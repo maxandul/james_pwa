@@ -3,10 +3,11 @@ from uuid import uuid4
 
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from .extensions import db
 from .models import Activity, HouseholdItem, Invitation, Membership, Product, ProductBarcode, ShoppingNeed, utcnow
+from .readiness import database_ready
 from .services import Conflict, change_item, create_item, make_invitation, membership_for
 
 main = Blueprint("main", __name__)
@@ -33,8 +34,9 @@ def helpers():
 @main.get("/health")
 def health():
     try:
-        db.session.execute(text("SELECT 1"))
-        return {"status": "ok"}
+        if database_ready():
+            return {"status": "ok"}
+        return {"status": "unavailable"}, 503
     except Exception:
         db.session.rollback()
         return {"status": "unavailable"}, 503

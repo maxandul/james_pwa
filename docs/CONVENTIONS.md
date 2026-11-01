@@ -40,6 +40,8 @@ Listenfilter und Suchbegriff bleiben nach Kartenaktionen erhalten. Breiten-/Orie
 
 Scan-Kontext: flow ist ausschliesslich create/assign/replenish; Ruecksprungziele werden serverseitig aus benannten Routes erzeugt, keine freie Return-URL. context_item_id bei assign wird bei jedem GET/POST erneut gegen den Haushalt geprueft. Bei Registrierung hat dieses gepruefte Ziel Vorrang vor item_id. Kontext bleibt in Formularen einschliesslich Katalogsuche und Fehlerkorrektur erhalten. Erfassen/Zuordnen bietet keine Kaufbuchung an.
 
-Deployment-Konfiguration wird mit dem Code versioniert: Dockerfile fuer die Laufzeit, railway.json fuer Build/Migration/Healthcheck. Container kopieren nur explizite Laufzeitpfade; keine lokalen Daten oder Secrets. CI prueft den gebauten Container mit Produktionseinstellungen gegen ausschliesslich isoliertes Postgres. scripts/check_deployment.py fuehrt nur oeffentliche Lesezugriffe ohne Anmeldedaten aus.
+Deployment-Konfiguration wird mit dem Code versioniert: Dockerfile fuer die Laufzeit, deployment/railway-settings.json (Referenz, nicht automatisch angewendet) fuer Build/Migration/Healthcheck. Container kopieren nur explizite Laufzeitpfade; keine lokalen Daten oder Secrets. CI prueft den gebauten Container mit Produktionseinstellungen gegen ausschliesslich isoliertes Postgres. scripts/check_deployment.py fuehrt nur oeffentliche Lesezugriffe ohne Anmeldedaten aus.
 
 Pre-Deploy bestaetigt nach db upgrade auch db current und db check. Die CI-Datenbankversion folgt der eingesetzten Railway-Hauptversion (aktuell 18).
+
+/health ist ein Readinesscheck: erwartete Tabellen vorhanden und Alembic-Revision entspricht den ausgelieferten Heads. SELECT 1 allein ist kein Betriebsnachweis. Railway-Einstellungen aktiv am richtigen Service speichern und zuruecklesen; eine Referenzdatei im Repository ist kein Nachweis ihrer Anwendung. Nach Neu-Deployment Schema-Readiness erneut pruefen.

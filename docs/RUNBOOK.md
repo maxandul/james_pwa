@@ -76,7 +76,7 @@ JavaScript-Pruefung mit Node: `node --test tests/scanner.test.cjs`. Simuliert Ka
 
 ## Konkrete HTTPS-Testumgebung vorbereiten
 
-Dateien: Dockerfile, .dockerignore und railway.json. Keine zusaetzliche Start-Command-Ueberschreibung im Railway-Dashboard notwendig. Das Image startet Gunicorn, die Railway-Konfiguration wendet Migrationen als Pre-Deploy an und erwartet /health innerhalb 120 Sekunden. Bei Migrationsfehlern das Deployment untersuchen, nicht durch einen zweiten Webstart umgehen.
+Dateien: Dockerfile, .dockerignore und deployment/railway-settings.json (Referenz, nicht automatisch angewendet). Keine zusaetzliche Start-Command-Ueberschreibung im Railway-Dashboard notwendig. Das Image startet Gunicorn, die Railway-Konfiguration wendet Migrationen als Pre-Deploy an und erwartet /health innerhalb 120 Sekunden. Bei Migrationsfehlern das Deployment untersuchen, nicht durch einen zweiten Webstart umgehen.
 
 1. Separates Railway-Projekt James mit eigener Testumgebung, eigenem Web-Service und Postgres erstellen. Keine bestehenden Gourmen-Ressourcen verbinden. EU-Region fuer beide Services waehlen, sofern im Workspace verfuegbar.
 2. Web-Service mit maxandul/james_pwa verbinden, fuer diese Vorschau Branch feat/household-shopping. Nach spaeterem Merge bewusst auf main umstellen. Repository-Zugriff und Railway-Workspace muessen bestaetigt verfuegbar sein.
@@ -127,3 +127,15 @@ railway ssh --project 9e1b0a24-3eb7-4906-9881-3bae2113f001 --environment 6a3cada
 
 Danach an der HTTPS-Testadresse anmelden und weitere Person ueber Zusammen nutzen einladen. Die lokale Vorschau-Anmeldung gilt hier nicht. Vor Alltagsdaten bleiben Backup/Restore, echtes Login/Einladung und Geraeteabnahme erforderlich. Ein erneutes init-household bei vorhandenem User wird abgewiesen.
 
+## Fehlerkorrektur: fehlende Tabellen bei init-household
+
+Symptom: relation user does not exist trotz vorherigem gruenem /health. Ursache: im aktiven Dienst fehlte das Pre-Deploy-Kommando; die alte railway.json wurde nicht angewendet. SELECT 1 pruefte nur die Verbindung. Der erste Owner wurde bei diesem Fehler nicht angelegt.
+
+Am James-Web-Service im expliziten staging-Environment sind nun diese aktiven Werte zu setzen und vor einem frischen Build zurueckzulesen:
+
+- Pre-Deploy: `flask --app james db upgrade && flask --app james db current && flask --app james db check`
+- Healthcheck: /health, Timeout 120 Sekunden.
+
+Die API lehnt die fruehere Railway-Config-File-Einstellung als veraltet ab. Die Sollwerte stehen nur als Referenz in deployment/railway-settings.json. Nicht auf automatische Anwendung einer Root-JSON-Datei vertrauen. Ein frischer Build vom Quellbranch muss die aktuellen Serviceeinstellungen enthalten; ein Erfolg alter Deployment-Snapshots reicht nicht.
+
+Nach Auslieferung muss der neue Schema-Healthcheck ok liefern; er prueft Tabellen und Migrationsrevision. Erst danach denselben interaktiven init-household-Befehl erneut ausfuehren. Keine Datenbank loeschen und kein db stamp als Reparatur verwenden. Das fehlgeschlagene Passwort bleibt ungespeichert; erneut verdeckt eingeben.

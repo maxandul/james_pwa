@@ -75,3 +75,11 @@ Getrenntes Projekt james-pwa mit eigenem Postgres-18-Volume und james-web in eur
 Endgueltigen Deploymentstatus im Railway-Dashboard pruefen; angelegte Ressourcen sind noch kein Nachweis eines erfolgreichen Deployments. Kein erster Owner eingerichtet, keine Login-/Einladungs-/Kamerapruefung und kein Backup/Restore behauptet. Aktuelle HTTPS-Adresse und IDs im Runbook. Automatisierte CI-Ergebnisse bleiben in PR #2 / Checks nachvollziehbar.
 
 Erstes Web-Deployment e92d81be-f267-43ca-80d4-e305749a6ad1 erreichte SUCCESS. Browseraufruf der HTTPS-Domain zeigt die James-Anmeldeseite; /health liefert status ok und bestaetigt die Verbindung zu Postgres. Persoenliche Anmeldung weiterhin offen, da erster Owner interaktiv durch den User einzurichten ist.
+
+## Korrektur des unvollstaendigen Betriebsnachweises
+
+Der User meldete bei der Ersteinrichtung eine fehlende user-Tabelle. Die bisherigen gruenen Healthchecks und SUCCESS-Deployments belegten nur Webstart und Datenbankverbindung, keine ausgefuehrten Migrationen. Diese Grenze wurde zuvor faelschlich als vollstaendiger Deploymentnachweis behandelt.
+
+Aktive Servicekonfiguration kontrolliert: kein Pre-Deploy/Healthcheck vorhanden. Sollwerte direkt am James-Web-Service gesetzt und zurueckgelesen; alte Config-as-Code-Datei von Railway als veraltet zurueckgewiesen. Referenz nach deployment/railway-settings.json verschoben. Frischer Quellbuild und Schema-Readiness sind fuer die Wiederabnahme erforderlich.
+
+Vier neue Regressionstests pruefen erreichbare Datenbank ohne Revision, vollstaendiges aktuelles Schema, veraltete Revision und fehlende Tabelle trotz aktuellem Stamp. Lokale SQLite-Pruefung erfolgreich; Postgres und Container folgen im aktuellen PR-Check. Neuer /health kann eine leere Datenbank nicht mehr als bereit melden.

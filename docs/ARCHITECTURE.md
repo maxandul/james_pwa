@@ -93,7 +93,7 @@ Der Scanner ist als kontextbezogene Hilfsseite ohne eigenen Navigationstab integ
 
 Dockerfile definiert Python 3.12, nur Laufzeitabhaengigkeiten und einen Benutzer ohne Root-Rechte. Explizite COPY-Pfade und .dockerignore halten lokale Datenbanken, Secrets, Tests und Vorschau-Daten aus dem Image. Gunicorn startet wsgi:app mit zwei Workern und Railway-PORT (lokaler Containerstandard 8080).
 
-railway.json waehlt den Docker-Build, fuehrt Alembic als Pre-Deploy-Kommando vor dem Webstart aus und prueft /health. Fehlgeschlagene Migration verhindert den neuen Webstart. Keine Migration in jedem Worker und keine automatisch angelegten Konten. Bestehende Datenbanken brauchen weiterhin Backup und einen geprueften Rueckweg.
+deployment/railway-settings.json (Referenz, nicht automatisch angewendet) waehlt den Docker-Build, fuehrt Alembic als Pre-Deploy-Kommando vor dem Webstart aus und prueft /health. Fehlgeschlagene Migration verhindert den neuen Webstart. Keine Migration in jedem Worker und keine automatisch angelegten Konten. Bestehende Datenbanken brauchen weiterhin Backup und einen geprueften Rueckweg.
 
 CI baut das echte Image und prueft Gunicorn gegen isoliertes Postgres mit Produktionseinstellungen. Dieser Nachweis ersetzt keine Railway-/TLS-/Proxy-Pruefung. Erstes Ziel ist ein getrenntes James-Testprojekt mit eigenem Postgres, HTTPS-Origin und Open-Food-Facts-Testkatalog. Noch keine Railway-Ressourcen angelegt.
 
@@ -102,3 +102,9 @@ CI baut das echte Image und prueft Gunicorn gegen isoliertes Postgres mit Produk
 Das getrennte Projekt james-pwa liegt im Workspace maxandul's Projects, Environment staging. james-web und Postgres befinden sich in europe-west4-drams3a. Postgres verwendet das aktuelle Railway-Template mit Version 18 und persistentem Volume; deshalb prueft die aktuelle CI ebenfalls Postgres 18 (fruehere Laeufe nutzten 16). Der Web-Service nutzt ausschliesslich die private DATABASE_URL-Referenz; es wurde kein oeffentlicher Datenbankproxy angelegt.
 
 HTTPS-Testdomain: https://james-web-staging.up.railway.app. Der Web-Service folgt feat/household-shopping; Pushes loesen Deployments aus. APP_ENV=production aktiviert die sicheren Cookie-/Konfigurationsregeln auch in staging. Produktvorschlaege verwenden weiterhin den Testkatalog. Pre-Deploy wendet Migrationen an und verifiziert db current sowie db check. Keine Benutzer automatisch angelegt; erster Owner per interaktiver CLI.
+
+## Korrektur des Deploymentpfads
+
+Der aktive Railway-Dienst hatte die fruehere railway.json nicht uebernommen. Die API weist diese Konfigurationsart inzwischen als veraltet zurueck. Die frueheren Aussagen zur automatischen Anwendung waren daher nicht zutreffend. Aktive Betriebsparameter werden direkt am expliziten james-web/staging-Service gesetzt und zurueckgelesen. deployment/railway-settings.json dokumentiert die Sollwerte, ist kein automatisch angewendetes Deploymentfile. Die irrefuehrende Root-Datei wurde entfernt. Eine spaetere IaC-Einfuehrung ist ein eigener Schritt mit Planpruefung.
+
+readiness.py prueft fuer /health alle erwarteten Modelltabellen und den Alembic-Stand gegen die Migrationen des laufenden Images. Erreichbare, leere oder veraltete Datenbanken erhalten HTTP 503 statt ok. Oeffentliche Antworten enthalten keine Schemanamen oder Fehlerdetails. Erst ein erfolgreicher Schema-Healthcheck und kontrollierter Migrationslauf belegen die Bereitschaft zur Ersteinrichtung.

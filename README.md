@@ -46,4 +46,4 @@ Dokumentations- und Feature-Aenderungen ueber Branch und Pull Request. Keine Zug
 
 ## HTTPS-Vorschau vorbereiten
 
-Dockerfile und railway.json enthalten Produktionsstart, Pre-Deploy-Migration und Healthcheck. Die CI prueft das echte Containerimage gegen isoliertes Postgres. Die konkrete Einrichtung der getrennten Railway-Testumgebung steht im [Runbook](docs/RUNBOOK.md#konkrete-https-testumgebung-vorbereiten). Die Testadresse ist https://james-web-staging.up.railway.app. Deploymentstatus und verbleibende Abnahme siehe Runbook/VALIDATION.md; erster Owner wird interaktiv eingerichtet.
+Dockerfile und deployment/railway-settings.json (Referenz, nicht automatisch angewendet) enthalten Produktionsstart, Pre-Deploy-Migration und Healthcheck. Die CI prueft das echte Containerimage gegen isoliertes Postgres. Die konkrete Einrichtung der getrennten Railway-Testumgebung steht im [Runbook](docs/RUNBOOK.md#konkrete-https-testumgebung-vorbereiten). Die Testadresse ist https://james-web-staging.up.railway.app. Deploymentstatus und verbleibende Abnahme siehe Runbook/VALIDATION.md; erster Owner wird interaktiv eingerichtet.
