@@ -55,3 +55,9 @@ Die GitHub-Workflowdatei prueft SQLite sowie Postgres 16, einschliesslich simult
 - Vor privaten Daten: automatisches Backup und Restore in eine isolierte DB testen. Zusaetzlich Betrieb, Neustart, Cookie-Verhalten und Handy-/Tablet-Bedienung abnehmen.
 
 Keine automatische Anwendung von Migrationen in jedem Webworker. Ein Downgrade der initialen Migration entfernt alle James-Tabellen und ist nur fuer leere Testdatenbanken vorgesehen. Produktive Ruecknahme immer mit gesichertem Backup und eigenem Plan.
+
+## Update der lokalen Vorschau: Artikelpflege
+
+Neue Revision eebb352b7301 fuegt Favoriten- und Archivstatus hinzu. Vor Start der aktualisierten App `flask --app james db upgrade` mit derselben lokalen Datenbank ausfuehren. Der in dieser Sitzung verwendete temporaere Vorschau-Starter james_preview.py erledigt das Upgrade beim Neustart selbst. Ein laufender alter Server muss dafuer gestoppt werden; keine Datenbankdatei loeschen. Testdaten bleiben erhalten.
+
+Die SQLite-Downgradepruefung benoetigt SQLite 3.35 oder neuer fuer natives DROP COLUMN. Die Entwicklung nutzt Python 3.12. Ein Downgrade entfernt die Favoriten-/Archivflags; es ist kein normaler Anwender-Schritt.

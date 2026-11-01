@@ -75,6 +75,8 @@ class HouseholdItem(db.Model):
     unit = db.Column(db.String(20), nullable=False, default="Packung")
     default_quantity = db.Column(db.Integer, nullable=False, default=1)
     stock_status = db.Column(db.String(12), nullable=False, default="unknown")
+    is_favorite = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    archived = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     version = db.Column(db.Integer, nullable=False, default=1)
     __mapper_args__ = {"version_id_col": version}
     __table_args__ = (

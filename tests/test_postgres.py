@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from james.extensions import db
-from james.models import Invitation, Membership, ShoppingNeed
+from james.models import HouseholdItem, Invitation, Membership, ShoppingNeed
 from james.services import Conflict, change_item, create_item, make_invitation
 
 
@@ -63,3 +63,33 @@ def test_concurrent_invitation_issuance_keeps_one_active_link(app):
         invitations = db.session.scalars(select(Invitation)).all()
         assert len(invitations) == 2
         assert sum(invitation.revoked_at is None for invitation in invitations) == 1
+
+
+def test_concurrent_archive_and_replenish_cannot_hide_open_need(app):
+    with app.app_context():
+        if db.engine.dialect.name != "postgresql":
+            pytest.skip("Archive/replenish race requires isolated Postgres.")
+        member = db.session.scalar(select(Membership).where(Membership.role == "owner"))
+        item = create_item(member.household_id, {"name": "Pasta"})
+        db.session.commit()
+        home, user, item_id = member.household_id, member.user_id, item.id
+    barrier = Barrier(2)
+    def mutate(action):
+        with app.app_context():
+            barrier.wait(timeout=10)
+            try:
+                change_item(home, user, item_id, action, str(uuid4()), 1)
+                db.session.commit()
+                return "ok"
+            except Conflict:
+                db.session.rollback()
+                return "conflict"
+            finally:
+                db.session.remove()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(mutate, ["archive", "replenish"]))
+    assert sorted(results) == ["conflict", "ok"]
+    with app.app_context():
+        item = db.session.get(HouseholdItem, item_id)
+        need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item_id))
+        assert not (item.archived and need.quantity)

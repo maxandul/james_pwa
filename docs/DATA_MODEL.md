@@ -86,3 +86,11 @@ StockState ist vorerst als stock_status im HouseholdItem integriert. ShoppingNee
 Activity speichert die Listenaktionen mit vorherigem/nachherigem Bestandsstatus und Bedarf, Item-Version, Urheber und eindeutiger Request-UUID pro Haushalt. Eine Ruecknahme verweist auf die Gegenbuchung. Receipt/StockMovement sind noch nicht eingefuehrt, da kein mengenbasierter Bestand oder Lieferprozess existiert.
 
 Quelle und Warengruppe sind zunaechst Texte am Artikel. Product, ProductBarcode, ItemProduct, PurchaseSource, ShopOffer, DeviceAccess und alle Bestellobjekte bleiben im Zielmodell. Vor deren Einfuehrung sind eigene Migrationen erforderlich.
+
+## Erweiterung Artikelpflege
+
+HouseholdItem besitzt is_favorite und archived (Boolean, nicht null, Default false auch fuer vorhandene Zeilen). Favoriten werden innerhalb des Haushalts geteilt. Archivierte Artikel erscheinen weder im aktiven Haushalt noch auf der Einkaufsliste und koennen wieder aktiviert werden. Offener Bedarf verhindert das Archivieren.
+
+Activity speichert nun zusaetzlich Name, Warengruppe, Quelle, Einheit, Standard-Nachkaufmenge, Favoriten- und Archivstatus. Vorhandene alte Snapshots mit nur status/quantity werden bei Ruecknahme weiter unterstuetzt. Keine Historie wird geloescht.
+
+Migration eebb352b7301 folgt auf e691ea9e9398 und wird getrennt vom Feature-Code committet. Sie ergaenzt die beiden Flags mit portablem SQL-false; bestehende Artikel und ihre Bedarfe bleiben erhalten. Downgrade entfernt ausschliesslich die neuen Flags und benoetigt fuer SQLite native DROP-COLUMN-Unterstuetzung ab 3.35. Produktive Migrationen weiterhin erst mit Backup und passender Betriebsfreigabe.

@@ -44,9 +44,18 @@ def health():
 @household_required
 def home():
     rows = db.session.execute(select(HouseholdItem, ShoppingNeed).join(ShoppingNeed).where(
-        HouseholdItem.household_id == g.household.id).order_by(HouseholdItem.name)).all()
-    pending = sum(1 for item, need in rows if need.quantity)
-    return render_template("home.html", rows=rows, pending=pending)
+        HouseholdItem.household_id == g.household.id).order_by(HouseholdItem.is_favorite.desc(), HouseholdItem.name)).all()
+    pending = sum(1 for item, need in rows if need.quantity and not item.archived)
+    active_count = sum(1 for item, need in rows if not item.archived)
+    view = request.args.get("view", "all")
+    if view not in {"all", "favorites", "archived"}:
+        view = "all"
+    rows = [(item, need) for item, need in rows if item.archived == (view == "archived")
+        and (view != "favorites" or item.is_favorite)]
+    query = request.args.get("q", "").strip()[:100]
+    if query:
+        rows = [(item, need) for item, need in rows if query.casefold() in item.name.casefold()]
+    return render_template("home.html", rows=rows, pending=pending, active_count=active_count, view=view, query=query)
 
 
 @main.route("/items/new", methods=["GET", "POST"])
@@ -65,11 +74,35 @@ def item_new():
     return render_template("item_new.html", error=error), (400 if error else 200)
 
 
+@main.route("/items/<int:item_id>/edit", methods=["GET", "POST"])
+@household_required
+def item_edit(item_id):
+    item = db.session.scalar(select(HouseholdItem).where(
+        HouseholdItem.id == item_id, HouseholdItem.household_id == g.household.id))
+    if not item:
+        abort(404)
+    error = None
+    status = 200
+    if request.method == "POST":
+        try:
+            event = change_item(g.household.id, current_user.id, item_id, "edit",
+                request.form.get("request_id"), request.form.get("version"), data=request.form)
+            db.session.commit()
+            flash("Artikel aktualisiert.", "success")
+            return redirect(url_for("main.home", undo=event.id))
+        except ValueError as exc:
+            db.session.rollback()
+            error = str(exc)
+            status = 409 if isinstance(exc, Conflict) else 400
+    need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item.id))
+    return render_template("item_edit.html", item=item, need=need, error=error, conflict=status == 409), status
+
+
 @main.get("/shopping")
 @household_required
 def shopping():
     rows = db.session.execute(select(HouseholdItem, ShoppingNeed).join(ShoppingNeed).where(
-        HouseholdItem.household_id == g.household.id, ShoppingNeed.quantity > 0
+        HouseholdItem.household_id == g.household.id, HouseholdItem.archived.is_(False), ShoppingNeed.quantity > 0
     ).order_by(HouseholdItem.category, HouseholdItem.name)).all()
     sources = sorted({item.source for item, need in rows})
     source = request.args.get("source", "")
@@ -84,13 +117,24 @@ def item_action(item_id):
     try:
         event = change_item(g.household.id, current_user.id, item_id,
             request.form.get("action"), request.form.get("request_id"),
-            request.form.get("version"), request.form.get("quantity"))
+            request.form.get("version"), request.form.get("quantity"), data=request.form)
         db.session.commit()
         session_event = event.id
-        flash("Einkauf gespeichert." if event.action == "purchase" else "Einkaufsliste aktualisiert.", "success")
+        messages = {"purchase": "Einkauf gespeichert.", "remove": "Von der Liste entfernt. Der Bestand bleibt unveraendert.",
+            "status": "Bestand aktualisiert. Die Einkaufsliste bleibt unveraendert.", "favorite": "Favoriten aktualisiert.",
+            "archive": "Artikel archiviert.", "restore": "Artikel wieder aktiviert."}
+        flash(messages.get(event.action, "Einkaufsliste aktualisiert."), "success")
         # Reference only; no state mutation on the destination GET.
         destination = "main.shopping" if request.form.get("return_to") == "shopping" else "main.home"
-        return redirect(url_for(destination, undo=session_event))
+        filters = {}
+        if destination == "main.home":
+            view = "archived" if request.form.get("return_to") == "archived" else request.form.get("view", "all")
+            if view in {"all", "favorites", "archived"}:
+                filters["view"] = view
+            query = request.form.get("q", "").strip()[:100]
+            if query:
+                filters["q"] = query
+        return redirect(url_for(destination, undo=session_event, **filters))
     except ValueError as exc:
         db.session.rollback()
         return render_template("error.html", message=str(exc)), (409 if isinstance(exc, Conflict) else 400)
@@ -121,7 +165,7 @@ def undo(activity_id):
             request.form.get("request_id"), request.form.get("version"), activity_id=target.id)
         db.session.commit()
         flash("Aenderung rueckgaengig gemacht.", "success")
-        return redirect(url_for("main.shopping"))
+        return redirect(url_for("main.shopping" if request.form.get("return_to") == "shopping" else "main.home"))
     except ValueError as exc:
         db.session.rollback()
         return render_template("error.html", message=str(exc)), 409

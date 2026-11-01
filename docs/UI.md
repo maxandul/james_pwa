@@ -40,3 +40,24 @@ Tablet und Handy sind die primaeren Oberflaechen; Desktop ist ergaenzend. Die we
 Der User nutzt ein Fold-Handy (als Z8 Fold bezeichnet). Keine festen Modellmasse angenommen: entscheidend sind die tatsaechlichen CSS-Viewportgroessen auf Aussen- und Innendisplay. Vor Abnahme beide Displays in Hoch-/Querformat sowie Auf-/Zuklappen waehrend eines begonnenen Formulars pruefen. Eingaben und Einkaufsstatus muessen dabei erhalten bleiben. Karten, Formulare, Navigation und Aktionen muessen sich ohne abgeschnittene Inhalte anpassen; Kernaktionen duerfen keinen Hover voraussetzen.
 
 Die dauerhafte Box fuer die letzte Aenderung wurde auf Wunsch des Users zurueckgenommen. Rueckgaengig erscheint wieder nur im direkten Hinweis nach einer Listenaktion; beim normalen Oeffnen oder Wechseln der Seite wird keine permanente Box angeboten. CSS-Version nach der Ruecknahme: 3.
+
+## Artikelpflege fuer Touch
+
+- Gemeinsam gesetzte Favoriten ueber einen sichtbaren Stern mit aria-pressed; Ansicht Favoriten fuer den schnellen Kuechenzugriff.
+- Ansicht Archiv mit Wieder-aktivieren-Aktion; keine endgueltige Loeschfunktion.
+- Bearbeiten-Link auf jeder aktiven Karte. Im Bearbeitungsformular Name, Warengruppe, Quelle, Nachkaufmenge, Einheit, Bestand und Favorit.
+- Bestand direkt auf der Karte unter "Bestand und Artikeldetails" setzen. Ein kurzer Hinweis trennt diese Korrektur vom Nachkaufen.
+- "Von der Liste entfernen" auf jeder Einkaufsposition; Ruecknahme im gewohnten direkten Aktionshinweis.
+- Suche nach Artikelname; Such- und Favoritenansicht bleibt nach Kartenaktionen erhalten.
+
+| Neue Klassen | Zweck |
+| --- | --- |
+| item-search | Umbruchfaehige Suche mit beschriftetem Suchfeld |
+| favorite-button | 44-Pixel-Touchziel fuer gemeinsamen Favoritenstatus |
+| item-card__manage, status-form | Touch-erreichbare Bestandskorrektur, ohne Hover |
+| item-edit-link | Sichtbarer Einstieg in die Artikelpflege |
+| check-field | Beschriftete Favoriten-Checkbox mit grosser Zielflaeche |
+| archive-section | Erklaerung und Aktion zum Archivieren |
+| remove-form | Sichtbare Listenentfernung unter der Einkaufsposition |
+
+Karten und Formularspalten nutzen auto-fit/minmax mit Mindestbreite innerhalb des verfuegbaren Platzes. Suche und Aktionszeilen brechen um; Eingabefelder auf kleinen Viewports haben 16 Pixel Schrift. Keine festen Modellmasse oder Aenderung der Eingaben beim Aufklappen. Visuelle Abnahme auf Aussen-/Innendisplay bleibt ein eigener Geraetetest. CSS- und JS-Referenzversion fuer dieses Paket: 4.

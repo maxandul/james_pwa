@@ -90,3 +90,13 @@ Der Geraetezugang darf keine Mitglieder, Shop-Zugaenge oder Bestellberechtigunge
 "Plane drei Abendessen fuer zwei Personen und verwende zuerst frische Lebensmittel."
 
 James liefert dazu beobachteten Bestand mit Zeitpunkt und Unsicherheit. Vorschlaege benennen zu pruefende Zutaten. Fehlende Zutaten werden nach Bestaetigung als Bedarf erfasst. Ein geplanter oder gekochter Menuevorschlag zieht im ersten Ausbau keine unbestaetigten Mengen automatisch ab.
+
+## Artikelpflege (implementiert)
+
+Auf der Karte den Stern antippen, um einen gemeinsamen Favoriten zu setzen; unter Favoriten erscheinen nur aktive markierte Artikel. Name per Suchfeld finden. Bestandsstatus ueber "Bestand und Artikeldetails" korrigieren; dies veraendert die Einkaufsliste nicht.
+
+"Artikel bearbeiten" oeffnet das Formular fuer Name, Warengruppe, Quelle, gewohnte Nachkaufmenge, Einheit und Bestand. Die Einheit ist bei offenem Einkaufsbedarf gesperrt. Neue Standardmengen wirken erst auf kuenftigen Bedarf. Bei einer zwischenzeitlichen Aenderung verlangt James ein Neuladen, statt alte Felder ueber neuere Werte zu schreiben.
+
+Ein Artikel ohne offenen Einkaufsbedarf kann im Bearbeitungsformular archiviert werden. Er bleibt im Archiv erhalten und kann dort wieder aktiviert werden. Noch offener Bedarf muss zuerst gekauft oder mit "Von der Liste entfernen" geloescht werden. Letzteres setzt keinen Bestand auf vorhanden und gilt nicht als Kauf.
+
+Alle Pflegeaktionen ausser der erstmaligen Erfassung sind ueber den direkten Aktionshinweis rueckgaengig machbar, solange die Artikelversion noch aktuell ist. Keine permanente Rueckgaengig-Box.

@@ -19,7 +19,7 @@ James unterstuetzt einen gemeinsam gefuehrten Haushalt beim Erfassen von Vorrat,
 
 Siehe [Runbook](docs/RUNBOOK.md) fuer Installation, Datenbankmigration und Erstbenutzer. Anmeldung erfolgt mit E-Mail und Passwort; weitere Zugaenge entstehen ausschliesslich ueber persoenliche Einladungslinks.
 
-Implementiert sind Artikel mit einfachem Bestandsstatus, Nachkaufmenge, gemeinsamer Einkaufsliste, Zusatz- und Teilmengen sowie Rueckgaengig. Tablet-Geraetezugang, Barcode, Mengenbestand, PWA-Installation/Offline-Lesen, Shop-Uebergabe und MCP folgen spaeter.
+Implementiert sind Artikelpflege mit Favoriten und Archiv, direkter einfacher Bestandsstatus, Nachkaufmenge, gemeinsame Einkaufsliste, Zusatz-/Teilmengen, Entfernen und Rueckgaengig. Tablet-Geraetezugang, Barcode, Mengenbestand, PWA-Installation/Offline-Lesen, Shop-Uebergabe und MCP folgen spaeter.
 
 Weitere Umsetzungshinweise: [Zugang](docs/AUTH.md), [Konventionen](docs/CONVENTIONS.md), [UI](docs/UI.md).
 

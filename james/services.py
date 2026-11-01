@@ -100,20 +100,38 @@ def accept_invitation(token, email, name, password):
     return user
 
 
-def create_item(household_id, data):
-    item = HouseholdItem(household_id=household_id,
-        name=clean_text(data.get("name"), "Artikelname", 100),
+def item_values(data):
+    return dict(name=clean_text(data.get("name"), "Artikelname", 100),
         category=clean_text(data.get("category") or "Sonstiges", "Warengruppe", 60),
         source=clean_text(data.get("source") or "Laden", "Bezugsquelle", 60),
         unit=clean_text(data.get("unit") or "Packung", "Einheit", 20),
         default_quantity=positive_int(data.get("quantity", "1")))
+
+
+def valid_status(value):
+    if value not in {"unknown", "available", "low", "empty"}:
+        raise ValueError("Bitte einen gueltigen Bestandsstatus waehlen.")
+    return value
+
+
+def item_state(item, need):
+    return {"status": item.stock_status, "quantity": need.quantity,
+        "name": item.name, "category": item.category, "source": item.source,
+        "unit": item.unit, "default_quantity": item.default_quantity,
+        "is_favorite": item.is_favorite, "archived": item.archived}
+
+
+def create_item(household_id, data):
+    item = HouseholdItem(household_id=household_id, **item_values(data),
+        is_favorite=data.get("favorite") == "1",
+        stock_status=valid_status(data.get("stock_status", "unknown")))
     db.session.add(item)
     db.session.flush()
     db.session.add(ShoppingNeed(item_id=item.id, quantity=0))
     return item
 
 
-def change_item(household_id, user_id, item_id, action, request_id, expected_version, quantity=None, activity_id=None):
+def change_item(household_id, user_id, item_id, action, request_id, expected_version, quantity=None, activity_id=None, data=None):
     try:
         request_id = str(UUID(str(request_id)))
     except (ValueError, TypeError, AttributeError):
@@ -135,7 +153,10 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
     if not valid_version:
         raise Conflict("Der Artikel wurde inzwischen geaendert. Bitte neu laden und erneut pruefen.")
     need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item.id))
-    before = {"status": item.stock_status, "quantity": need.quantity}
+    if item.archived and action not in {"restore", "undo"}:
+        raise Conflict("Dieser Artikel ist archiviert. Bitte zuerst wieder aktivieren.")
+    before = item_state(item, need)
+    data = data or {}
     undo_target = None
     if action in {"replenish", "empty"}:
         if need.quantity == 0:
@@ -152,6 +173,28 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
             raise Conflict("Die Einkaufsmenge ist groesser als der offene Bedarf. Bitte die Liste neu laden.")
         need.quantity -= amount
         item.stock_status = "available"
+    elif action == "remove":
+        need.quantity = 0
+    elif action == "status":
+        item.stock_status = valid_status(data.get("stock_status"))
+    elif action == "favorite":
+        if data.get("favorite") not in {"0", "1"}:
+            raise ValueError("Bitte einen gueltigen Favoritenstatus waehlen.")
+        item.is_favorite = data["favorite"] == "1"
+    elif action == "edit":
+        values = item_values(data)
+        if need.quantity and values["unit"] != item.unit:
+            raise Conflict("Die Einheit kann bei offenem Einkaufsbedarf nicht geaendert werden. Bitte zuerst die Position von der Liste entfernen.")
+        for field, value in values.items():
+            setattr(item, field, value)
+        item.stock_status = valid_status(data.get("stock_status"))
+        item.is_favorite = data.get("favorite") == "1"
+    elif action == "archive":
+        if need.quantity:
+            raise Conflict("Der Artikel steht noch auf der Einkaufsliste. Bitte zuerst den offenen Bedarf erledigen oder von der Liste entfernen.")
+        item.archived = True
+    elif action == "restore":
+        item.archived = False
     elif action == "undo":
         undo_target = db.session.scalar(select(Activity).where(
             Activity.id == activity_id, Activity.household_id == household_id,
@@ -160,6 +203,10 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
             raise Conflict("Rueckgaengig ist nach einer weiteren Aenderung nicht mehr moeglich.")
         item.stock_status = undo_target.before_state["status"]
         need.quantity = undo_target.before_state["quantity"]
+        # Existing activities may predate metadata snapshots.
+        for field in ("name", "category", "source", "unit", "default_quantity", "is_favorite", "archived"):
+            if field in undo_target.before_state:
+                setattr(item, field, undo_target.before_state[field])
     else:
         raise ValueError("Unbekannte Aktion.")
     # Version advances even when only ShoppingNeed changed, or the action was a no-op.
@@ -167,7 +214,7 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
     db.session.flush()
     event = Activity(household_id=household_id, user_id=user_id, item_id=item.id,
         request_id=request_id, action=action, before_state=before,
-        after_state={"status": item.stock_status, "quantity": need.quantity}, version_after=item.version)
+        after_state=item_state(item, need), version_after=item.version)
     db.session.add(event)
     db.session.flush()
     if undo_target:

@@ -39,3 +39,13 @@ Die ersten CI-Laeufe scheiterten vor den Tests an der Anfuehrungszeichenfolge im
 - Eingeschraenkter Geraetezugang, Barcode, Mengenbestand und Offline-Lesen.
 
 Es wurden keine echten Benutzerpasswoerter, Shop-Zugaenge oder privaten Haushaltsdaten fuer Tests verwendet.
+
+## Erweiterung Artikelpflege
+
+Lokal: 42 Tests bestanden; drei ausschliesslich fuer Postgres vorgesehene Parallelitaetstests uebersprungen. Der aktuelle CI-Nachweis fuer den jeweiligen Implementierungsstand steht bei [PR #2 / Checks](https://github.com/maxandul/james_pwa/pull/2/checks).
+
+Neue Prueffaelle: Metadaten bearbeiten und zuruecknehmen, vier Bestandszustaende ohne Aenderung des Einkaufsbedarfs, Listenentfernung ohne Kaufbuchung, gemeinsame Favoriten samt Filter/Replay, Archivierung nur ohne offenen Bedarf, Wiederaktivierung, keine Nachbestellung archivierter Artikel, veraltete Formulare, Einheitenwechsel bei offenem Bedarf, Haushaltsgrenzen, Suche und kompatible Ruecknahme alter Activity-Snapshots.
+
+Migration zusaetzlich mit vorhandenen Artikeln, offenem Bedarf und referenzierender Historie getestet: Upgrade, Ruecknahme der neuen Flags und erneutes Upgrade erhalten die bisherigen Daten. Der Postgres-spezifische Test prueft paralleles Archivieren/Nachkaufen und verhindert unsichtbaren offenen Bedarf.
+
+Responsive CSS ist fuer Touch und flexible Viewportbreiten angepasst. Keine Behauptung einer erfolgten visuellen Fold-/Tablet-Abnahme; diese braucht den Neustart der erreichbaren Vorschau und die echten Zielgeraete. Die Datenbank der laufenden User-Vorschau wurde nicht veraendert.

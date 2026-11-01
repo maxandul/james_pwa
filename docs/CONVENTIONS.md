@@ -18,3 +18,13 @@ Stand: 01.11.2026.
 - Deutsch ohne Eszett. Keine extern geladenen Fonts oder Scripts.
 
 Einladungslinks werden pro Haushalt unter einer Zeilensperre ausgestellt, damit auch gleichzeitiges Neuausstellen nur einen aktiven Link fuer dieselbe Adresse hinterlaesst. Der Postgres-Test prueft diesen Fall mit zwei Transaktionen.
+
+## Artikelpflege
+
+Favoriten gelten gemeinsam fuer den Haushalt. Archivieren ist ein logischer Status am Artikel, keine Loeschung. Ein Artikel mit offenem Einkaufsbedarf kann nicht archiviert werden; serverseitige Sperre und Versionspruefung erhalten diese Regel auch bei gleichzeitigen Eingaben.
+
+Bestandskorrektur und Entfernen von der Einkaufsliste sind getrennte Aktionen. Eine Bestandskorrektur bucht keinen Kauf; Entfernen setzt nur den Bedarf auf null. Metadaten, Favoriten, Archiv und Bestand gehen in den Activity-Snapshot ein, damit die direkte Ruecknahme den vorherigen Zustand herstellen kann. Alte Snapshots ohne Metadaten bleiben lesbar.
+
+Eine neue Nachkaufmenge veraendert bereits offenen Bedarf nicht. Einheitenwechsel ist bei offenem Bedarf gesperrt, da sonst vorhandene Mengen eine neue Bedeutung erhielten. Veraltete Bearbeitungsformulare erhalten 409 mit Aufforderung zum Neuladen; sie bekommen keine still aktualisierte Versionsnummer zum Ueberschreiben.
+
+Listenfilter und Suchbegriff bleiben nach Kartenaktionen erhalten. Breiten-/Orientierungswechsel loesen kein Neuladen oder Zuruecksetzen von Formularen aus.

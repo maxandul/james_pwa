@@ -4,4 +4,6 @@
 <input type="hidden" name="version" value="{{ item.version }}">
 <input type="hidden" name="action" value="{{ action }}">
 <input type="hidden" name="return_to" value="{{ destination }}">
+<input type="hidden" name="view" value="{{ request.args.get('view', 'all') }}">
+<input type="hidden" name="q" value="{{ request.args.get('q', '')[:100] }}">
 {% endmacro %}

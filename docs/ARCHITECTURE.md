@@ -75,4 +75,6 @@ Blueprints auth und main, zentrale Fachregeln in services.py. Jeder Browser-Schr
 
 Die erste Version nutzt noch keine WebSockets, KI, Shop-Zugaenge, Bild-Uploads, Mengenbestaende oder Hintergrundauftraege. Auth-HTML ist no-store; es gibt noch keinen Service Worker. Der unprivilegierte Tablet-Geraetezugang ist offen.
 
-Pruefung: SQLite-Suite lokal erfolgreich. Lokale TCP-Verbindungen zu Postgres und Webserver sind in der Arbeitsumgebung blockiert. Postgres 16 wurde anschliessend erfolgreich in GitHub-CI geprueft (26 Tests und Migrationsvergleich). Visuelle Zielgeraetepruefung bleibt offen; siehe VALIDATION.md.
+Automatisierte Pruefung: lokale SQLite-Suite und GitHub-CI gegen Postgres 16 mit Migrationsvergleich. Die lokale Arbeitsumgebung blockiert TCP-Verbindungen; Postgres wird deshalb in CI geprueft. Der aktuelle Pruefstand steht in VALIDATION.md. Visuelle Zielgeraetepruefung bleibt offen.
+
+Artikelpflege erweitert den bestehenden Service-Layer um Bearbeiten, gemeinsamen Favoritenstatus, Archivieren/Wiederaktivieren, Bestandskorrektur und Listenentfernung. Die beiden Archiv-/Favoritenflags und die portable Datenbankmigration sind in DATA_MODEL.md dokumentiert; es wurde kein neuer externer Dienst eingefuehrt.

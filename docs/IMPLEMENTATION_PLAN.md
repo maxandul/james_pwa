@@ -9,8 +9,8 @@ Stand: 01.11.2026. Konzept zusammengefuehrt; ein erster durchgaengiger Ablauf is
 | K0 Konzept | Gemeinsame Dokumentationsgrundlage | Umfang, Datenmodell, Ablaeufe, Architektur und Testgrenzen beschrieben | Zusammengefuehrt (PR #1) |
 | P1 Technische Basis | Flask-Vorschlag konkretisieren, Postgres, Migrationen, Entwicklungs-/Testsetup | App startet; isolierte Testdatenbank; Basis-Checks dokumentiert | Technische Basis und Postgres-CI geprueft; Deployment offen |
 | P2 Gemeinsamer Haushalt | Login, Mitgliedschaften und Tablet-Zugang | Zwei Personen sehen denselben Haushalt; fremde Haushaltsdaten gesperrt; Tablet-Rechte eingeschraenkt | Persoenliche Zugaenge/Einladungen fertig; Geraetezugang offen |
-| P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Text und einfacher Status fertig; Barcode/Mengenbestand offen |
-| P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Erster Ablauf implementiert; visuelle Abnahme offen |
+| P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Text, Favoriten, Artikelpflege und einfacher Status fertig; Barcode/Mengenbestand offen |
+| P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Nachkauf, Zusatz-/Teilkauf, Entfernen und Ruecknahme implementiert; visuelle Abnahme offen |
 | P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Offen |
 | P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Offen |
 | P7 Shop-Uebergabe | Pro Shop nachgewiesener Warenkorbweg | Angemeldeter Test, mehrere Mengen, Wiederholungen und Sitzungsablauf geprueft | Offen |
@@ -45,7 +45,7 @@ Browser-Tests belegen die konkrete Oberflaeche zum Testzeitpunkt. Sie ersetzen k
 
 ## Naechster Arbeitsschritt
 
-Postgres-CI erfolgreich (26 Tests plus Migrationsvergleich). Als Naechstes visuelle Bedienung auf erreichbarer Vorschau pruefen. Danach eingeschraenkten Tablet-Geraetezugang, Artikelpflege, Barcode und Mengenbestand ergaenzen; PWA/Offline-Lesen und Railway-Testbetrieb bleiben P5.
+Postgres-CI erfolgreich (26 Tests plus Migrationsvergleich). Als Naechstes visuelle Bedienung auf erreichbarer Vorschau pruefen. Artikelpflege einschliesslich Favoriten, Archiv und Bestandskorrekturen ist umgesetzt. Danach eingeschraenkten Tablet-Geraetezugang, Barcode und Mengenbestand ergaenzen; PWA/Offline-Lesen und Railway-Testbetrieb bleiben P5.
 
 Die erste Version braucht keine Shop-Zugaenge. Angemeldete Shop-Tests bleiben unabhaengig davon offen.
 
