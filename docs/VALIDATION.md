@@ -83,3 +83,5 @@ Der User meldete bei der Ersteinrichtung eine fehlende user-Tabelle. Die bisheri
 Aktive Servicekonfiguration kontrolliert: kein Pre-Deploy/Healthcheck vorhanden. Sollwerte direkt am James-Web-Service gesetzt und zurueckgelesen; alte Config-as-Code-Datei von Railway als veraltet zurueckgewiesen. Referenz nach deployment/railway-settings.json verschoben. Frischer Quellbuild und Schema-Readiness sind fuer die Wiederabnahme erforderlich.
 
 Vier neue Regressionstests pruefen erreichbare Datenbank ohne Revision, vollstaendiges aktuelles Schema, veraltete Revision und fehlende Tabelle trotz aktuellem Stamp. Lokale SQLite-Pruefung erfolgreich; Postgres und Container folgen im aktuellen PR-Check. Neuer /health kann eine leere Datenbank nicht mehr als bereit melden.
+
+Die bisherige Health-Testannahme (create_all ohne Migration meldet ok) wurde auf 503/unavailable angepasst. Railway protokolliert nun die drei tatsaechlich ausgefuehrten Upgrades bis b8cf5f8bfc8c; der neue Schema-Healthcheck liefert ueber HTTPS ok.

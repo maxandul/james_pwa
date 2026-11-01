@@ -252,8 +252,10 @@ def test_missing_or_reused_request_id_rejected(app, client):
     assert action(client, item_id, "purchase", 2, quantity="1", key=key).status_code == 409
 
 
-def test_health_is_minimal_and_works(client):
-    assert client.get("/health").json == {"status": "ok"}
+def test_health_is_minimal_for_unmigrated_fixture(client):
+    response = client.get("/health")
+    assert response.status_code == 503
+    assert response.json == {"status": "unavailable"}
 
 
 def test_undo_only_shown_on_direct_action_confirmation(app, client):
