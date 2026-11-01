@@ -24,6 +24,88 @@ def register(client, code=EAN, **fields):
         "product_name": "Testprodukt", "item_id": "new", **fields})
 
 
+def test_scan_is_embedded_in_article_processes(client, app):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    home = client.get("/").text
+    assert '>Scannen</a>' not in home
+    assert '/scan?flow=replenish' in home
+    assert '/scan?flow=create' in client.get('/items/new').text
+    assert f'context_item_id={item_id}' in client.get(f'/items/{item_id}/edit').text
+
+
+def test_create_scan_returns_to_article_without_buying(app, client):
+    login(client)
+    page = client.get('/scan?flow=create')
+    assert 'Artikel per Barcode erfassen' in page.text
+    assert 'href="/items/new"' in page.text
+    unknown = scan_code(client, flow='create')
+    assert 'name="flow" value="create"' in unknown.text
+    result = register(client, flow='create')
+    assert result.status_code == 302
+    assert '/edit' in result.location
+    with app.app_context():
+        assert db.session.scalar(select(ShoppingNeed.quantity)) == 0
+    known = scan_code(client, flow='create')
+    assert 'bereits erfasst' in known.text
+    assert 'name="action" value="replenish"' not in known.text
+
+
+def test_article_scan_pins_target_and_returns_to_edit(app, client):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    fields = {'flow': 'assign', 'context_item_id': str(item_id)}
+    unknown = scan_code(client, **fields)
+    assert 'name="context_item_id"' in unknown.text
+    assert 'id="barcode-target"' not in unknown.text
+    assert 'id="new-item-fields"' not in unknown.text
+    # A stale/default item_id must not accidentally create another article.
+    result = register(client, item_id='new', **fields)
+    assert result.status_code == 302 and result.location.endswith(f'/items/{item_id}/edit')
+    with app.app_context():
+        assert db.session.scalar(select(func.count(HouseholdItem.id))) == 1
+        assert db.session.scalar(select(Product.item_id)) == item_id
+        assert db.session.scalar(select(ShoppingNeed.quantity)) == 0
+    assert scan_code(client, **fields).location.endswith(f'/items/{item_id}/edit')
+
+
+def test_article_scan_cannot_use_foreign_context(app, client):
+    other_id, _, _ = seed_item(app, 'other@example.test')
+    login(client)
+    fields = {'flow': 'assign', 'context_item_id': str(other_id)}
+    assert client.get(f'/scan?flow=assign&context_item_id={other_id}').status_code == 404
+    assert scan_code(client, **fields).status_code == 404
+    assert register(client, **fields).status_code == 404
+
+
+def test_article_scan_does_not_remap_known_product(app, client):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    register(client)
+    result = scan_code(client, flow='assign', context_item_id=str(item_id))
+    assert result.status_code == 409
+    assert 'nicht zugeordnet' in result.text
+    assert 'name="action" value="replenish"' not in result.text
+    assert register(client, flow='assign', context_item_id=str(item_id)).status_code == 409
+    with app.app_context():
+        assert db.session.scalar(select(Product.item_id)) != item_id
+
+
+def test_scan_context_survives_catalogue_failure_and_invalid_code(app, client):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    fields = {'flow': 'assign', 'context_item_id': str(item_id)}
+    invalid = scan_code(client, code='123', **fields)
+    assert invalid.status_code == 400
+    assert f'href="/items/{item_id}/edit"' in invalid.text
+    with patch('james.scan.fetch_suggestion', side_effect=CatalogUnavailable('Manuell erfassen')):
+        result = scan_code(client, lookup='1', product_name='Entwurf', **fields)
+    assert result.status_code == 200
+    assert 'value="Entwurf"' in result.text
+    assert 'name="flow" value="assign"' in result.text
+    assert f'name="context_item_id" value="{item_id}"' in result.text
+
+
 @pytest.mark.parametrize("code", [EAN, UPC, "96385074", "00036000291452"])
 def test_valid_gtins_preserve_original_digits(code):
     original, canonical = normalize_barcode(code)

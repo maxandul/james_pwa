@@ -64,7 +64,7 @@ Karten und Formularspalten nutzen auto-fit/minmax mit Mindestbreite innerhalb de
 
 ## Scanner und Produktzuordnung
 
-Navigation Scannen und sichtbarer Einstieg im Haushalt. Manuelle Eingabe bleibt immer verfuegbar. Kamera startet nur per Schaltflaeche, bietet Stoppen und endet bei Navigation, Hintergrund oder erkanntem Code. Bei fehlendem BarcodeDetector klare Rueckmeldung statt externer SDK-Abhaengigkeit.
+Kein eigener Scan-Tab. Scannen ist eine Hilfsfunktion in Artikelanlage, Nachkaufen und Artikelpflege. Manuelle Eingabe bleibt immer verfuegbar. Kamera startet nur per Schaltflaeche, bietet Stoppen und endet bei Navigation, Hintergrund oder erkanntem Code. Bei fehlendem BarcodeDetector klare Rueckmeldung statt externer SDK-Abhaengigkeit.
 
 Bekannter Barcode zeigt Produkt und Haushaltsartikel mit ausdruecklichen Nachkaufaktionen. Unbekannten Barcode einem bestehenden Artikel zuordnen oder samt neuem Artikel erfassen. Optionaler Open-Food-Facts-Vorschlag mit Herkunft, Lizenzlink und Testkatalog-Hinweis; Formularentwurf bleibt erhalten. Zuordnungen lassen sich in der Artikelpflege entfernen.
 
@@ -76,4 +76,12 @@ Bekannter Barcode zeigt Produkt und Haushaltsartikel mit ausdruecklichen Nachkau
 | barcode-new-item, catalog-lookup | Neuer Artikel und optionale Katalogsuche |
 | barcode-mappings | Zuordnungen in der Artikelpflege |
 
-CSS-/App-JS-Version 5, Scanner-JS-Version 1. Kontextueller Rueckgaengig-Hinweis bleibt erhalten. Hardwaretest unter HTTPS: Verpackung/Licht, verweigerte Berechtigung, Hintergrundwechsel, Fold-Aussen-/Innendisplay und Tablet. Simulierte Browser-APIs ersetzen diese Abnahme nicht.
+CSS-/App-JS-Version 6, Scanner-JS-Version 1. Kontextueller Rueckgaengig-Hinweis bleibt erhalten. Hardwaretest unter HTTPS: Verpackung/Licht, verweigerte Berechtigung, Hintergrundwechsel, Fold-Aussen-/Innendisplay und Tablet. Simulierte Browser-APIs ersetzen diese Abnahme nicht.
+
+### Scan im jeweiligen Ablauf
+
+- Neuer Artikel: Mit Barcode erfassen; nach Speichern zum Artikel zurueck. Bekannte Produkte anbieten, ohne Duplikat oder Nachkaufaktion.
+- Haushalt: Nachkaufen per Barcode; bekannte Artikel zeigen Nachkaufen/Leer und nachkaufen. Die bestaetigte Aktion fuehrt wie gewohnt zum Haushalt mit kontextuellem Rueckgaengig-Hinweis.
+- Artikelpflege: Barcode zu diesem Artikel hinzufuegen. Zielartikel fest vorgegeben; Zuordnung zu einem anderen Artikel wird als Konflikt erklaert. Nach Erfolg zur selben Artikelpflege zurueck.
+- Abbrechen fuehrt zur jeweiligen Ausgangsseite. Ueberschrift und Hilfetext nennen den aktuellen Zweck. Bestehende Komponenten wiederverwendet; keine neuen CSS-Klassen.
+

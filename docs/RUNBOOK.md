@@ -64,7 +64,7 @@ Die SQLite-Downgradepruefung benoetigt SQLite 3.35 oder neuer fuer natives DROP 
 
 ## Barcode und optionaler Produktkatalog
 
-Revision b8cf5f8bfc8c mit db upgrade anwenden. Der temporaere Vorschau-Starter erledigt dies beim Neustart; alten Server zuerst mit Ctrl+C stoppen. Keine Datenbankdatei loeschen. Die neue Seite heisst Scannen. Manuelle Eingabe funktioniert ohne Kamera und ohne externen Katalog.
+Revision b8cf5f8bfc8c mit db upgrade anwenden. Der temporaere Vorschau-Starter erledigt dies beim Neustart; alten Server zuerst mit Ctrl+C stoppen. Keine Datenbankdatei loeschen. Die Scan-Hilfe wird aus Neuer Artikel, Nachkaufen per Barcode im Haushalt oder der Barcode-Zuordnung in der Artikelpflege geoeffnet. Manuelle Eingabe funktioniert ohne Kamera und ohne externen Katalog.
 
 OPENFOODFACTS_ENVIRONMENT akzeptiert staging/production. Standard bei APP_ENV=development: staging (world.openfoodfacts.net); sonst production (world.openfoodfacts.org). Entwicklung und automatisierte Tests nicht gegen den produktiven Katalog richten. Staging verwendet die dokumentierten oeffentlichen Zugangsdaten off:off und kann andere/unvollstaendige Produkte enthalten.
 

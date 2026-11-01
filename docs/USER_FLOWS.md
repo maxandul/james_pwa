@@ -103,10 +103,12 @@ Alle Pflegeaktionen ausser der erstmaligen Erfassung sind ueber den direkten Akt
 
 ## Implementierter Barcode-Ablauf
 
-1. Scannen oeffnen, Code eintippen oder Kamera bewusst starten. EAN-8/13, UPC-A und GTIN-14 werden mit Pruefziffer validiert.
+1. In Neuer Artikel die Hilfe Mit Barcode erfassen, im Haushalt Nachkaufen per Barcode oder in Artikel bearbeiten die Barcode-Zuordnung oeffnen. Code eintippen oder Kamera bewusst starten. EAN-8/13, UPC-A und GTIN-14 werden mit Pruefziffer validiert.
 2. Bekannter Code zeigt die gespeicherte Produktvariante und den Haushaltsartikel. Erst Nachkaufen bzw. Leer und nachkaufen bucht Bedarf. Archivierte Artikel zuerst wieder aktivieren.
 3. Unbekannten Code manuell erfassen: Produktname, optional Marke/Packungsangabe, bestehender Haushaltsartikel oder neuer Artikel. Speichern allein aendert weder Bestand noch Liste.
 4. Optional Produktvorschlag anfordern: Nur der Barcode geht an Open Food Facts. Vorschlag pruefen; vorhandene Eingaben werden nicht ueberschrieben. Ausfall oder fehlender Treffer laesst manuelle Erfassung offen.
 5. Erneutes Scannen erzeugt keine doppelten Artikel. Falsche Zuordnung unter Artikel bearbeiten entfernen und neu erfassen; Artikel und Einkaufsbedarf bleiben erhalten.
 
 Kamera endet bei erkanntem Code, Stoppen, Navigation und Hintergrundwechsel. Keine Bilder gespeichert oder hochgeladen. Reale Geraeteabnahme unter HTTPS bleibt offen.
+
+Die Scan-Hilfe ist kein eigener Tab. Nach Artikelanlage oder Zuordnung wird die Artikelpflege geoeffnet; nach bestaetigtem Nachkaufen der Haushalt. Abbrechen kehrt zur Ausgangsseite zurueck. Bereits bekannte Produkte werden beim Erfassen angeboten, ohne neue Artikel anzulegen. Ein Barcode, der schon zu einem anderen Artikel gehoert, wird beim Zuordnen als Konflikt gezeigt und niemals automatisch umgehaengt. Beim Abhaken eines Einkaufs bleibt Antippen der normale Weg.

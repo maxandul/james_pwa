@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='5') }}">
-  <script src="{{ url_for('static', filename='app.js', v='5') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='6') }}">
+  <script src="{{ url_for('static', filename='app.js', v='6') }}" defer></script>
 </head>
 <body>
   <header class="header">
@@ -19,7 +19,6 @@
   <nav class="nav" aria-label="Hauptnavigation">
     <a {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}">Mein Haushalt</a>
     <a {% if request.endpoint == 'main.shopping' %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}">Einkaufsliste</a>
-    <a {% if request.endpoint and request.endpoint.startswith('scan.') %}aria-current="page"{% endif %} href="{{ url_for('scan.index') }}">Scannen</a>
     {% if g.membership.role == 'owner' %}<a {% if request.endpoint == 'main.household' %}aria-current="page"{% endif %} href="{{ url_for('main.household') }}">Zusammen nutzen</a>{% endif %}
   </nav>
   {% endif %}

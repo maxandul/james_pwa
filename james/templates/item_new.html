@@ -3,6 +3,7 @@
 <div class="page-heading"><div><p class="eyebrow">FUER EUREN HAUSHALT</p><h1>Neuer Artikel</h1><p class="muted">Einmal erfassen. Beim nächsten Mal einfach antippen.</p></div></div>
 <section class="panel form-panel">
 {% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+<p class="scan-entry"><a class="button button--outline" href="{{ url_for('scan.index', flow='create') }}">Mit Barcode erfassen</a></p>
 <form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% set values = request.form if request.method == 'POST' else {} %}
   {% include '_item_fields.html' %}

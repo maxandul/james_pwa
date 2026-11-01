@@ -57,3 +57,7 @@ Gezielte lokale Pruefung nach Herkunftsergaenzung: 33 Barcode-/Migrationstests b
 Geprueft: Laengen/Pruefziffern/fuehrende Nullen, UPC-/EAN-Aequivalenz, CSRF, Haushaltsgrenzen, wiederholte Registrierung, Zuordnung zu bestehenden/neuen Artikeln, archivierte Artikel, Entfernen ohne Bedarfsaenderung, Herkunft, manuelle Eingabe bei Katalogausfall, Cache und Abrufbegrenzung. HTTP-Tests simulieren feste HTTPS-Ziele, Timeout, Fehler und begrenzte Antwortgroesse; keine echte Provider-Erreichbarkeit behauptet.
 
 Postgres-CI prueft zusaetzlich gleichzeitige Erstregistrierung und konkurrierende Katalogabrufe. Node simuliert fehlende APIs, Start per Benutzeraktion, genau einmalige Erkennung, Stoppen nach spaeter Berechtigung und Hintergrundwechsel sowie Erhalt der benannten Katalogaktion. Keine echte Kamera oder visuelle Fold-/Tablet-Pruefung. Die laufende Vorschau-Datenbank wird erst beim vom User ausgefuehrten Neustart migriert.
+
+## Scan als Prozesshilfe
+
+Sechs zusaetzliche Integrationstests pruefen die Einstiege ohne Scan-Tab, Artikelanlage mit Rueckkehr und ohne Kauf, festes Artikelziel bei Zuordnung, fremde Kontextartikel, bestehende andere Zuordnungen sowie Kontexterhalt bei ungueltigem Code und Katalogfehler. Keine Schemaaenderung. Vollstaendige Pruefung inklusive Postgres ueber PR #2 / Checks. Visuelle Geraeteabnahme bleibt offen.

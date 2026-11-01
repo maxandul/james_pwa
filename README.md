@@ -19,7 +19,7 @@ James unterstuetzt einen gemeinsam gefuehrten Haushalt beim Erfassen von Vorrat,
 
 Siehe [Runbook](docs/RUNBOOK.md) fuer Installation, Datenbankmigration und Erstbenutzer. Anmeldung erfolgt mit E-Mail und Passwort; weitere Zugaenge entstehen ausschliesslich ueber persoenliche Einladungslinks.
 
-Implementiert sind Artikelpflege mit Favoriten und Archiv, direkter einfacher Bestandsstatus, Nachkaufmenge, gemeinsame Einkaufsliste, Zusatz-/Teilmengen, Entfernen und Rueckgaengig. Unter Scannen lassen sich Barcodes eingeben, Produkten zuordnen und bei Browserunterstuetzung per Kamera lesen. Optional liefert Open Food Facts einen zu pruefenden Produktvorschlag. Tablet-Geraetezugang, Mengenbestand, PWA-Installation/Offline-Lesen, Shop-Uebergabe und MCP folgen spaeter. Kamera und Bedienung auf echten Zielgeraeten sind noch abzunehmen.
+Implementiert sind Artikelpflege mit Favoriten und Archiv, direkter einfacher Bestandsstatus, Nachkaufmenge, gemeinsame Einkaufsliste, Zusatz-/Teilmengen, Entfernen und Rueckgaengig. Barcodes unterstuetzen die Artikelanlage, das Nachkaufen und die Artikelpflege direkt im jeweiligen Ablauf. Manuelle Eingabe und bei Browserunterstuetzung Kamera-Erkennung sind verfuegbar; kein eigener Scan-Tab. Optional liefert Open Food Facts einen zu pruefenden Produktvorschlag. Tablet-Geraetezugang, Mengenbestand, PWA-Installation/Offline-Lesen, Shop-Uebergabe und MCP folgen spaeter. Kamera und Bedienung auf echten Zielgeraeten sind noch abzunehmen.
 
 Weitere Umsetzungshinweise: [Zugang](docs/AUTH.md), [Konventionen](docs/CONVENTIONS.md), [UI](docs/UI.md).
 
