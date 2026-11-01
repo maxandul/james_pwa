@@ -68,14 +68,16 @@ def create_app(test_config=None):
     from .views import main
     from .cli import register_cli
     from .scan import scan
+    from .pwa import pwa
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
+    app.register_blueprint(pwa)
     register_cli(app)
 
     @app.after_request
     def response_headers(response):
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; worker-src 'self'; manifest-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         camera = "(self)" if request.endpoint == "scan.index" else "()"

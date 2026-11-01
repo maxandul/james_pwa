@@ -30,7 +30,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - name: Scanner lifecycle and named form actions
-        run: node --test tests/scanner.test.cjs
+        run: node --test tests/scanner.test.cjs tests/pwa.test.cjs
       - name: SQLite suite and migration roundtrip
         run: python -m pytest -q
       - name: Postgres suite including simultaneous writes

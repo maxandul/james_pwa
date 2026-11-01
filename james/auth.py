@@ -65,7 +65,9 @@ def login():
 def logout():
     logout_user()
     session.clear()
-    return redirect(url_for("auth.login"))
+    response = redirect(url_for("auth.login"))
+    response.headers["Clear-Site-Data"] = '"storage", "cache"'
+    return response
 
 
 @auth.route("/join", methods=["GET", "POST"])

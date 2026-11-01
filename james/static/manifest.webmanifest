@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "James - Zuhause gut versorgt",
+  "short_name": "James",
+  "lang": "de-CH",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f0",
+  "theme_color": "#214b3d",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

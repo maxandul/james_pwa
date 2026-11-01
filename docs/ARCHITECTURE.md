@@ -73,7 +73,7 @@ App Factory, Flask-SQLAlchemy/SQLAlchemy, Flask-Login, Flask-WTF-CSRF und Flask-
 
 Blueprints auth und main, zentrale Fachregeln in services.py. Jeder Browser-Schreibzugriff nutzt CSRF und den serverseitig ermittelten Haushalt. PostgreSQL-Zeilensperren, Versionspruefung und Activity-UUIDs schuetzen vor verlorenen bzw. wiederholten Buchungen.
 
-Die erste Version nutzt noch keine WebSockets, KI, Shop-Zugaenge, Bild-Uploads, Mengenbestaende oder Hintergrundauftraege. Auth-HTML ist no-store; es gibt noch keinen Service Worker. Der unprivilegierte Tablet-Geraetezugang ist offen.
+Die erste Version nutzt noch keine WebSockets, KI, Shop-Zugaenge, Bild-Uploads, Mengenbestaende oder Hintergrundauftraege. Auth-HTML bleibt no-store; der Service Worker speichert ausschliesslich eine anonyme Offline-Huelle und ausgewaehlte oeffentliche Assets. Der unprivilegierte Tablet-Geraetezugang ist offen.
 
 Automatisierte Pruefung: lokale SQLite-Suite und GitHub-CI gegen Postgres 16 mit Migrationsvergleich. Die lokale Arbeitsumgebung blockiert TCP-Verbindungen; Postgres wird deshalb in CI geprueft. Der aktuelle Pruefstand steht in VALIDATION.md. Visuelle Zielgeraetepruefung bleibt offen.
 
@@ -108,3 +108,13 @@ HTTPS-Testdomain: https://james-web-staging.up.railway.app. Der Web-Service folg
 Der aktive Railway-Dienst hatte die fruehere railway.json nicht uebernommen. Die API weist diese Konfigurationsart inzwischen als veraltet zurueck. Die frueheren Aussagen zur automatischen Anwendung waren daher nicht zutreffend. Aktive Betriebsparameter werden direkt am expliziten james-web/staging-Service gesetzt und zurueckgelesen. deployment/railway-settings.json dokumentiert die Sollwerte, ist kein automatisch angewendetes Deploymentfile. Die irrefuehrende Root-Datei wurde entfernt. Eine spaetere IaC-Einfuehrung ist ein eigener Schritt mit Planpruefung.
 
 readiness.py prueft fuer /health alle erwarteten Modelltabellen und den Alembic-Stand gegen die Migrationen des laufenden Images. Erreichbare, leere oder veraltete Datenbanken erhalten HTTP 503 statt ok. Oeffentliche Antworten enthalten keine Schemanamen oder Fehlerdetails. Erst ein erfolgreicher Schema-Healthcheck und kontrollierter Migrationslauf belegen die Bereitschaft zur Ersteinrichtung.
+
+## PWA und gespeicherte Einkaufsliste
+
+pwa.py stellt Manifest, Worker unter /sw.js mit Root-Scope, anonyme /offline-Huelle und /api/offline-list bereit. Der private GET-Endpunkt prueft persoenlichen Zugang und aktive Mitgliedschaft, liefert nur den vollstaendigen aktuellen Bedarf dieses Haushalts und setzt no-store. Er bucht nichts und akzeptiert keine frei waehlbare Haushaltskennung.
+
+Der Service Worker cached nur eine explizite Liste oeffentlicher Assets und die anonyme Offline-Huelle. Er speichert keine angemeldeten Seiten, Login-/Einladungsseiten, API-Antworten oder POSTs. Nur Navigationen zu Haushalt/Einkauf/Offline bekommen bei Netzwerkfehler die Offline-Huelle. Updates entfernen ausschliesslich alte James-Shell-Caches.
+
+pwa.js speichert die bestaetigte JSON-Liste getrennt im lokalen Geraetespeicher. offline-store.js bindet die einzelne Kopie an User, Auth-Version und Haushalt. Konto-/Sitzungswechsel oder Abmelden entfernen sie; Generationskennungen verhindern Wiederherstellung durch verspaetete Antworten. Aeltere Antworten duerfen neuere Snapshots nicht ersetzen. Logout setzt zusaetzlich Clear-Site-Data fuer storage/cache. Keine Passwoerter, CSRF-Token oder Einladungen im Offline-Speicher.
+
+Die Offline-Kopie ist lesbar fuer Personen mit Zugriff auf dieses Browserprofil/Geraet. Rechteentzug kann ohne Verbindung nicht neu geprueft werden; beim naechsten Online-Abgleich werden 401/403 geloescht. Keine Offline-Schreibwarteschlange. Browser koennen Speicher entfernen; kein Ersatz fuer ein Serverbackup. Keine neue Datenbankmigration oder externe Abhaengigkeit.

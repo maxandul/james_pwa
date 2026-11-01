@@ -3,12 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='6') }}">
-  <script src="{{ url_for('static', filename='app.js', v='6') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='7') }}">
+  <script src="{{ url_for('static', filename='app.js', v='7') }}" defer></script>
+  <script src="/static/offline-store.js?v=1" defer></script>
+  <script src="/static/pwa.js?v=1" defer></script>
 </head>
-<body>
+<body data-offline-owner="{{ offline_owner }}">
   <header class="header">
     <a class="brand" href="{{ url_for('main.home') }}"><span class="brand__mark">j.</span><span>james<span class="brand__tag">Zuhause gut versorgt.</span></span></a>
     {% if current_user.is_authenticated and g.membership is defined and g.membership %}
@@ -30,6 +35,7 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <section class="pwa-help" aria-label="App und Offline-Nutzung"><p id="offline-save-status" class="small muted" role="status"></p><button id="install-app" class="button button--outline" type="button" hidden>James als App installieren</button><details><summary>App installieren und Liste offline nutzen</summary><p class="small muted">Im Browsermenue kannst du James installieren oder zum Startbildschirm hinzufuegen. Die Einkaufsliste wird auf diesem Geraet gespeichert, wenn du James online und angemeldet oeffnest. Beim Abmelden wird sie entfernt. Geraetespeicher kann vom Browser geloescht werden.</p><a class="button button--quiet" href="/offline">Gespeicherte Einkaufsliste ansehen</a></details></section>
   <footer class="footer">Weniger dran denken. Mehr zuhause sein.<span>James · Erste Version</span></footer>
 </body>
 </html>

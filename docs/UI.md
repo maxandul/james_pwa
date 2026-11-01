@@ -1,6 +1,6 @@
 # UI der ersten Version
 
-Stand: 01.11.2026. Serverseitige Jinja-Templates, ein lokales Stylesheet und gezieltes JavaScript. Noch kein Service Worker und kein Installationsmanifest.
+Stand: 01.11.2026. Serverseitige Jinja-Templates, ein lokales Stylesheet und gezieltes JavaScript. Installationsmanifest und Service Worker fuer eine oeffentliche Offline-Huelle sind vorhanden.
 
 ## Gestaltung
 
@@ -29,7 +29,7 @@ Warmer Papierhintergrund, dunkles Gruen fuer Hauptaktionen, ruhige Karten, klar 
 
 Stylesheet und JavaScript werden mit Versionsparameter eingebunden. Bei Aenderungen beide passenden Versionswerte in base.html anheben. Authentifizierte Seiten werden nicht gecacht.
 
-Auto-Aktualisierung nur auf Haushalt/Einkauf, alle 45 Sekunden und beim erneuten Sichtbarwerden. Keine Aktualisierung nach begonnenen Eingaben, waehrend Absenden oder bei geoeffneten Zusatzmengen. Offline-Formulare werden sichtbar blockiert; eine persistierte Offline-Liste ist noch offen.
+Auto-Aktualisierung nur auf Haushalt/Einkauf, alle 45 Sekunden und beim erneuten Sichtbarwerden. Keine Aktualisierung nach begonnenen Eingaben, waehrend Absenden oder bei geoeffneten Zusatzmengen. Offline-Formulare werden sichtbar blockiert; eine separat gespeicherte, nur lesbare Offline-Liste ist vorhanden.
 
 Browserpruefung in dieser Arbeitsumgebung durch nicht erreichbaren lokalen Webserver blockiert. Desktop-/Tablet-/Handy-QA steht vor Alltagseinsatz noch aus.
 
@@ -85,3 +85,15 @@ CSS-/App-JS-Version 6, Scanner-JS-Version 1. Kontextueller Rueckgaengig-Hinweis 
 - Artikelpflege: Barcode zu diesem Artikel hinzufuegen. Zielartikel fest vorgegeben; Zuordnung zu einem anderen Artikel wird als Konflikt erklaert. Nach Erfolg zur selben Artikelpflege zurueck.
 - Abbrechen fuehrt zur jeweiligen Ausgangsseite. Ueberschrift und Hilfetext nennen den aktuellen Zweck. Bestehende Komponenten wiederverwendet; keine neuen CSS-Klassen.
 
+## Installation und Offline-Liste
+
+CSS-/App-JS-Version 7; PWA-/Store-JS-Version 1; Shell-Cache james-shell-v1. Manifest mit 192-/512-Pixel-Icons, eigenstaendigem App-Fenster und ohne feste Orientierung. Ein Installieren-Button erscheint nur, wenn der Browser einen passenden Installationsdialog anbietet. Ansonsten erklaert der aufklappbare Hilfebereich das Browsermenue. Keine automatische Aufforderung oder neue Hauptnavigation.
+
+| Neue Klassen | Verwendung |
+| --- | --- |
+| pwa-help | Zurueckhaltender Bereich mit Installationshilfe, Speicherstatus und Offline-Link |
+| pwa-actions | Umbruchfaehige Online-/Entfernen-Aktionen in der Offline-Ansicht |
+
+Die Offline-Ansicht zeigt Haushaltsname, Mengen, Einheiten, Kategorie, Bezugsquelle und Zeitpunkt des gespeicherten Stands. Keine Abhak-/Schreibfelder; Rueckweg zur Online-Liste und explizites Entfernen der Geraetekopie. Leere Liste und noch nicht gespeicherte Liste sind verschiedene Zustaende. Texte werden ueber textContent eingesetzt, kein HTML aus Artikelnamen.
+
+Die globale hidden-Regel erzwingt versteckte Elemente auch gegen display-Regeln der Button-/Rasterkomponenten. Reale Installation, Flugmodus-Neustart und beide Fold-Displays bleiben auf den Zielgeraeten abzunehmen.

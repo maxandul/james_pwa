@@ -139,3 +139,16 @@ Am James-Web-Service im expliziten staging-Environment sind nun diese aktiven We
 Die API lehnt die fruehere Railway-Config-File-Einstellung als veraltet ab. Die Sollwerte stehen nur als Referenz in deployment/railway-settings.json. Nicht auf automatische Anwendung einer Root-JSON-Datei vertrauen. Ein frischer Build vom Quellbranch muss die aktuellen Serviceeinstellungen enthalten; ein Erfolg alter Deployment-Snapshots reicht nicht.
 
 Nach Auslieferung muss der neue Schema-Healthcheck ok liefern; er prueft Tabellen und Migrationsrevision. Erst danach denselben interaktiven init-household-Befehl erneut ausfuehren. Keine Datenbank loeschen und kein db stamp als Reparatur verwenden. Das fehlgeschlagene Passwort bleibt ungespeichert; erneut verdeckt eingeben.
+
+## James auf Handy/Tablet installieren und offline testen
+
+1. Die HTTPS-Adresse online oeffnen und anmelden. Unten bestaetigt der Speicherstatus die gesicherte Einkaufsliste. Browser kann lokalen Speicher blockieren; dann erscheint ein Hinweis.
+2. Browsermenue: App installieren oder zum Startbildschirm hinzufuegen. Falls der Browser einen Installationsdialog bereitstellt, erscheint auch der James-Installieren-Button. Unter iOS erfolgt das Hinzufuegen ueber Teilen. Die Installation ist eine Aktion des Users.
+3. Nach einmaligem Online-Oeffnen etwas auf die Liste setzen und den aktuellen Speicherstatus abwarten. Dann Flugmodus aktivieren und Einkaufsliste oeffnen, auch nach Schliessen/Neustart der App.
+4. Gespeicherte Liste muss mit Zeitstempel sichtbar sein und darf keine Kauf-/Bearbeitungsaktionen anbieten. Ohne vorhandenen Snapshot klarer Leerzustand.
+5. Wieder online die Online-Liste oeffnen und Aktualisierung pruefen. Offline gibt es keine Warteschlange; keine Aktionen werden spaeter unbemerkt nachgeholt.
+6. Abmelden: Kopie und Browsercache werden entfernt. Konto-/Haushaltswechsel darf niemals die vorherige Liste zeigen. Unter Gespeicherte Einkaufsliste laesst sich die Kopie auch explizit entfernen.
+
+Die Offline-Kopie gehoert zum Browserprofil und ist auf einem entsperrten gemeinsamen Geraet lesbar. Ein Rechteentzug wird erst bei erneuter Online-Verbindung erkannt. Installation und Browser-Speicherverwaltung sind kein Backup. Reale Geraeteabnahme bleibt offen, insbesondere Fold-Aussen-/Innendisplay, Flugmodusstart und Tablet.
+
+Tests: `node --test tests/scanner.test.cjs tests/pwa.test.cjs` und `python -m pytest -q`. Kein Schema-/ENV-Update fuer diesen Schritt. Die bestehenden Railway-Pre-Deploy-Einstellungen bleiben aktiv.

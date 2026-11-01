@@ -85,3 +85,9 @@ Aktive Servicekonfiguration kontrolliert: kein Pre-Deploy/Healthcheck vorhanden.
 Vier neue Regressionstests pruefen erreichbare Datenbank ohne Revision, vollstaendiges aktuelles Schema, veraltete Revision und fehlende Tabelle trotz aktuellem Stamp. Lokale SQLite-Pruefung erfolgreich; Postgres und Container folgen im aktuellen PR-Check. Neuer /health kann eine leere Datenbank nicht mehr als bereit melden.
 
 Die bisherige Health-Testannahme (create_all ohne Migration meldet ok) wurde auf 503/unavailable angepasst. Railway protokolliert nun die drei tatsaechlich ausgefuehrten Upgrades bis b8cf5f8bfc8c; der neue Schema-Healthcheck liefert ueber HTTPS ok.
+
+## PWA und Offline-Lesen
+
+Fuenf neue Flask-Tests pruefen Manifest/PNG-Icons/Worker-Scope, identitaetsfreie Offline-Huelle, no-store und Zugriffsschutz des Snapshots, Haushaltsisolation/Read-only sowie Logout-Loeschheader. Node prueft Kontowechsel, verspaetete Antworten nach Logout/Speicherreset, fremde Antworten, Reihenfolge der Snapshots, oeffentliche Cache-Allowlist, Ausschluss von Auth/API/POST, Navigation-Fallback und Cache-Upgrade. Zusaetzlich gerenderte Textdaten, explizites Entfernen und Logout waehrend einer laufenden Abfrage simuliert.
+
+Die automatisierten Tests ersetzen keine Installation oder echten Flugmodus auf dem Fold/Tablet. User bestaetigt allgemeine Online-Ablaeufe; Kamerascan bei schlechtem Licht noch nicht erfolgreich. Keine Kameraabnahme behauptet. Aktuelle CI-Nachweise in PR #2 / Checks.

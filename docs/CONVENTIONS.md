@@ -45,3 +45,12 @@ Deployment-Konfiguration wird mit dem Code versioniert: Dockerfile fuer die Lauf
 Pre-Deploy bestaetigt nach db upgrade auch db current und db check. Die CI-Datenbankversion folgt der eingesetzten Railway-Hauptversion (aktuell 18).
 
 /health ist ein Readinesscheck: erwartete Tabellen vorhanden und Alembic-Revision entspricht den ausgelieferten Heads. SELECT 1 allein ist kein Betriebsnachweis. Railway-Einstellungen aktiv am richtigen Service speichern und zuruecklesen; eine Referenzdatei im Repository ist kein Nachweis ihrer Anwendung. Nach Neu-Deployment Schema-Readiness erneut pruefen.
+
+## Offline-Konventionen
+
+- Service Worker nur fuer versionierte oeffentliche Dateien und eine identitaetsfreie Huelle. Niemals authentifiziertes HTML oder API-/POST-Antworten cachen.
+- Offline-Snapshot separat, ein Benutzer/Haushalt pro Browserprofil. Aktive Mitgliedschaft serverseitig pruefen; private Antworten immer no-store.
+- Abmelden/Kontowechsel loeschen den Snapshot. In-flight-Requests muessen Besitzer und Generationskennung vor jedem Speichern pruefen; aeltere Snapshots nicht ueber neuere schreiben.
+- Offline-Daten ausschliesslich als Text rendern. Kein Offline-Schreiben ohne eigenen fachlichen Entwurf; keine automatische Wiederholung von POSTs.
+- Bei Aenderung oeffentlicher Offline-Assets Referenzversionen und Worker-Cacheversion gemeinsam pflegen. Kein erzwungenes Neuladen waehrend Formulareingaben.
+

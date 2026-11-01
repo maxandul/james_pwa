@@ -112,3 +112,7 @@ Alle Pflegeaktionen ausser der erstmaligen Erfassung sind ueber den direkten Akt
 Kamera endet bei erkanntem Code, Stoppen, Navigation und Hintergrundwechsel. Keine Bilder gespeichert oder hochgeladen. Reale Geraeteabnahme unter HTTPS bleibt offen.
 
 Die Scan-Hilfe ist kein eigener Tab. Nach Artikelanlage oder Zuordnung wird die Artikelpflege geoeffnet; nach bestaetigtem Nachkaufen der Haushalt. Abbrechen kehrt zur Ausgangsseite zurueck. Bereits bekannte Produkte werden beim Erfassen angeboten, ohne neue Artikel anzulegen. Ein Barcode, der schon zu einem anderen Artikel gehoert, wird beim Zuordnen als Konflikt gezeigt und niemals automatisch umgehaengt. Beim Abhaken eines Einkaufs bleibt Antippen der normale Weg.
+
+## Implementiert: Installation und Offline-Lesen
+
+Online und angemeldet wird die gesamte offene Einkaufsliste auf diesem Geraet gespeichert. Die Ansicht zeigt den Speicherzeitpunkt. Ueber den Hilfebereich oder bei Verbindungsverlust beim Oeffnen von Haushalt/Einkauf erscheint die gespeicherte Liste ohne Schreibaktionen. Bei erneutem Online-Oeffnen wird sie aktualisiert. Beim Abmelden/Kontowechsel wird die alte Kopie entfernt. Installation erfolgt ueber Browsermenue oder den angebotenen Installieren-Button. Echte Kamera- und Installationsabnahme auf Zielgeraeten bleiben offen.
