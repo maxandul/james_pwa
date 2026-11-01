@@ -7,7 +7,15 @@
   let generation;
   let fetching = false;
   let blocked = false;
+  const canUseWorker = 'serviceWorker' in navigator && window.isSecureContext;
+  let offlineState = canUseWorker ? 'preparing' : 'unavailable';
   const say = text => { if (notice) notice.textContent = text; };
+  function savedMessage(snapshot) {
+    const time = new Date(snapshot.saved_at).toLocaleString('de-CH');
+    say(offlineState === 'ready' ? 'Offline-Liste auf diesem Geraet bereit: ' + time + '.' :
+      offlineState === 'preparing' ? 'Liste gespeichert. Offline-Start wird noch vorbereitet.' :
+        'Liste gespeichert, aber Offline-Start ist hier derzeit nicht verfuegbar. Bitte spaeter online erneut oeffnen.');
+  }
   const clear = () => {
     blocked = true;
     try { store.clear(localStorage, owner || undefined); } catch { /* Storage may be disabled. */ }
@@ -33,7 +41,7 @@
       const snapshot = await response.json();
       if (snapshot.owner !== owner) { clear(); return; }
       if (!blocked && store.save(localStorage, owner, generation, snapshot)) {
-        say('Einkaufsliste auf diesem Geraet gespeichert: ' + new Date(snapshot.saved_at).toLocaleString('de-CH') + '.');
+        savedMessage(snapshot);
       }
     } catch { say('Offline-Stand konnte nicht aktualisiert werden. Ein vorhandener Stand bleibt erhalten.'); }
     finally { fetching = false; }
@@ -79,8 +87,16 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync(); });
     window.addEventListener('pageshow', event => { if (event.persisted) sync(); });
   }
-  if ('serviceWorker' in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {
+  if (canUseWorker) {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then(() => navigator.serviceWorker.ready).then(() => {
+        offlineState = 'ready';
+        if (owner && !blocked) {
+          try { const snapshot = store.read(localStorage); if (snapshot?.owner === owner) savedMessage(snapshot); }
+          catch { /* Snapshot storage can be unavailable. */ }
+        }
+      }).catch(() => {
+      offlineState = 'unavailable';
       say('Offline-Start ist noch nicht verfuegbar. Bitte spaeter online erneut oeffnen.');
     });
   }

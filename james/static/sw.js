@@ -1,7 +1,7 @@
 'use strict';
-const CACHE = 'james-shell-v1';
+const CACHE = 'james-shell-v2';
 const FILES = ['/offline', '/static/app.css?v=7', '/static/offline-store.js?v=1',
-  '/static/pwa.js?v=1', '/static/icon-192.png', '/static/icon-512.png', '/manifest.webmanifest'];
+  '/static/pwa.js?v=2', '/static/icon-192.png', '/static/icon-512.png', '/manifest.webmanifest'];
 const STATIC = new Set(FILES.filter(path => path !== '/offline'));
 
 self.addEventListener('install', event => {

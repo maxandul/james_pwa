@@ -87,7 +87,7 @@ CSS-/App-JS-Version 6, Scanner-JS-Version 1. Kontextueller Rueckgaengig-Hinweis 
 
 ## Installation und Offline-Liste
 
-CSS-/App-JS-Version 7; PWA-/Store-JS-Version 1; Shell-Cache james-shell-v1. Manifest mit 192-/512-Pixel-Icons, eigenstaendigem App-Fenster und ohne feste Orientierung. Ein Installieren-Button erscheint nur, wenn der Browser einen passenden Installationsdialog anbietet. Ansonsten erklaert der aufklappbare Hilfebereich das Browsermenue. Keine automatische Aufforderung oder neue Hauptnavigation.
+CSS-/App-JS-Version 7; PWA-JS-Version 2, Store-JS-Version 1; Shell-Cache james-shell-v2. Manifest mit 192-/512-Pixel-Icons, eigenstaendigem App-Fenster und ohne feste Orientierung. Ein Installieren-Button erscheint nur, wenn der Browser einen passenden Installationsdialog anbietet. Ansonsten erklaert der aufklappbare Hilfebereich das Browsermenue. Keine automatische Aufforderung oder neue Hauptnavigation.
 
 | Neue Klassen | Verwendung |
 | --- | --- |
@@ -97,3 +97,5 @@ CSS-/App-JS-Version 7; PWA-/Store-JS-Version 1; Shell-Cache james-shell-v1. Mani
 Die Offline-Ansicht zeigt Haushaltsname, Mengen, Einheiten, Kategorie, Bezugsquelle und Zeitpunkt des gespeicherten Stands. Keine Abhak-/Schreibfelder; Rueckweg zur Online-Liste und explizites Entfernen der Geraetekopie. Leere Liste und noch nicht gespeicherte Liste sind verschiedene Zustaende. Texte werden ueber textContent eingesetzt, kein HTML aus Artikelnamen.
 
 Die globale hidden-Regel erzwingt versteckte Elemente auch gegen display-Regeln der Button-/Rasterkomponenten. Reale Installation, Flugmodus-Neustart und beide Fold-Displays bleiben auf den Zielgeraeten abzunehmen.
+
+Der Speicherstatus meldet Offline bereit erst nach erfolgreicher Installation der oeffentlichen Offline-Huelle; vorher wird die Vorbereitung angezeigt.

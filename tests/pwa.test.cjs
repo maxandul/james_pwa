@@ -58,7 +58,7 @@ function worker() {
       saved.push(...paths.map(request => new URL(request.url).pathname + new URL(request.url).search));
     } }),
       match: async path => { matched.push(path); return 'cached shell'; },
-      keys: async () => ['james-shell-v0', 'james-shell-v1', 'other-app'],
+      keys: async () => ['james-shell-v1', 'james-shell-v2', 'other-app'],
       delete: async key => deleted.push(key) },
   });
   vm.runInContext(fs.readFileSync('james/static/sw.js', 'utf8'), context);
@@ -88,10 +88,10 @@ test('offline list navigation falls back only to the anonymous shell', async () 
 test('worker upgrades clean only obsolete James shell caches', async () => {
   const w = worker(); let done;
   w.listeners.activate({ waitUntil: promise => { done = promise; } }); await done;
-  assert.deepEqual(w.deleted, ['james-shell-v0']);
+  assert.deepEqual(w.deleted, ['james-shell-v1']);
 });
 
-function page(storage, offline, fetch) {
+function page(storage, offline, fetch, serviceWorker) {
   const elements = new Map();
   const element = () => ({ children: [], listeners: {}, textContent: '', hidden: false,
     append(...nodes) { this.children.push(...nodes); }, appendChild(node) { this.children.push(node); },
@@ -100,8 +100,10 @@ function page(storage, offline, fetch) {
   const document = { body: { dataset: offline ? { offlinePage: 'true' } : { offlineOwner: 'alice' } },
     querySelector: name => elements.get(name) || null,
     querySelectorAll: () => [elements.get('logout')], createElement: element, addEventListener() {} };
-  const context = vm.createContext({ window: { JamesOffline: store, isSecureContext: false, addEventListener() {} },
-    document, navigator: { onLine: true }, localStorage: storage, fetch, Date });
+  const navigator = { onLine: true };
+  if (serviceWorker) navigator.serviceWorker = serviceWorker;
+  const context = vm.createContext({ window: { JamesOffline: store, isSecureContext: !!serviceWorker, addEventListener() {} },
+    document, navigator, localStorage: storage, fetch, Date });
   vm.runInContext(fs.readFileSync('james/static/pwa.js', 'utf8'), context);
   return elements;
 }
@@ -124,4 +126,14 @@ test('logout while a snapshot fetch is pending cannot restore the list', async (
   resolve({ ok: true, status: 200, json: async () => ({ owner: 'alice', saved_at: '2026-11-01T12:00:00Z', items: [] }) });
   await new Promise(done => setImmediate(done));
   assert.equal(store.read(s), null);
+});
+test('offline ready is announced only after shell installation completes', async () => {
+  const s = storage(); let ready;
+  const worker = { register: async () => ({}), ready: new Promise(done => { ready = done; }) };
+  const elements = page(s, false, async () => ({ ok: true, status: 200,
+    json: async () => ({ owner: 'alice', saved_at: '2026-11-01T12:00:00.000000Z', items: [] }) }), worker);
+  await new Promise(done => setImmediate(done));
+  assert.match(elements.get('#offline-save-status').textContent, /noch vorbereitet/);
+  ready({}); await new Promise(done => setImmediate(done));
+  assert.match(elements.get('#offline-save-status').textContent, /Offline-Liste auf diesem Geraet bereit/);
 });
