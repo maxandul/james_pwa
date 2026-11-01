@@ -17,7 +17,7 @@ Grosse Touch-Flaechen und kurze Wege am Tablet; gut lesbare Checkboxen auf dem H
 
 1. Person tippt einen Favoriten an und waehlt "Nachkaufen".
 2. James legt die Standard-Nachkaufmenge als offenen Bedarf an oder verweist auf bereits offenen/geplanten Bedarf.
-3. Sichtbare Rueckmeldung zeigt Artikel und Menge; Rueckgaengig ist erreichbar.
+3. Eine hervorgehobene Box "Deine letzte Aenderung" zeigt Artikel und Aktion mit dem Button "Rueckgaengig machen". Sie bleibt beim Wechsel zwischen Haushalt und Einkaufsliste sichtbar, solange die letzte eigene Listenaktion noch zur aktuellen Artikelversion passt.
 4. Eine zweite Person sieht dieselbe Position.
 
 Wiederholtes Antippen oder ein Netzwerk-Retry darf keine weitere Position erzeugen. Eine gewuenschte Zusatzmenge wird ausdruecklich erfasst. Bei einem bereits bestellten Artikel zeigt James den Lieferstatus; neuer Bedarf bleibt bewusst hinzufuegbar.

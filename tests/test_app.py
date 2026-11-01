@@ -254,3 +254,34 @@ def test_missing_or_reused_request_id_rejected(app, client):
 
 def test_health_is_minimal_and_works(client):
     assert client.get("/health").json == {"status": "ok"}
+
+
+def test_undo_stays_visible_across_navigation_and_disappears_after_use(app, client):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    response = action(client, item_id, "replenish", 1)
+    event_id = int(re.search(r"undo=(\d+)", response.location).group(1))
+    for path in ("/", "/shopping", "/shopping?source=Laden", "/"):
+        page = client.get(path)
+        assert "Deine letzte Änderung" in page.text
+        assert "Zum Nachkaufen vorgemerkt" in page.text
+        assert "Rückgängig machen" in page.text
+        assert f'/activity/{event_id}/undo' in page.text
+    result = client.post(f"/activity/{event_id}/undo", data={
+        "csrf_token": csrf(client, "/"), "request_id": str(uuid4()), "version": 2})
+    assert result.status_code == 302
+    assert "Deine letzte Änderung" not in client.get("/").text
+    with app.app_context():
+        assert db.session.scalar(select(ShoppingNeed.quantity)) == 0
+
+
+def test_undo_is_personal_and_hidden_after_another_member_changes_item(app, client):
+    item_id, _, _ = seed_item(app)
+    login(client)
+    action(client, item_id, "replenish", 1)
+    second = app.test_client()
+    login(second, "member@example.test")
+    assert "Deine letzte Änderung" not in second.get("/").text
+    action(second, item_id, "purchase", 2, quantity="1")
+    assert "Deine letzte Änderung" not in client.get("/").text
+    assert "Als gekauft markiert" in second.get("/").text
