@@ -28,3 +28,12 @@ Bestandskorrektur und Entfernen von der Einkaufsliste sind getrennte Aktionen. E
 Eine neue Nachkaufmenge veraendert bereits offenen Bedarf nicht. Einheitenwechsel ist bei offenem Bedarf gesperrt, da sonst vorhandene Mengen eine neue Bedeutung erhielten. Veraltete Bearbeitungsformulare erhalten 409 mit Aufforderung zum Neuladen; sie bekommen keine still aktualisierte Versionsnummer zum Ueberschreiben.
 
 Listenfilter und Suchbegriff bleiben nach Kartenaktionen erhalten. Breiten-/Orientierungswechsel loesen kein Neuladen oder Zuruecksetzen von Formularen aus.
+
+## Barcodes und Produktvorschlaege
+
+- GTIN ausschliesslich als ASCII-Ziffernfolge mit Laenge 8/12/13/14 und gueltiger GS1-Pruefziffer. Fuehrende Nullen erhalten; kanonischer Vergleich mit links auf 14 Stellen aufgefuelltem Wert. Keine URL als Barcode akzeptieren.
+- Ein Barcode pro Haushalt eindeutig. Alle Zugriffe pruefen Haushalt von Barcode, Produkt und Artikel. Erstregistrierung sperrt den Haushalt; parallele Requests erzeugen keine zweite Zuordnung. Vorhandene Zuordnung wird nicht still umgehaengt.
+- Zuordnung und Entfernen der Zuordnung buchen keinen Bedarf oder Bestand. Entfernen behaelt Produkt und Artikel; erneutes Erfassen ist moeglich. Keine Activity-Ruecknahme fuer reine Barcode-Zuordnungen.
+- Routes besitzen commit/rollback. Katalog-Gate vor HTTP committen, damit keine Zeilensperre waehrend des Netzwerkzugriffs gehalten wird. Cache enthaelt ausschliesslich oeffentliche Providerdaten; Herkunft bei bestaetigter Produktregistrierung erhalten.
+- Kamera nur nach Benutzeraktion; Tracks auch bei Abbruch waehrend der Berechtigungsfrage, Hintergrundwechsel und Navigation beenden. Spaete asynchrone Ergebnisse ignorieren.
+- Beim Sperren von Absende-Schaltflaechen den Namen/Wert von event.submitter als verstecktes Feld erhalten; sonst geht die explizite Katalogaktion verloren.

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">NEUER BARCODE</p><h1>Einmal zuordnen.</h1><p class="muted">Noch nicht in eurem Haushalt gespeichert. Danach erkennt James dieses Produkt direkt wieder.</p></div></section>
+<section class="panel form-panel">
+{% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if catalog_message %}<div class="notice" role="status">{{ catalog_message }}</div>{% endif %}
+<form id="barcode-register-form" method="post" action="{{ url_for('scan.register') }}" class="form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="data_source" value="{{ values.get('data_source', 'manual') }}">
+<label>Barcode<input name="code" value="{{ code }}" readonly></label>
+<div class="catalog-lookup"><button class="button button--outline" type="submit" name="lookup" value="1" formaction="{{ url_for('scan.index') }}" formnovalidate>Produktdaten vorschlagen</button><p class="small muted">Freiwillig: Nur die Barcode-Nummer wird an Open Food Facts gesendet, keine Bilder oder Haushaltsdaten.{% if catalog_staging %} Lokal wird der Testkatalog verwendet.{% endif %}</p></div>
+{% if catalog_source %}<p class="small">Vorschlag von <a href="https://world.openfoodfacts.org" rel="noreferrer">Open Food Facts</a> (ODbL). Bitte anhand der Packung prüfen.</p>{% endif %}
+<label>Produktname<input name="product_name" maxlength="200" required value="{{ values.get('product_name', '') }}" placeholder="Zum Beispiel Barilla Spaghetti No. 5"></label>
+<div class="form-grid"><label>Marke (optional)<input name="brand" maxlength="100" value="{{ values.get('brand', '') }}"></label><label>Packungsangabe (optional)<input name="package_text" maxlength="80" value="{{ values.get('package_text', '') }}" placeholder="Zum Beispiel 500 g"></label></div>
+<label>In eurem Haushalt zuordnen zu<select id="barcode-target" name="item_id"><option value="new">Neuen Haushaltsartikel anlegen</option>{% for item in items %}<option value="{{ item.id }}" {% if values.get('item_id') == item.id|string %}selected{% endif %}>{{ item.name }} · {{ item.category }}</option>{% endfor %}</select><small>Zum Beispiel verschiedene Pasta-Produkte eurem Artikel «Spaghetti» zuordnen.</small></label>
+<fieldset id="new-item-fields" class="barcode-new-item"><legend>Für den neuen Haushaltsartikel</legend><label>Name im Haushalt (optional)<input name="item_name" maxlength="100" value="{{ values.get('item_name', '') }}" placeholder="Leer lassen = Produktname"></label><div class="form-grid"><label>Warengruppe<input name="category" maxlength="60" value="{{ values.get('category', 'Vorrat') }}"></label><label>Bezugsquelle<input name="source" maxlength="60" value="{{ values.get('source', 'Laden') }}"></label></div><div class="form-grid"><label>Nachkaufmenge<input type="number" inputmode="numeric" name="quantity" min="1" max="999" value="{{ values.get('quantity', '1') }}"></label><label>Einheit<input name="unit" maxlength="20" value="{{ values.get('unit', 'Packung') }}"></label></div><label class="check-field"><input type="checkbox" name="favorite" value="1" {% if values.get('favorite') == '1' %}checked{% endif %}><span>Als Favorit markieren</span></label></fieldset>
+<p class="small muted">Speichern ordnet das Produkt zu. Es ändert keinen Bestand und löst keinen Einkauf aus.</p><div class="form-actions"><button class="button button--primary" type="submit">Barcode speichern</button><a class="button button--quiet" href="{{ url_for('scan.index') }}">Abbrechen</a></div>
+</form></section>
+{% endblock %}

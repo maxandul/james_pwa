@@ -85,7 +85,7 @@ StockState ist vorerst als stock_status im HouseholdItem integriert. ShoppingNee
 
 Activity speichert die Listenaktionen mit vorherigem/nachherigem Bestandsstatus und Bedarf, Item-Version, Urheber und eindeutiger Request-UUID pro Haushalt. Eine Ruecknahme verweist auf die Gegenbuchung. Receipt/StockMovement sind noch nicht eingefuehrt, da kein mengenbasierter Bestand oder Lieferprozess existiert.
 
-Quelle und Warengruppe sind zunaechst Texte am Artikel. Product, ProductBarcode, ItemProduct, PurchaseSource, ShopOffer, DeviceAccess und alle Bestellobjekte bleiben im Zielmodell. Vor deren Einfuehrung sind eigene Migrationen erforderlich.
+Quelle und Warengruppe sind zunaechst Texte am Artikel. ItemProduct, PurchaseSource, ShopOffer, DeviceAccess und alle Bestellobjekte bleiben im Zielmodell. Vor deren Einfuehrung sind eigene Migrationen erforderlich.
 
 ## Erweiterung Artikelpflege
 
@@ -94,3 +94,13 @@ HouseholdItem besitzt is_favorite und archived (Boolean, nicht null, Default fal
 Activity speichert nun zusaetzlich Name, Warengruppe, Quelle, Einheit, Standard-Nachkaufmenge, Favoriten- und Archivstatus. Vorhandene alte Snapshots mit nur status/quantity werden bei Ruecknahme weiter unterstuetzt. Keine Historie wird geloescht.
 
 Migration eebb352b7301 folgt auf e691ea9e9398 und wird getrennt vom Feature-Code committet. Sie ergaenzt die beiden Flags mit portablem SQL-false; bestehende Artikel und ihre Bedarfe bleiben erhalten. Downgrade entfernt ausschliesslich die neuen Flags und benoetigt fuer SQLite native DROP-COLUMN-Unterstuetzung ab 3.35. Produktive Migrationen weiterhin erst mit Backup und passender Betriebsfreigabe.
+
+## Implementierte Barcode-Zuordnung
+
+Product speichert household_id, item_id, Name, Marke, freie Packungsangabe und data_source (manual/openfoodfacts/openfoodfacts_staging). Ein Produkt gehoert aktuell genau zu einem Artikel; mehrere Produktvarianten pro Artikel sind moeglich. ItemProduct als allgemeine Mehrfachzuordnung bleibt spaeterer Ausbau. Packungsangabe ist keine automatische Einheitenumrechnung.
+
+ProductBarcode speichert household_id, product_id, urspruenglichen code und kanonischen gtin (14 Stellen). Unique(household_id, gtin) verhindert doppelte Zuordnung, auch bei aequivalenten UPC-/EAN-Schreibweisen. Zuordnung und Suche pruefen alle Haushaltsbeziehungen im Service. Ein Scan eines archivierten Artikels fordert zuerst zur Wiederaktivierung auf.
+
+CatalogCache speichert nur oeffentliche Katalogantworten mit Schluessel Umgebung:GTIN und expires_at. CatalogGate speichert je Umgebung next_allowed_at zur workeruebergreifenden Abrufbegrenzung. Keine privaten Haushaltsdaten in diesen beiden Tabellen.
+
+Revision b8cf5f8bfc8c folgt auf eebb352b7301 und erstellt diese vier Tabellen in einem separaten Migrationscommit. Vorhandene Artikel, Bedarfe und Historie bleiben erhalten. Downgrade entfernt die Produktzuordnungen und Katalogdaten; kein Anwender-Schritt.

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import action_fields with context %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">BARCODE ERKANNT</p><h1>{{ item.name }}</h1><p class="muted">{{ barcode.product.name }}{% if barcode.product.brand %} · {{ barcode.product.brand }}{% endif %}{% if barcode.product.package_text %} · {{ barcode.product.package_text }}{% endif %}</p></div></section>
+<section class="panel form-panel scan-result"><p class="barcode-code">{{ barcode.code }}</p><p><span class="pill pill--{{ item.stock_status }}">{{ 'Archiviert' if item.archived else stock_labels[item.stock_status] }}</span></p><p class="muted">Gewohnter Nachkauf: {{ item.default_quantity }} {{ item.unit }} · {{ item.source }}</p>
+{% if barcode.product.data_source in ['openfoodfacts', 'openfoodfacts_staging'] %}<p class="small muted">Produktangaben mit einem Vorschlag von <a href="https://world.openfoodfacts.org" rel="noreferrer">Open Food Facts</a> (ODbL) erfasst.{% if barcode.product.data_source == 'openfoodfacts_staging' %} Quelle: Testkatalog.{% endif %}</p>{% endif %}
+{% if item.archived %}<p>Dieser Artikel ist archiviert. Zum Nachkaufen zuerst wieder aktivieren.</p><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'restore') }}<button class="button button--primary" type="submit">Wieder aktivieren</button></form>
+{% else %}<div class="scan-result__actions"><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'replenish') }}<button class="button button--primary" type="submit">+ Nachkaufen</button></form><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'empty') }}<button class="button button--outline" type="submit">Leer und nachkaufen</button></form></div>{% endif %}
+<a class="button button--quiet" href="{{ url_for('main.item_edit', item_id=item.id) }}">Artikel und Zuordnung ansehen</a><a class="button button--quiet" href="{{ url_for('scan.index') }}">Nächsten Barcode scannen</a></section>
+{% endblock %}

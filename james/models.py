@@ -108,3 +108,36 @@ class Activity(db.Model):
     item = db.relationship(HouseholdItem)
     user = db.relationship(User)
     __table_args__ = (db.UniqueConstraint("household_id", "request_id", name="activity_request"),)
+
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    item_id = db.Column(db.Integer, db.ForeignKey("household_item.id"), nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    brand = db.Column(db.String(100), nullable=False, default="")
+    package_text = db.Column(db.String(80), nullable=False, default="")
+    data_source = db.Column(db.String(24), nullable=False, default="manual")
+    item = db.relationship(HouseholdItem)
+
+
+class ProductBarcode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False)
+    code = db.Column(db.String(14), nullable=False)
+    gtin = db.Column(db.String(14), nullable=False)
+    product = db.relationship(Product)
+    __table_args__ = (db.UniqueConstraint("household_id", "gtin", name="barcode_household_gtin"),)
+
+
+class CatalogCache(db.Model):
+    # Public product suggestions only, never household identities or photos.
+    key = db.Column(db.String(32), primary_key=True)
+    payload = db.Column(db.JSON)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+
+class CatalogGate(db.Model):
+    key = db.Column(db.String(20), primary_key=True)
+    next_allowed_at = db.Column(db.DateTime, nullable=False)

@@ -36,9 +36,31 @@ document.querySelectorAll('form[method="post"]').forEach(form => {
   form.addEventListener('submit', event => {
     if (!navigator.onLine || submitting) { event.preventDefault(); return; }
     submitting = true;
+    // Disabled buttons are not successful form controls: preserve named actions.
+    form.querySelectorAll('input[data-submit-value]').forEach(field => field.remove());
+    if (event.submitter?.name) {
+      const field = document.createElement('input');
+      field.type = 'hidden';
+      field.name = event.submitter.name;
+      field.value = event.submitter.value;
+      field.setAttribute('data-submit-value', '');
+      form.appendChild(field);
+    }
     form.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = true; });
   });
 });
+
+const barcodeTarget = document.querySelector('#barcode-target');
+if (barcodeTarget) {
+  const newFields = document.querySelector('#new-item-fields');
+  const updateTarget = () => {
+    const existing = barcodeTarget.value !== 'new';
+    newFields.hidden = existing;
+    newFields.disabled = existing;
+  };
+  barcodeTarget.addEventListener('change', updateTarget);
+  updateTarget();
+}
 window.addEventListener('pageshow', event => {
   if (event.persisted) { submitting = false; onlineState(); }
 });

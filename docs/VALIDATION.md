@@ -49,3 +49,11 @@ Neue Prueffaelle: Metadaten bearbeiten und zuruecknehmen, vier Bestandszustaende
 Migration zusaetzlich mit vorhandenen Artikeln, offenem Bedarf und referenzierender Historie getestet: Upgrade, Ruecknahme der neuen Flags und erneutes Upgrade erhalten die bisherigen Daten. Der Postgres-spezifische Test prueft paralleles Archivieren/Nachkaufen und verhindert unsichtbaren offenen Bedarf.
 
 Responsive CSS ist fuer Touch und flexible Viewportbreiten angepasst. Keine Behauptung einer erfolgten visuellen Fold-/Tablet-Abnahme; diese braucht den Neustart der erreichbaren Vorschau und die echten Zielgeraete. Die Datenbank der laufenden User-Vorschau wurde nicht veraendert.
+
+## Erweiterung Barcode
+
+Gezielte lokale Pruefung nach Herkunftsergaenzung: 33 Barcode-/Migrationstests bestanden. Vorherige komplette SQLite-Suite: 72 bestanden, fuenf nur fuer Postgres vorgesehene Tests uebersprungen. JavaScript: fuenf Node-Tests bestanden. Den abschliessenden Gesamtstand belegt der aktuelle Lauf bei PR #2 / Checks.
+
+Geprueft: Laengen/Pruefziffern/fuehrende Nullen, UPC-/EAN-Aequivalenz, CSRF, Haushaltsgrenzen, wiederholte Registrierung, Zuordnung zu bestehenden/neuen Artikeln, archivierte Artikel, Entfernen ohne Bedarfsaenderung, Herkunft, manuelle Eingabe bei Katalogausfall, Cache und Abrufbegrenzung. HTTP-Tests simulieren feste HTTPS-Ziele, Timeout, Fehler und begrenzte Antwortgroesse; keine echte Provider-Erreichbarkeit behauptet.
+
+Postgres-CI prueft zusaetzlich gleichzeitige Erstregistrierung und konkurrierende Katalogabrufe. Node simuliert fehlende APIs, Start per Benutzeraktion, genau einmalige Erkennung, Stoppen nach spaeter Berechtigung und Hintergrundwechsel sowie Erhalt der benannten Katalogaktion. Keine echte Kamera oder visuelle Fold-/Tablet-Pruefung. Die laufende Vorschau-Datenbank wird erst beim vom User ausgefuehrten Neustart migriert.

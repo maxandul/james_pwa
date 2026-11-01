@@ -6,7 +6,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import select, text
 
 from .extensions import db
-from .models import Activity, HouseholdItem, Invitation, Membership, ShoppingNeed, utcnow
+from .models import Activity, HouseholdItem, Invitation, Membership, Product, ProductBarcode, ShoppingNeed, utcnow
 from .services import Conflict, change_item, create_item, make_invitation, membership_for
 
 main = Blueprint("main", __name__)
@@ -95,7 +95,10 @@ def item_edit(item_id):
             error = str(exc)
             status = 409 if isinstance(exc, Conflict) else 400
     need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item.id))
-    return render_template("item_edit.html", item=item, need=need, error=error, conflict=status == 409), status
+    barcodes = db.session.scalars(select(ProductBarcode).join(Product).where(
+        ProductBarcode.household_id == g.household.id, Product.household_id == g.household.id,
+        Product.item_id == item.id).order_by(ProductBarcode.id)).all()
+    return render_template("item_edit.html", item=item, need=need, error=error, conflict=status == 409, barcodes=barcodes), status
 
 
 @main.get("/shopping")

@@ -1,6 +1,6 @@
 # Bedienablaeufe
 
-Stand: 01.11.2026. Soll-Ablaeufe mit erstem implementierten Ausschnitt. Text-Erfassung, persoenliche Einladungen, Nachkaufen, Zusatz-/Teilkauf und Ruecknahme sind umgesetzt. Barcode, Mengenbestand, Shop-Bestellung, Lieferung, Offline-Lesen, Geraetezugang und Menueplanung sind noch offen.
+Stand: 01.11.2026. Soll-Ablaeufe mit erstem implementierten Ausschnitt. Text-Erfassung, persoenliche Einladungen, Nachkaufen, Zusatz-/Teilkauf und Ruecknahme sind umgesetzt. Mengenbestand, Shop-Bestellung, Lieferung, Offline-Lesen, Geraetezugang und Menueplanung sind noch offen.
 
 ## Oberflaechen
 
@@ -100,3 +100,13 @@ Auf der Karte den Stern antippen, um einen gemeinsamen Favoriten zu setzen; unte
 Ein Artikel ohne offenen Einkaufsbedarf kann im Bearbeitungsformular archiviert werden. Er bleibt im Archiv erhalten und kann dort wieder aktiviert werden. Noch offener Bedarf muss zuerst gekauft oder mit "Von der Liste entfernen" geloescht werden. Letzteres setzt keinen Bestand auf vorhanden und gilt nicht als Kauf.
 
 Alle Pflegeaktionen ausser der erstmaligen Erfassung sind ueber den direkten Aktionshinweis rueckgaengig machbar, solange die Artikelversion noch aktuell ist. Keine permanente Rueckgaengig-Box.
+
+## Implementierter Barcode-Ablauf
+
+1. Scannen oeffnen, Code eintippen oder Kamera bewusst starten. EAN-8/13, UPC-A und GTIN-14 werden mit Pruefziffer validiert.
+2. Bekannter Code zeigt die gespeicherte Produktvariante und den Haushaltsartikel. Erst Nachkaufen bzw. Leer und nachkaufen bucht Bedarf. Archivierte Artikel zuerst wieder aktivieren.
+3. Unbekannten Code manuell erfassen: Produktname, optional Marke/Packungsangabe, bestehender Haushaltsartikel oder neuer Artikel. Speichern allein aendert weder Bestand noch Liste.
+4. Optional Produktvorschlag anfordern: Nur der Barcode geht an Open Food Facts. Vorschlag pruefen; vorhandene Eingaben werden nicht ueberschrieben. Ausfall oder fehlender Treffer laesst manuelle Erfassung offen.
+5. Erneutes Scannen erzeugt keine doppelten Artikel. Falsche Zuordnung unter Artikel bearbeiten entfernen und neu erfassen; Artikel und Einkaufsbedarf bleiben erhalten.
+
+Kamera endet bei erkanntem Code, Stoppen, Navigation und Hintergrundwechsel. Keine Bilder gespeichert oder hochgeladen. Reale Geraeteabnahme unter HTTPS bleibt offen.

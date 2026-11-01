@@ -61,3 +61,15 @@ Keine automatische Anwendung von Migrationen in jedem Webworker. Ein Downgrade d
 Neue Revision eebb352b7301 fuegt Favoriten- und Archivstatus hinzu. Vor Start der aktualisierten App `flask --app james db upgrade` mit derselben lokalen Datenbank ausfuehren. Der in dieser Sitzung verwendete temporaere Vorschau-Starter james_preview.py erledigt das Upgrade beim Neustart selbst. Ein laufender alter Server muss dafuer gestoppt werden; keine Datenbankdatei loeschen. Testdaten bleiben erhalten.
 
 Die SQLite-Downgradepruefung benoetigt SQLite 3.35 oder neuer fuer natives DROP COLUMN. Die Entwicklung nutzt Python 3.12. Ein Downgrade entfernt die Favoriten-/Archivflags; es ist kein normaler Anwender-Schritt.
+
+## Barcode und optionaler Produktkatalog
+
+Revision b8cf5f8bfc8c mit db upgrade anwenden. Der temporaere Vorschau-Starter erledigt dies beim Neustart; alten Server zuerst mit Ctrl+C stoppen. Keine Datenbankdatei loeschen. Die neue Seite heisst Scannen. Manuelle Eingabe funktioniert ohne Kamera und ohne externen Katalog.
+
+OPENFOODFACTS_ENVIRONMENT akzeptiert staging/production. Standard bei APP_ENV=development: staging (world.openfoodfacts.net); sonst production (world.openfoodfacts.org). Entwicklung und automatisierte Tests nicht gegen den produktiven Katalog richten. Staging verwendet die dokumentierten oeffentlichen Zugangsdaten off:off und kann andere/unvollstaendige Produkte enthalten.
+
+OPENFOODFACTS_USER_AGENT identifiziert die App mit Versions-/Kontaktangabe; Standard verweist auf das James-Repository. Vor Betrieb aktuelle [API-Dokumentation](https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/) und ODbL-Hinweise pruefen. Herkunft und Lizenzlink werden bei Vorschlaegen und gespeicherten Produkten angezeigt. Keine Bilder abgefragt oder hochgeladen. Live-Erreichbarkeit aus Railway noch pruefen.
+
+Kamera braucht einen sicheren Browserkontext (HTTPS oder localhost) und BarcodeDetector-Unterstuetzung. Ein Handy erreicht ueber localhost nicht den PC. Fuer reale Geraetepruefung HTTPS-Vorschau bereitstellen; manuelle Eingabe bleibt als Rueckfallebene.
+
+JavaScript-Pruefung mit Node: `node --test tests/scanner.test.cjs`. Simuliert Kameralebenszyklus, spaete Berechtigungen/Ergebnisse und benannte Formularaktionen; kein Hardwaretest.

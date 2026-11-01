@@ -78,3 +78,11 @@ Die erste Version nutzt noch keine WebSockets, KI, Shop-Zugaenge, Bild-Uploads, 
 Automatisierte Pruefung: lokale SQLite-Suite und GitHub-CI gegen Postgres 16 mit Migrationsvergleich. Die lokale Arbeitsumgebung blockiert TCP-Verbindungen; Postgres wird deshalb in CI geprueft. Der aktuelle Pruefstand steht in VALIDATION.md. Visuelle Zielgeraetepruefung bleibt offen.
 
 Artikelpflege erweitert den bestehenden Service-Layer um Bearbeiten, gemeinsamen Favoritenstatus, Archivieren/Wiederaktivieren, Bestandskorrektur und Listenentfernung. Die beiden Archiv-/Favoritenflags und die portable Datenbankmigration sind in DATA_MODEL.md dokumentiert; es wurde kein neuer externer Dienst eingefuehrt.
+
+## Barcode-Erfassung
+
+Blueprint scan steuert die Erfassung; barcodes.py validiert GTINs und kapselt Haushaltszuordnungen. Konkrete Produktvarianten gehoeren jeweils zu einem Haushaltsartikel. Scan und Zuordnung veraendern weder Bestand noch Einkaufsbedarf.
+
+scanner.js verwendet ausschliesslich den nativen BarcodeDetector und getUserMedia nach bewusstem Start. Bilder verlassen das Geraet nicht. Kamera ist nur fuer die Scan-Seite erlaubt; bei fehlender Browserunterstuetzung bleibt die manuelle Eingabe. Reale Kamera-/HTTPS-Pruefung steht aus.
+
+catalog.py fragt Open Food Facts nur auf ausdruecklichen Wunsch mit dem Barcode ab, ohne Haushaltsdaten oder Bilder. Feste HTTPS-Hosts, keine Weiterleitungen, drei Sekunden Timeout und begrenzte Antwortgroesse. Oeffentliche Vorschlaege werden getrennt von Haushaltsdaten einen Tag gecacht, fehlende Treffer eine Stunde. Ein Datenbank-Gate begrenzt ausgehende Abfragen pro Umgebung auf eine alle fuenf Sekunden ueber alle Worker. Entwicklungsumgebung nutzt standardmaessig den Testkatalog; Konfiguration siehe RUNBOOK.md. Externe Vorschlaege bleiben manuell zu pruefen.

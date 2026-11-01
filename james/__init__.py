@@ -3,7 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_wtf.csrf import CSRFError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
@@ -29,11 +29,15 @@ def create_app(test_config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(days=7),
         MAX_CONTENT_LENGTH=32 * 1024, MAX_FORM_MEMORY_SIZE=32 * 1024,
         MAX_FORM_PARTS=30,
+        OPENFOODFACTS_ENVIRONMENT=os.getenv("OPENFOODFACTS_ENVIRONMENT", "staging" if environment == "development" else "production"),
+        OPENFOODFACTS_USER_AGENT=os.getenv("OPENFOODFACTS_USER_AGENT", "JamesPWA/0.1 (+https://github.com/maxandul/james_pwa)"),
     )
     if test_config:
         app.config.update(test_config)
     if not app.config["SECRET_KEY"] or len(app.config["SECRET_KEY"]) < 32:
         raise RuntimeError("SECRET_KEY muss mindestens 32 zufaellige Zeichen enthalten.")
+    if app.config["OPENFOODFACTS_ENVIRONMENT"] not in {"staging", "production"}:
+        raise RuntimeError("OPENFOODFACTS_ENVIRONMENT muss staging oder production sein.")
     origin = urlsplit(app.config["PUBLIC_BASE_URL"])
     if origin.scheme not in {"http", "https"} or not origin.netloc or origin.path not in {"", "/"} or origin.query or origin.fragment or origin.username:
         raise RuntimeError("PUBLIC_BASE_URL muss ein gueltiger HTTP(S)-Origin sein.")
@@ -63,16 +67,19 @@ def create_app(test_config=None):
     from .auth import auth
     from .views import main
     from .cli import register_cli
+    from .scan import scan
     app.register_blueprint(auth)
     app.register_blueprint(main)
+    app.register_blueprint(scan)
     register_cli(app)
 
     @app.after_request
     def response_headers(response):
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        camera = "(self)" if request.endpoint == "scan.index" else "()"
+        response.headers["Permissions-Policy"] = f"camera={camera}, microphone=(), geolocation=()"
         if app.config["SESSION_COOKIE_SECURE"]:
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
         # No authenticated HTML, invitation links or CSRF tokens in shared caches.

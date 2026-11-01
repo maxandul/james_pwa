@@ -61,3 +61,19 @@ Die dauerhafte Box fuer die letzte Aenderung wurde auf Wunsch des Users zurueckg
 | remove-form | Sichtbare Listenentfernung unter der Einkaufsposition |
 
 Karten und Formularspalten nutzen auto-fit/minmax mit Mindestbreite innerhalb des verfuegbaren Platzes. Suche und Aktionszeilen brechen um; Eingabefelder auf kleinen Viewports haben 16 Pixel Schrift. Keine festen Modellmasse oder Aenderung der Eingaben beim Aufklappen. Visuelle Abnahme auf Aussen-/Innendisplay bleibt ein eigener Geraetetest. CSS- und JS-Referenzversion fuer dieses Paket: 4.
+
+## Scanner und Produktzuordnung
+
+Navigation Scannen und sichtbarer Einstieg im Haushalt. Manuelle Eingabe bleibt immer verfuegbar. Kamera startet nur per Schaltflaeche, bietet Stoppen und endet bei Navigation, Hintergrund oder erkanntem Code. Bei fehlendem BarcodeDetector klare Rueckmeldung statt externer SDK-Abhaengigkeit.
+
+Bekannter Barcode zeigt Produkt und Haushaltsartikel mit ausdruecklichen Nachkaufaktionen. Unbekannten Barcode einem bestehenden Artikel zuordnen oder samt neuem Artikel erfassen. Optionaler Open-Food-Facts-Vorschlag mit Herkunft, Lizenzlink und Testkatalog-Hinweis; Formularentwurf bleibt erhalten. Zuordnungen lassen sich in der Artikelpflege entfernen.
+
+| Neue Klassen | Zweck |
+| --- | --- |
+| scan-entry, scan-layout | Einstieg und flexibles Kamera-/Eingaberaster |
+| camera-preview, camera-guide, camera-actions | Lokales Kamerabild, Scanbereich und Touch-Aktionen |
+| barcode-code, scan-result, scan-result__actions | Code, Produkt-/Artikelergebnis und Nachkauf |
+| barcode-new-item, catalog-lookup | Neuer Artikel und optionale Katalogsuche |
+| barcode-mappings | Zuordnungen in der Artikelpflege |
+
+CSS-/App-JS-Version 5, Scanner-JS-Version 1. Kontextueller Rueckgaengig-Hinweis bleibt erhalten. Hardwaretest unter HTTPS: Verpackung/Licht, verweigerte Berechtigung, Hintergrundwechsel, Fold-Aussen-/Innendisplay und Tablet. Simulierte Browser-APIs ersetzen diese Abnahme nicht.
