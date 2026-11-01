@@ -16,3 +16,5 @@ Stand: 01.11.2026.
 - Schemaaenderungen mit Alembic; Migrationsdateien in eigenem Commit. Kein `create_all()` im normalen App-Start.
 - Dokumente mit Umsetzungsstand pflegen. Noch offene Funktionen nicht als fertig kennzeichnen.
 - Deutsch ohne Eszett. Keine extern geladenen Fonts oder Scripts.
+
+Einladungslinks werden pro Haushalt unter einer Zeilensperre ausgestellt, damit auch gleichzeitiges Neuausstellen nur einen aktiven Link fuer dieselbe Adresse hinterlaesst. Der Postgres-Test prueft diesen Fall mit zwei Transaktionen.

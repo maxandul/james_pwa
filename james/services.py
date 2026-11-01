@@ -9,7 +9,7 @@ from flask import abort
 from sqlalchemy import select
 
 from .extensions import db
-from .models import Activity, HouseholdItem, Invitation, Membership, ShoppingNeed, User, utcnow
+from .models import Activity, Household, HouseholdItem, Invitation, Membership, ShoppingNeed, User, utcnow
 
 
 class Conflict(ValueError):
@@ -53,6 +53,9 @@ def make_invitation(membership, email):
     if membership.role != "owner":
         abort(403)
     email = clean_email(email)
+    # Serialize issuance even when there is no existing invitation row to lock.
+    db.session.scalar(select(Household).where(
+        Household.id == membership.household_id).with_for_update())
     if db.session.scalar(select(User.id).where(User.email == email)):
         raise ValueError("Fuer diese Adresse besteht bereits ein Zugang.")
     now = utcnow()
