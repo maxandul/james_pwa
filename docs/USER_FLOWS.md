@@ -1,6 +1,6 @@
 # Bedienablaeufe
 
-Stand: 01.11.2026. Soll-Verhalten, noch nicht implementiert.
+Stand: 01.11.2026. Soll-Ablaeufe mit erstem implementierten Ausschnitt. Text-Erfassung, persoenliche Einladungen, Nachkaufen, Zusatz-/Teilkauf und Ruecknahme sind umgesetzt. Barcode, Mengenbestand, Shop-Bestellung, Lieferung, Offline-Lesen, Geraetezugang und Menueplanung sind noch offen.
 
 ## Oberflaechen
 

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">FUER EUREN HAUSHALT</p><h1>Neuer Artikel</h1><p class="muted">Einmal erfassen. Beim naechsten Mal einfach antippen.</p></div></div>
+<section class="panel form-panel">
+{% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Artikelname<input name="name" required maxlength="100" placeholder="Zum Beispiel Kaffee" value="{{ request.form.get('name', '') }}"></label>
+  <div class="form-grid"><label>Warengruppe<input name="category" maxlength="60" list="categories" value="{{ request.form.get('category', 'Vorrat') }}"><datalist id="categories"><option>Vorrat</option><option>Frisches</option><option>Getraenke</option><option>Haushalt</option><option>Pflege</option><option>Tierbedarf</option></datalist></label><label>Wo kauft ihr das?<input name="source" maxlength="60" list="sources" value="{{ request.form.get('source', 'Laden') }}"><datalist id="sources"><option>Laden</option><option>Coop</option><option>Galaxus</option><option>Migros</option></datalist></label></div>
+  <div class="form-grid"><label>Gewohnte Nachkaufmenge<input type="number" min="1" max="999" step="1" name="quantity" required value="{{ request.form.get('quantity', '1') }}"></label><label>Einheit<input name="unit" required maxlength="20" list="units" value="{{ request.form.get('unit', 'Packung') }}"><datalist id="units"><option>Packung</option><option>Stueck</option><option>Flasche</option><option>Dose</option></datalist></label></div>
+  <p class="small muted">Der Bestand startet als unbekannt. Ihr muesst vorher nichts zaehlen.</p>
+  <div class="form-actions"><button class="button button--primary" type="submit">Artikel speichern</button><a class="button button--quiet" href="{{ url_for('main.home') }}">Abbrechen</a></div>
+</form></section>
+{% endblock %}

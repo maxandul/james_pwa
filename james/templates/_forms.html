@@ -1,0 +1,7 @@
+{% macro action_fields(item, action, destination='home') %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="request_id" value="{{ request_id() }}">
+<input type="hidden" name="version" value="{{ item.version }}">
+<input type="hidden" name="action" value="{{ action }}">
+<input type="hidden" name="return_to" value="{{ destination }}">
+{% endmacro %}

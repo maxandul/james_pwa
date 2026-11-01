@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import action_fields with context %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">{{ g.household.name }}</p><h1>Was braucht ihr?</h1><p class="muted">Wird etwas knapp? Ein Tippen, und es steht auf eurer Liste.</p></div><a class="button button--primary" href="{{ url_for('main.item_new') }}">+ Artikel erfassen</a></section>
+<a class="summary" href="{{ url_for('main.shopping') }}"><div><span class="summary__label">EUER NAECHSTER EINKAUF</span><h2>{% if pending %}{{ pending }} Artikel auf der Liste{% else %}Gerade nichts offen.{% endif %}</h2><p>{% if pending %}Gemeinsam erfasst. Bereit fuer den naechsten Einkauf.{% else %}Fehlt etwas? Fuegt es unten mit einem Tippen hinzu.{% endif %}</p></div><span class="summary__arrow" aria-hidden="true">↗</span></a>
+<div class="section-heading"><h2>Eure Artikel <span class="count">{{ rows|length }}</span></h2><span class="muted small">{{ pending }} zum Nachkaufen</span></div>
+{% if rows %}<div class="item-grid">
+{% for item, need in rows %}<article class="item-card">
+  <div class="item-card__top"><span class="item-icon" aria-hidden="true">{{ item.name[:1]|upper }}</span><span class="pill pill--{{ item.stock_status }}">{{ stock_labels[item.stock_status] }}</span></div>
+  <p class="eyebrow item-card__category">{{ item.category }}</p><h3>{{ item.name }}</h3><p class="muted small">{{ item.source }} · {{ item.default_quantity }} {{ item.unit }} nachkaufen</p>
+  <div class="item-card__actions"><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'replenish') }}<button class="button {{ 'button--listed' if need.quantity else 'button--primary' }}" type="submit">{% if need.quantity %}✓ Auf der Liste · {{ need.quantity }}{% else %}+ Nachkaufen{% endif %}</button></form><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'empty') }}<button class="button button--outline" type="submit">Ist leer</button></form></div>
+</article>{% endfor %}</div>
+{% else %}<section class="empty"><div class="empty__symbol" aria-hidden="true">+</div><h2>Euer Haushalt beginnt hier.</h2><p>Kaffee, Pasta oder Waschmittel: Erfasst zuerst die Dinge,<br>die ihr regelmaessig nachkauft.</p><a class="button button--primary" href="{{ url_for('main.item_new') }}">Ersten Artikel erfassen</a></section>{% endif %}
+{% endblock %}

@@ -2,7 +2,7 @@
 
 James unterstuetzt einen gemeinsam gefuehrten Haushalt beim Erfassen von Vorrat, Nachkaufen, Einkaufen und spaeter bei der Menueplanung.
 
-**Stand: Konzeptentwurf vom 01.11.2026. Es gibt noch keine implementierte oder deployte Anwendung.**
+**Stand: 01.11.2026. Eine lokale Erstversion ist implementiert und automatisiert getestet; noch kein Railway-Deployment.**
 
 ## Einstieg
 
@@ -15,6 +15,14 @@ James unterstuetzt einen gemeinsam gefuehrten Haushalt beim Erfassen von Vorrat,
 | [Shop-Machbarkeit](docs/SHOP_FEASIBILITY.md) | Dokumentation und Ergebnisse der bisherigen Browser-Tests |
 | [Umsetzungsplan](docs/IMPLEMENTATION_PLAN.md) | Pakete, Abnahmekriterien und offene Entscheidungen |
 
+## Erste Version starten
+
+Siehe [Runbook](docs/RUNBOOK.md) fuer Installation, Datenbankmigration und Erstbenutzer. Anmeldung erfolgt mit E-Mail und Passwort; weitere Zugaenge entstehen ausschliesslich ueber persoenliche Einladungslinks.
+
+Implementiert sind Artikel mit einfachem Bestandsstatus, Nachkaufmenge, gemeinsamer Einkaufsliste, Zusatz- und Teilmengen sowie Rueckgaengig. Tablet-Geraetezugang, Barcode, Mengenbestand, PWA-Installation/Offline-Lesen, Shop-Uebergabe und MCP folgen spaeter.
+
+Weitere Umsetzungshinweise: [Zugang](docs/AUTH.md), [Konventionen](docs/CONVENTIONS.md), [UI](docs/UI.md).
+
 ## Produktprinzipien
 
 - Das Erfassen im Alltag muss schneller sein als das spaetere Erinnern.
@@ -26,7 +34,7 @@ James unterstuetzt einen gemeinsam gefuehrten Haushalt beim Erfassen von Vorrat,
 
 ## Technische Richtung
 
-PWA fuer Kuechentablet und Handy, Python-Backend mit Flask als Vorschlag, Postgres und Railway. ChatGPT soll spaeter ueber einen authentifizierten MCP-Zugang auf dieselben Haushaltsfunktionen zugreifen.
+PWA fuer Kuechentablet und Handy, Python-Backend mit Flask, Postgres und Railway. ChatGPT soll spaeter ueber einen authentifizierten MCP-Zugang auf dieselben Haushaltsfunktionen zugreifen.
 
 Der erste praktische Browser-Test bestaetigt Produktsuche bei Coop und Galaxus sowie das Hinzufuegen eines Testartikels zu einem nicht angemeldeten Galaxus-Warenkorb. Eine angemeldete Shop-Anbindung, geraeteuebergreifende Warenkorbuebergabe und automatischer Bestellabschluss sind nicht nachgewiesen.
 

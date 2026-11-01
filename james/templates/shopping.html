@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import action_fields with context %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">ZUSAMMEN EINKAUFEN</p><h1>Eure Einkaufsliste.</h1><p class="muted">{{ rows|length }} Artikel{% if selected_source %} · {{ selected_source }}{% endif %}. Gekauft? Direkt abhaken.</p></div><a class="button button--outline" href="{{ url_for('main.home') }}">+ Aus euren Artikeln</a></section>
+<nav class="filters" aria-label="Bezugsquelle"><a class="filter {{ 'filter--active' if not selected_source }}" href="{{ url_for('main.shopping') }}">Alle</a>{% for source in sources %}<a class="filter {{ 'filter--active' if selected_source == source }}" href="{{ url_for('main.shopping', source=source) }}">{{ source }}</a>{% endfor %}</nav>
+{% if rows %}
+{% for group in rows|groupby('0.category') %}<section class="shopping-group"><h2>{{ group.grouper }}</h2><div class="shopping-list">
+{% for item, need in group.list %}<article class="shopping-row">
+  <div class="shopping-row__name"><h3>{{ item.name }}</h3><p class="muted small">{{ need.quantity }} {{ item.unit }} · {{ item.source }}</p></div>
+  <form class="purchase-form" method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'purchase', 'shopping') }}<label class="sr-only" for="purchase-{{ item.id }}">Gekaufte Menge fuer {{ item.name }}</label><input id="purchase-{{ item.id }}" class="quantity" type="number" name="quantity" min="1" max="{{ need.quantity }}" step="1" value="{{ need.quantity }}" required><button class="button button--primary" type="submit">✓ Gekauft</button></form>
+  <details class="extra"><summary>Mehr benoetigt?</summary><form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'extra', 'shopping') }}<label for="extra-{{ item.id }}">Zusaetzliche Menge</label><input id="extra-{{ item.id }}" class="quantity" type="number" name="quantity" min="1" max="999" step="1" value="1" required><button class="button button--outline" type="submit">Ergaenzen</button></form></details>
+</article>{% endfor %}</div></section>{% endfor %}
+{% else %}<section class="empty"><div class="empty__symbol" aria-hidden="true">✓</div><h2>{% if selected_source %}Hier ist nichts offen.{% else %}Alles erledigt.{% endif %}</h2><p>Neue Bedarfe koennt ihr jederzeit im Haushalt erfassen.</p><a class="button button--primary" href="{{ url_for('main.home') }}">Zum Haushalt</a></section>{% endif %}
+<p class="small muted">Die Liste wird beim erneuten Oeffnen und regelmaessig aktualisiert. Angefangene Eingaben bleiben dabei erhalten.</p>
+{% endblock %}

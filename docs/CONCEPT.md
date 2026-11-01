@@ -16,7 +16,8 @@ Erfolg bedeutet: weniger vergessene Artikel, weniger doppelte Einkaeufe und weni
 | Persoenliche Handy-Zugaenge und gemeinsames Kuechentablet | Bestandteil des akzeptierten Konzepts |
 | Einfache und mengenbasierte Bestandsfuehrung | Bestandteil des akzeptierten Konzepts |
 | Postgres und Railway | Gewuenschte technische Richtung |
-| Flask | Technischer Vorschlag; urspruenglich als Option genannt |
+| Flask | Fuer die erste Version umgesetzt |
+| E-Mail/Passwort und Einladung | Vom User bestaetigt und in der ersten Version umgesetzt |
 | ChatGPT ueber MCP | Gewuenschte spaetere Erweiterung; konkrete Verfuegbarkeit zu pruefen |
 | Woechentlicher oder manuell gestarteter Einkauf | Gewuenschtes Ziel; Tag und Zeit noch offen |
 | Vollautomatische Shop-Bestellung | Langfristiger Wunsch, technisch noch offen |
@@ -77,4 +78,8 @@ Menuevorschlaege sollen frische Artikel bevorzugen und unsichere Bestaende kennt
 
 ## Noch zu klaeren
 
-Vor dem jeweils betroffenen Paket: Tablet und Betriebssystem, Login-Verfahren, Einladungsweg fuer weitere Mitglieder, Standard-Bestandsmodus, Bestellberechtigte, bevorzugte Shops und Ersatzregeln. Vor Regelbetrieb zudem Backup/Restore und Benachrichtigungskanal festlegen.
+Vor dem jeweils betroffenen Paket: Tablet und Betriebssystem, Standard-Bestandsmodus, Bestellberechtigte, bevorzugte Shops und Ersatzregeln. Vor Regelbetrieb zudem Backup/Restore und Benachrichtigungskanal festlegen.
+
+## Erster Implementierungsstand
+
+Artikel per Text, einfacher Bestandsstatus, gemeinsame Liste, Einladungslinks, Nachkaufen, Zusatz-/Teilmengen und Ruecknahme sind umgesetzt. Je Person wird aktuell ein Haushalt unterstuetzt. Der erste Schritt bleibt bewusst kleiner als der komplette Umfang P1 bis P5: kein Geraetezugang, Barcode, Mengenbestand oder Offline-Cache. Siehe IMPLEMENTATION_PLAN.md fuer den verbleibenden Umfang.

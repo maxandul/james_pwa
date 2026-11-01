@@ -1,6 +1,6 @@
 # Fachliches Datenmodell
 
-Stand: 01.11.2026. Vorschlag fuer die Umsetzung, noch kein SQL-Schema und keine Migration.
+Stand: 01.11.2026. Zielmodell mit folgendem implementierten Ausschnitt; initiale Alembic-Migration liegt separat vor.
 
 ## Kernobjekte
 
@@ -76,3 +76,13 @@ Fehler einer Warenkorbuebergabe gehoeren in den Uebergabeversuch und setzen nich
 ## Spaetere Objekte
 
 Recipe, RecipeIngredient, MealPlan und MealPlanEntry sowie optionale Chargen/Verbrauchsdaten und Verbrauchsschaetzungen. Beobachteter Bestand, schaetzungsbasierte Hinweise und Rezeptannahmen muessen unterscheidbar bleiben.
+
+## Implementierter Ausschnitt
+
+Household, User, Membership, Invitation, LoginThrottle, HouseholdItem, ShoppingNeed und Activity. Membership.user_id ist aktuell eindeutig: ein Haushalt pro Person. Invitation enthaelt ausschliesslich den Hash des Tokens, Empfaengeradresse, Ablauf, Widerruf, Verbrauch und Aussteller.
+
+StockState ist vorerst als stock_status im HouseholdItem integriert. ShoppingNeed ist pro Artikel eindeutig und bleibt mit Menge null als erledigter Bedarf bestehen. Nachkauf- und Bedarfsmenge sind in dieser ersten Stufe positive ganze Packungen/Stuecke (offener Bedarf auch null), kein vorgetaeuschter Mengenbestand.
+
+Activity speichert die Listenaktionen mit vorherigem/nachherigem Bestandsstatus und Bedarf, Item-Version, Urheber und eindeutiger Request-UUID pro Haushalt. Eine Ruecknahme verweist auf die Gegenbuchung. Receipt/StockMovement sind noch nicht eingefuehrt, da kein mengenbasierter Bestand oder Lieferprozess existiert.
+
+Quelle und Warengruppe sind zunaechst Texte am Artikel. Product, ProductBarcode, ItemProduct, PurchaseSource, ShopOffer, DeviceAccess und alle Bestellobjekte bleiben im Zielmodell. Vor deren Einfuehrung sind eigene Migrationen erforderlich.
