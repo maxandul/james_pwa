@@ -93,3 +93,11 @@ Fuenf neue Flask-Tests pruefen Manifest/PNG-Icons/Worker-Scope, identitaetsfreie
 Die automatisierten Tests ersetzen keine Installation oder echten Flugmodus auf dem Fold/Tablet. User bestaetigt allgemeine Online-Ablaeufe; Kamerascan bei schlechtem Licht noch nicht erfolgreich. Keine Kameraabnahme behauptet. Aktuelle CI-Nachweise in PR #2 / Checks.
 
 Zusaetzliche asynchrone UI-Pruefung: Bereitmeldung erst nach abgeschlossenem Service-Worker-Install. Browserpruefung der oeffentlichen Offline-Ansicht auf Railway: Leerzustand vorhanden und keine Skriptfehler; Screenshot-Aufnahme durch Browser-Timeout begrenzt. Keine echte Flugmodus-/Installationsabnahme behauptet.
+
+## Produkt-/Shop-Grundlage
+
+Lokal: bisherige gesamte Suite 104 bestanden, sechs Postgres-spezifische Tests uebersprungen; ein waehrend des Laufs korrigierter Testaufbau im neuen Migrationstest wurde anschliessend erneut geprueft. Abschliessend alle 23 Katalog-/Produkt-/Angebots-/Migrationstests bestanden. Node: 17 bestanden. Keine echte Shop-Anfrage oder Bestellung.
+
+Geprueft: echte Auswahlfelder, eigene Namen/Umbenennen/Aliase und alte Ruecknahme, mehrere Einkaufsorte bei einmaligem Bedarf, Haushaltsgrenzen einschliesslich manipulierter Zweitquelle, Produkt+Barcode ohne Bestandsbuchung, ein Produkt in zwei Shops, Vorzug pro Shop, Packungsrundung/Mehrmenge, unklare Auswahl, Eingabe-/Linkvalidierung, doppelte/veraltete Formulare, Einheitenwechsel einschliesslich Ruecknahme bei aktiven Zuordnungen. Migration mit bestehenden individuellen Namen, Bedarf und Barcode: Upgrade/check, Downgrade und erneutes Upgrade/check erfolgreich.
+
+Postgres-CI prueft zusaetzlich zwei gleichzeitige Vorzugsprodukte unter Haushaltssperre. Vollstaendige SQLite-/Postgres-18-/Containerpruefung im neuen PR gegen feat/household-shopping. Endergebnis in den PR-Checks; keine Live-Migration vor Datenbanksicherung. Keine visuelle Abnahme der neuen Masken auf Fold oder Tablet behauptet.

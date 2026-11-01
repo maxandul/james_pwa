@@ -54,3 +54,14 @@ Pre-Deploy bestaetigt nach db upgrade auch db current und db check. Die CI-Daten
 - Offline-Daten ausschliesslich als Text rendern. Kein Offline-Schreiben ohne eigenen fachlichen Entwurf; keine automatische Wiederholung von POSTs.
 - Bei Aenderung oeffentlicher Offline-Assets Referenzversionen und Worker-Cacheversion gemeinsam pflegen. Kein erzwungenes Neuladen waehrend Formulareingaben.
 
+
+
+## Kataloge und Shop-Zuordnungen
+
+- Warengruppen/Einkaufsorte gehoeren einem Haushalt. Namen normalisieren mit Unicode NFKC/casefold; alte Namen als Alias erhalten. Umbenennen aktualisiert Artikel und ihre Versionen; alte Activity-Snapshots werden bei Ruecknahme auf den aktuellen Namen abgebildet.
+- Artikel behalten ihre Textfelder fuer kompatible Historie. ItemSource enthaelt die weiteren Orte. Bevorzugter Ort und aktive ShopOffer-Orte bleiben stets enthalten; zusaetzliche Orte sind frei waehlbar. Alle IDs erneut gegen den Haushalt pruefen.
+- Pro Produkt/Einkaufsort genau eine Shop-Zuordnung. Pro Artikel/Einkaufsort hoechstens ein aktives Vorzugsprodukt, serialisiert ueber Household-Sperre. Ohne eindeutige Variante keine automatische Auswahl.
+- units_per_pack ist eine ausdruecklich bestaetigte positive Dezimalmenge in der Artikeleinheit, maximal drei Nachkommastellen. Freier Verpackungstext bewirkt keine Umrechnung. Packungszahl aufrunden und Mehrmenge sichtbar machen. Kaufbuchung bleibt in der Artikeleinheit.
+- Einheitenwechsel einschliesslich Ruecknahme ist bei aktiven Packungszuordnungen gesperrt; erst deaktivieren, Einheit aendern, Umrechnung neu bestaetigen.
+- Versionierte Artikelaktionen laufen in no_autoflush, damit Katalog-/Linkabfragen keine halbe Aenderung speichern oder die Version doppelt erhoehen. Neue Katalogeintraege nur gezielt flushen; die ganze Aktion am Ende flushen.
+- Produkt/Katalog/Angebotsformulare verwenden Versionspruefungen. Produktlinks nur HTTPS ohne eingebettete Zugangsdaten; keine Zugangsdaten speichern, keine Links automatisch aufrufen.

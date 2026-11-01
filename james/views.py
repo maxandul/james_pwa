@@ -100,7 +100,9 @@ def item_edit(item_id):
     barcodes = db.session.scalars(select(ProductBarcode).join(Product).where(
         ProductBarcode.household_id == g.household.id, Product.household_id == g.household.id,
         Product.item_id == item.id).order_by(ProductBarcode.id)).all()
-    return render_template("item_edit.html", item=item, need=need, error=error, conflict=status == 409, barcodes=barcodes), status
+    from .assortment import source_ids, offer_source_ids
+    return render_template("item_edit.html", item=item, need=need, error=error, conflict=status == 409,
+        barcodes=barcodes, selected_source_ids=source_ids(item), fixed_source_ids=offer_source_ids(item)), status
 
 
 @main.get("/shopping")
@@ -109,11 +111,15 @@ def shopping():
     rows = db.session.execute(select(HouseholdItem, ShoppingNeed).join(ShoppingNeed).where(
         HouseholdItem.household_id == g.household.id, HouseholdItem.archived.is_(False), ShoppingNeed.quantity > 0
     ).order_by(HouseholdItem.category, HouseholdItem.name)).all()
-    sources = sorted({item.source for item, need in rows})
+    from .assortment import shopping_options, selected_offer
+    allowed, offers = shopping_options(rows)
+    sources = sorted({name for names in allowed.values() for name in names})
     source = request.args.get("source", "")
     if source:
-        rows = [(item, need) for item, need in rows if item.source == source]
-    return render_template("shopping.html", rows=rows, sources=sources, selected_source=source)
+        rows = [(item, need) for item, need in rows if source in allowed[item.id]]
+    choices = {item.id: selected_offer(offers[item.id], source, need.quantity) for item, need in rows} if source else {}
+    return render_template("shopping.html", rows=rows, sources=sources, selected_source=source,
+        allowed_sources=allowed, choices=choices)
 
 
 @main.post("/items/<int:item_id>/action")

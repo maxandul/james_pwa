@@ -116,3 +116,14 @@ Die Scan-Hilfe ist kein eigener Tab. Nach Artikelanlage oder Zuordnung wird die 
 ## Implementiert: Installation und Offline-Lesen
 
 Online und angemeldet wird die gesamte offene Einkaufsliste auf diesem Geraet gespeichert. Die Ansicht zeigt den Speicherzeitpunkt. Ueber den Hilfebereich oder bei Verbindungsverlust beim Oeffnen von Haushalt/Einkauf erscheint die gespeicherte Liste ohne Schreibaktionen. Bei erneutem Online-Oeffnen wird sie aktualisiert. Beim Abmelden/Kontowechsel wird die alte Kopie entfernt. Installation erfolgt ueber Browsermenue oder den angebotenen Installieren-Button. Echte Kamera- und Installationsabnahme auf Zielgeraeten bleiben offen.
+
+
+## Milch bei mehreren Laeden
+
+1. Artikel Milch einmalig erfassen, Einheit beispielsweise Liter. Bevorzugten Einkaufsort und weitere moegliche Orte waehlen. Eigene Warengruppen/Orte lassen sich hinzufuegen und umbenennen.
+2. In der Artikelpflege Produkte und Einkaufsorte oeffnen. Konkrete Milchvarianten anlegen oder vorhandene Barcode-Produkte bearbeiten.
+3. Variante mit Coop/Migros oder mehreren Einkaufsorten verknuepfen. Ausdruecklich angeben, wie viele Artikeleinheiten eine Shop-Packung enthaelt; Link/Artikelnummer optional. Je Laden ein Vorzugsprodukt setzen.
+4. Nachkaufen erzeugt weiterhin einen gemeinsamen Bedarf. Im Filter Coop oder Migros erscheint derselbe Artikel mit der dort passenden Variante. Ohne eindeutige Auswahl fordert James zur Variantenpflege auf.
+5. Beispiel: 3 Liter Bedarf, 2 Liter je Shop-Packung ergibt 2 Packungen und 1 Liter Mehrmenge. Dies ist eine Vorbereitung, keine Bestellung. Kauf weiter in Litern bestaetigen; vorhandene Kauf-/Ruecknahmeregeln gelten.
+
+Automatische Warenkoerbe/Bestellungen, Belegimport und James-Chat sind weitere Pakete. Bestehende Coop-/Migros-App-Konten werden dadurch noch nicht angebunden.

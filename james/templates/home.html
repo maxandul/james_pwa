@@ -22,4 +22,5 @@
   {% endif %}
 </article>{% endfor %}</div>
 {% else %}<section class="empty"><div class="empty__symbol" aria-hidden="true">{{ '☆' if view == 'favorites' else '+' }}</div><h2>{% if query %}Kein passender Artikel.{% elif view == 'favorites' %}Eure Favoriten sind schnell zur Hand.{% elif view == 'archived' %}Noch nichts archiviert.{% else %}Euer Haushalt beginnt hier.{% endif %}</h2><p>{% if view == 'favorites' %}Markiert häufig benötigte Artikel mit dem Stern.{% elif view == 'archived' %}Archivierte Artikel könnt ihr hier wieder aktivieren.{% elif query %}Versucht einen anderen Suchbegriff.{% else %}Kaffee, Pasta oder Waschmittel: Erfasst zuerst die Dinge, die ihr regelmässig nachkauft.{% endif %}</p>{% if not query and view == 'all' %}<a class="button button--primary" href="{{ url_for('main.item_new') }}">Ersten Artikel erfassen</a>{% endif %}</section>{% endif %}
+<p class="form-actions"><a class="button button--quiet" href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte verwalten</a></p>
 {% endblock %}

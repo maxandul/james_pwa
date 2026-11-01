@@ -152,3 +152,12 @@ Nach Auslieferung muss der neue Schema-Healthcheck ok liefern; er prueft Tabelle
 Die Offline-Kopie gehoert zum Browserprofil und ist auf einem entsperrten gemeinsamen Geraet lesbar. Ein Rechteentzug wird erst bei erneuter Online-Verbindung erkannt. Installation und Browser-Speicherverwaltung sind kein Backup. Reale Geraeteabnahme bleibt offen, insbesondere Fold-Aussen-/Innendisplay, Flugmodusstart und Tablet.
 
 Tests: `node --test tests/scanner.test.cjs tests/pwa.test.cjs` und `python -m pytest -q`. Kein Schema-/ENV-Update fuer diesen Schritt. Die bestehenden Railway-Pre-Deploy-Einstellungen bleiben aktiv.
+
+
+## Auslieferung Produkt-/Shop-Grundlage
+
+Neue Revision: 4b4e6934c1ee nach b8cf5f8bfc8c. Additive Tabellen, Product.version und Backfill bestehender Einkaufsorte; keine Bestands-/Bedarfsbuchung.
+
+Der laufende Railway-Service folgt feat/household-shopping. Neue Arbeiten werden deshalb auf feat/product-sources isoliert und per PR gegen diesen Branch geprueft. Vor dem Zusammenfuehren native Sicherung des bestehenden Postgres-Volumes im Railway-Dashboard erstellen; Wiederherstellungsweg dokumentieren. Kein Merge/Deploy vor Sicherung. Aktuelle Connector-Werkzeuge bieten keine Backup-Erstellung; Dashboard war im Agent-Browser nicht angemeldet. Es wurde keine Sicherung behauptet oder Live-Migration ausgefuehrt.
+
+Nach Zusammenfuehren Pre-Deploy upgrade/current/check im expliziten staging-Service beobachten; current muss 4b4e6934c1ee zeigen, /health muss ok liefern. Danach vorhandene Artikel, Einkaufsbedarf und Barcodes kontrollieren, zweite Person/alte Formulare pruefen und Milch mit zwei Einkaufsorten testen. Downgrade wuerde neue Produkt-Shop-Daten entfernen und ist kein regulaerer Rueckgaengig-Weg.

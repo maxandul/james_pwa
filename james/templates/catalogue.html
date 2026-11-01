@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">FUER EUREN HAUSHALT</p><h1>Warengruppen und Einkaufsorte</h1><p class="muted">Gemeinsam gepflegt. Neue Namen stehen danach in der Artikelerfassung zur Auswahl.</p></div><a class="button button--quiet" href="{{ url_for('main.home') }}">Zum Haushalt</a></section>
+{% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+<div class="two-columns">
+{% for kind, title, records in [('category','Warengruppen',categories),('source','Einkaufsorte',sources)] %}
+<section class="panel"><h2>{{ title }}</h2>
+{% for entry in records %}<form class="catalogue-row" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="entry_id" value="{{ entry.id }}"><input type="hidden" name="version" value="{{ entry.version }}"><label>{{ title[:-1] if kind == 'category' else 'Einkaufsort' }}<input name="name" value="{{ entry.name }}" maxlength="60" required></label><button class="button button--outline" type="submit">Umbenennen</button></form>{% endfor %}
+<form class="form archive-section" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}"><label>{{ 'Neue Warengruppe' if kind == 'category' else 'Neuer Einkaufsort' }}<input name="name" maxlength="60" placeholder="{{ 'Zum Beispiel Tiefkuehlkost' if kind == 'category' else 'Zum Beispiel Wochenmarkt' }}" required></label><button class="button button--primary" type="submit">Hinzufuegen</button></form>
+</section>{% endfor %}</div>
+<p class="small muted">Umbenennen aktualisiert die zugeordneten Artikel. Produktzuordnungen, Einkaufsbedarf und Historie bleiben erhalten. Geoeffnete Bearbeitungsformulare muessen danach neu geladen werden.</p>
+{% endblock %}

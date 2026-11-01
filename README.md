@@ -51,3 +51,8 @@ Dockerfile und deployment/railway-settings.json (Referenz, nicht automatisch ang
 ## Als App und ohne Empfang nutzen
 
 James kann ueber das Browsermenue zum Startbildschirm hinzugefuegt/installiert werden. Nach Online-Anmeldung speichert es die Einkaufsliste auf diesem Geraet. Ohne Verbindung zeigt es den letzten Stand mit Zeitstempel ausschliesslich zum Lesen. Abmelden entfernt die Kopie. Installationshilfe und Speicherstatus stehen unten in der App; Praxistest siehe Runbook.
+
+
+## Produkte und mehrere Einkaufsorte (vorbereitet)
+
+Ein Haushaltsartikel kann bei mehreren Laeden gekauft werden. Warengruppen/Einkaufsorte sind erweiterbar und umbenennbar. Unter Artikel bearbeiten → Produkte und Einkaufsorte lassen sich konkrete Varianten und je Laden ein Vorzugsprodukt mit Packungsinhalt hinterlegen. Die gefilterte Einkaufsliste zeigt die passende Variante und gerundete Packungszahl; Bedarf bleibt einmalig. Keine automatische Bestellung in diesem Schritt. Auslieferung mit additiver Migration erst nach Datenbanksicherung; Details in docs/RUNBOOK.md.

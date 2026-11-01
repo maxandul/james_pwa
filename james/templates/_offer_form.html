@@ -1,0 +1,15 @@
+{% macro offer_form(product, offer=None) %}
+{% set failed = failed_product_id is defined and failed_product_id == product.id and failed_offer_id == (offer.id if offer else none) %}
+{% set fv = offer_values if failed else {} %}
+<form method="post" class="form offer-form" action="{{ url_for('products.offer', item_id=item.id, product_id=product.id, offer_id=offer.id if offer else none) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% if offer %}<input type="hidden" name="version" value="{{ fv.get('version', offer.version) }}">{% endif %}
+<div class="form-grid"><label>Einkaufsort<select name="source_id" required><option value="">Bitte waehlen</option>{% for source in purchase_sources %}<option value="{{ source.id }}" {% if fv.get('source_id', offer.source_id|string if offer else '') == source.id|string %}selected{% endif %}>{{ source.name }}</option>{% endfor %}</select></label>
+<label>Eine Packung entspricht<input name="units_per_pack" type="number" inputmode="decimal" min="0.001" max="999999" step="0.001" required value="{{ fv.get('units_per_pack', offer.units_per_pack if offer else '1') }}"><small>{{ item.unit }} des Haushaltsartikels. Keine automatische Umrechnung.</small></label></div>
+<label>Produktlink (optional)<input name="url" type="url" maxlength="1000" placeholder="https://..." value="{{ fv.get('url', offer.url if offer else '') }}"></label>
+<label>Shop-Artikelnummer (optional)<input name="shop_sku" maxlength="80" value="{{ fv.get('shop_sku', offer.shop_sku if offer else '') }}"></label>
+<label class="check-field"><input type="checkbox" name="preferred" value="1" {% if (failed and fv.get('preferred') == '1') or (not failed and offer and offer.preferred) %}checked{% endif %}><span>Bei diesem Einkaufsort bevorzugen</span></label>
+<label>Status<select name="active"><option value="1" {% if fv.get('active', '1' if not offer or offer.active else '0') == '1' %}selected{% endif %}>Verwenden</option><option value="0" {% if fv.get('active', '1' if not offer or offer.active else '0') == '0' %}selected{% endif %}>Nicht mehr verwenden</option></select></label>
+<button class="button button--outline" type="submit">{{ 'Zuordnung speichern' if offer else 'Einkaufsort zuordnen' }}</button>
+</form>
+{% endmacro %}

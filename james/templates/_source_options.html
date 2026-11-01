@@ -1,0 +1,4 @@
+{% if purchase_sources %}<fieldset class="source-options"><legend>Auch erhaeltlich bei</legend><input type="hidden" name="sources_present" value="1">
+{% set picked = request.form.getlist('source_ids') if request.method == 'POST' else selected_source_ids|default([]) %}
+{% for source in purchase_sources %}{% set fixed = source.id in fixed_source_ids|default([]) %}<label class="check-field"><input type="checkbox" name="source_ids" value="{{ source.id }}" {% if source.id in picked or source.id|string in picked or fixed or source.name == catalogue_label('source', values.get('source', 'Laden')) %}checked{% endif %} {% if fixed %}disabled{% endif %}><span>{{ source.name }}{% if fixed %}<small>Aktives Produkt hinterlegt</small>{% endif %}</span></label>{% endfor %}
+<p class="small muted">Der bevorzugte Ort und Orte mit aktiven Produktzuordnungen bleiben verfuegbar.</p></fieldset>{% endif %}

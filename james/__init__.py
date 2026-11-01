@@ -69,10 +69,12 @@ def create_app(test_config=None):
     from .cli import register_cli
     from .scan import scan
     from .pwa import pwa
+    from .products import products
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
     app.register_blueprint(pwa)
+    app.register_blueprint(products)
     register_cli(app)
 
     @app.after_request

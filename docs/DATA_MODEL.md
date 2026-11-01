@@ -104,3 +104,22 @@ ProductBarcode speichert household_id, product_id, urspruenglichen code und kano
 CatalogCache speichert nur oeffentliche Katalogantworten mit Schluessel Umgebung:GTIN und expires_at. CatalogGate speichert je Umgebung next_allowed_at zur workeruebergreifenden Abrufbegrenzung. Keine privaten Haushaltsdaten in diesen beiden Tabellen.
 
 Revision b8cf5f8bfc8c folgt auf eebb352b7301 und erstellt diese vier Tabellen in einem separaten Migrationscommit. Vorhandene Artikel, Bedarfe und Historie bleiben erhalten. Downgrade entfernt die Produktzuordnungen und Katalogdaten; kein Anwender-Schritt.
+
+
+## Implementierte Kategorien, Einkaufsorte und Angebote
+
+Revision 4b4e6934c1ee folgt auf b8cf5f8bfc8c (eigener Migrationscommit):
+
+| Tabelle/Feld | Bedeutung |
+| --- | --- |
+| Category | Haushalts-Warengruppe: Name, normalisierter name_key, aliases, version |
+| PurchaseSource | Haushalts-Einkaufsort mit denselben Namens-/Versionsregeln |
+| ItemSource | Mehrfachzuordnung Artikel/Einkaufsort, zusammengesetzter Primaerschluessel |
+| ShopOffer | Produkt/Einkaufsort eindeutig; HTTPS-Link, Shop-Artikelnummer, units_per_pack, preferred, active, version |
+| Product.version | Optimistische Konflikterkennung bei Bearbeitung einer Variante |
+
+ShopOffer.units_per_pack ist Numeric(12,3), >0 und <=999999. Household-/Produkt-/Quellenzugehoerigkeit wird serverseitig geprueft. Keine Aussage ueber aktuelle Verfuegbarkeit. Ein Produkt kann mehrere ShopOffer besitzen, ein Artikel mehrere Produkte. ProductBarcode bleibt unveraendert.
+
+Backfill erzeugt je vorhandenem Haushalt Standardoptionen plus bestehende individuelle Namen und verknuepft den bisherigen Einkaufsort. Gross-/Kleinschreibvarianten ergeben einen Eintrag. Artikeltext, Versionen, Bestand, Bedarf, Barcodes und Activity bleiben erhalten. Alte Activity-Snapshots sind kompatibel; neue enthalten source_ids. Aktive Angebotsorte bleiben auch bei Ruecknahme erhalten.
+
+Downgrade entfernt ausschliesslich die neuen Tabellen und Product.version, also neue Zuordnungen/Katalognamen. Artikel, Produkte und Barcodes bleiben erhalten. Kein Anwender-Reparaturschritt; vor Live-Migration Backup erstellen und Restore pruefen.
