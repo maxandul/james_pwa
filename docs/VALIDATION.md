@@ -19,7 +19,17 @@ Ein Fehler in der Fehlerseite bei entzogener Mitgliedschaft wurde durch die Test
 
 Ein isolierter lokaler Postgres-16-Cluster wurde gestartet. Der Testprozess durfte keine TCP-Verbindung dorthin oeffnen (Permission denied). Der Browser konnte auch den gestarteten lokalen Flask-Webserver nicht erreichen (Connection timed out). Das belegt keine Funktionsstoerung von Postgres oder Flask und wird nicht als erfolgreicher Integrationstest gewertet.
 
-Die Postgres-Suite einschliesslich simultaner Requests und Migrationsvergleich ist im GitHub-Workflow vorbereitet. Ihr tatsaechliches Ergebnis ist am Pull Request separat nachzuweisen. Bis dahin bleibt Postgres-Integration unabgenommen.
+## GitHub-CI erfolgreich
+
+[Prueflauf 41318470053](https://github.com/maxandul/james_pwa/actions/runs/41318470053) am Implementierungscommit 63dbceb93de9b63c3d081d05156800a8a3e11c27:
+
+- SQLite: 24 bestanden, zwei nur fuer Postgres vorgesehene Tests uebersprungen.
+- Postgres 16: 26 Tests bestanden, einschliesslich parallelem Nachkaufen/Einkaufen und gleichzeitigem Neuausstellen von Einladungen.
+- Initiale Migration gegen Postgres angewendet; db check meldet keine Abweichung der Modellmetadaten.
+
+Ersteinrichtung separat lokal geprueft: erster Owner samt Haushalt angelegt, erneute Initialisierung abgewiesen. Kein produktiver Datenbankzugriff.
+
+Die ersten CI-Laeufe scheiterten vor den Tests an der Anfuehrungszeichenfolge im Container-Healthcheck. Die Workflow-Konfiguration wurde korrigiert; der oben verlinkte Lauf ist erfolgreich.
 
 ## Vor Alltagseinsatz noch offen
 

@@ -75,4 +75,4 @@ Blueprints auth und main, zentrale Fachregeln in services.py. Jeder Browser-Schr
 
 Die erste Version nutzt noch keine WebSockets, KI, Shop-Zugaenge, Bild-Uploads, Mengenbestaende oder Hintergrundauftraege. Auth-HTML ist no-store; es gibt noch keinen Service Worker. Der unprivilegierte Tablet-Geraetezugang ist offen.
 
-Pruefung: SQLite-Suite lokal erfolgreich. Lokale TCP-Verbindungen zu Postgres und Webserver sind in der Arbeitsumgebung blockiert. Postgres-CI und visuelle Zielgeraetepruefung sind deshalb getrennt zu verifizieren; siehe VALIDATION.md.
+Pruefung: SQLite-Suite lokal erfolgreich. Lokale TCP-Verbindungen zu Postgres und Webserver sind in der Arbeitsumgebung blockiert. Postgres 16 wurde anschliessend erfolgreich in GitHub-CI geprueft (26 Tests und Migrationsvergleich). Visuelle Zielgeraetepruefung bleibt offen; siehe VALIDATION.md.
