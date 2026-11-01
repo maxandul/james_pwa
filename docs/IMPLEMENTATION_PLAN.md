@@ -7,11 +7,11 @@ Stand: 01.11.2026. Konzept zusammengefuehrt; ein erster durchgaengiger Ablauf is
 | Paket | Ergebnis | Abnahme | Stand |
 | --- | --- | --- | --- |
 | K0 Konzept | Gemeinsame Dokumentationsgrundlage | Umfang, Datenmodell, Ablaeufe, Architektur und Testgrenzen beschrieben | Zusammengefuehrt (PR #1) |
-| P1 Technische Basis | Flask-Vorschlag konkretisieren, Postgres, Migrationen, Entwicklungs-/Testsetup | App startet; isolierte Testdatenbank; Basis-Checks dokumentiert | Technische Basis und Postgres-CI geprueft; Docker-/Railway-Konfiguration vorbereitet, Deployment offen |
+| P1 Technische Basis | Flask-Vorschlag konkretisieren, Postgres, Migrationen, Entwicklungs-/Testsetup | App startet; isolierte Testdatenbank; Basis-Checks dokumentiert | Technische Basis und Postgres-CI geprueft; Docker-/Railway-Konfiguration und getrennte staging-Ressourcen eingerichtet; Betriebsabnahme offen |
 | P2 Gemeinsamer Haushalt | Login, Mitgliedschaften und Tablet-Zugang | Zwei Personen sehen denselben Haushalt; fremde Haushaltsdaten gesperrt; Tablet-Rechte eingeschraenkt | Persoenliche Zugaenge/Einladungen fertig; Geraetezugang offen |
 | P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Text, Favoriten, Artikelpflege und einfacher Status fertig; Barcode-Zuordnung und Kameraablauf implementiert; Hardwareabnahme/Mengenbestand offen |
 | P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Nachkauf, Zusatz-/Teilkauf, Entfernen und Ruecknahme implementiert; visuelle Abnahme offen |
-| P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Deployment-Konfiguration und Containerpruefung vorbereitet; Railway-Verbindung/Geraeteabnahme und uebriger Umfang offen |
+| P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Deployment-Konfiguration und Containerpruefung vorbereitet; Railway verbunden, staging-Ressourcen eingerichtet; Betriebs-/Geraeteabnahme und uebriger Umfang offen |
 | P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Offen |
 | P7 Shop-Uebergabe | Pro Shop nachgewiesener Warenkorbweg | Angemeldeter Test, mehrere Mengen, Wiederholungen und Sitzungsablauf geprueft | Offen |
 | P8 Wochenroutine | Serverseitiger Vorschlag und Benachrichtigung | Ein Vorschlag je Haushalt und Termin; keine Abhaengigkeit von geoeffneter PWA; manueller Start bleibt moeglich | Offen |
@@ -51,4 +51,4 @@ Die erste Version braucht keine Shop-Zugaenge. Angemeldete Shop-Tests bleiben un
 
 ## Grenzen des aktuellen Stands
 
-Keine Railway-Ressourcen oder produktiven Datenbanken eingerichtet. Keine echten Konten, Mailversand, Shop-Zugaenge oder kostenpflichtigen Bestellungen angelegt. Kein Geraetezugang oder Offline-Cache. Noch keine Abnahme auf realem Handy/Tablet.
+Getrennte Railway-staging-Ressourcen fuer James sind eingerichtet; keine privaten Alltagsdaten uebernommen. Keine echten Konten, Mailversand, Shop-Zugaenge oder kostenpflichtigen Bestellungen angelegt. Kein Geraetezugang oder Offline-Cache. Noch keine Abnahme auf realem Handy/Tablet.

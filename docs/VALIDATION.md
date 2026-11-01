@@ -67,3 +67,11 @@ Sechs zusaetzliche Integrationstests pruefen die Einstiege ohne Scan-Tab, Artike
 Dockerfile und railway.json sind fuer getrennten James-Testbetrieb vorbereitet. CI baut das Produktionsimage, startet den echten Gunicorn-Prozess gegen isoliertes Postgres und prueft Health, Login-HTML samt CSRF, no-store, CSP, HSTS und Secure/HttpOnly/SameSite-Cookie. Ergebnisse im aktuellen PR-Check.
 
 Lokal kein Docker-Befehl verfuegbar; kein lokaler Image-Build behauptet. Railway-CLI 5.28.0 startet, aber whoami/list scheitern an DNS fuer backboard.railway.com. Keine Railway-Ressource erstellt und keine Deployment- oder produktive DB-Aktion ausgefuehrt. Railway-Verbindung, HTTPS-/Proxy-Verhalten und echte Geraete bleiben offen.
+
+## Railway-staging eingerichtet
+
+Getrenntes Projekt james-pwa mit eigenem Postgres-18-Volume und james-web in europe-west4-drams3a erstellt. HTTPS-Domain und private DB-Referenz konfiguriert; Web-Service an feat/household-shopping angebunden. Erstes Deployment startet vom zuvor in CI geprueften Commit eb6ad8cb4956fe45321bfd168a6a07be5ca48f48. Nachfolgende Konfiguration prueft im Pre-Deploy zusaetzlich current/check und richtet die CI auf Postgres 18 aus.
+
+Endgueltigen Deploymentstatus im Railway-Dashboard pruefen; angelegte Ressourcen sind noch kein Nachweis eines erfolgreichen Deployments. Kein erster Owner eingerichtet, keine Login-/Einladungs-/Kamerapruefung und kein Backup/Restore behauptet. Aktuelle HTTPS-Adresse und IDs im Runbook. Automatisierte CI-Ergebnisse bleiben in PR #2 / Checks nachvollziehbar.
+
+Erstes Web-Deployment e92d81be-f267-43ca-80d4-e305749a6ad1 erreichte SUCCESS. Browseraufruf der HTTPS-Domain zeigt die James-Anmeldeseite; /health liefert status ok und bestaetigt die Verbindung zu Postgres. Persoenliche Anmeldung weiterhin offen, da erster Owner interaktiv durch den User einzurichten ist.

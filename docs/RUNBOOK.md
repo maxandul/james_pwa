@@ -101,3 +101,29 @@ Vor privaten Alltagsdaten Backup/Restore in isolierter Datenbank nachweisen. Bis
 
 Stand dieser Vorbereitung: Railway-CLI ist installiert, aber ihr API-Host ist aus der Agent-Shell nicht aufloesbar. Ein direkter Railway-Zugang muss noch verbunden werden. Deshalb noch keine Projekt-/Service-IDs, HTTPS-Adresse oder erfolgreiche Railway-Abnahme dokumentiert.
 
+## Eingerichtetes James-staging
+
+Stand 01.11.2026: getrennte Ressourcen angelegt, abschliessende Betriebs- und Geraeteabnahme noch offen.
+
+| Ressource | Wert |
+| --- | --- |
+| Projekt | james-pwa / 9e1b0a24-3eb7-4906-9881-3bae2113f001 |
+| Workspace | maxandul's Projects |
+| Environment | staging / 6a3cada1-355c-4823-bc7a-c85ba2a68636 |
+| Web-Service | james-web / f7326491-f6bb-498c-a58a-9baeb7dbcc40 |
+| Datenbank-Service | Postgres / 5e61bc6e-a634-4425-b956-ddae0c7ca70d |
+| Datenbank | PostgreSQL 18, persistentes Volume |
+| Region | europe-west4-drams3a fuer beide Services |
+| HTTPS-Adresse | https://james-web-staging.up.railway.app |
+| Quellbranch | feat/household-shopping (automatische Deployments bei Push) |
+
+Railway-OAuth ist verbunden. Die fruehere CLI-DNS-Einschraenkung der Agent-Shell bleibt bestehen; Plattformaktionen erfolgen ueber die direkte Railway-Verbindung. Keine Secrets ausgelesen oder dokumentiert. Keine lokalen Vorschau-Daten uebertragen. Postgres ist nur im privaten Netzwerk verdrahtet.
+
+Einmaliger erster Zugang: im eigenen PowerShell-Terminal ausfuehren. Falls die lokale CLI noch nicht angemeldet ist, zuerst railway login ausfuehren. E-Mail, Name, Haushaltsname und Passwort werden interaktiv erfragt; Passwort nicht in Chat, Befehlsargumente oder Dokumentation kopieren.
+
+```powershell
+railway ssh --project 9e1b0a24-3eb7-4906-9881-3bae2113f001 --environment 6a3cada1-355c-4823-bc7a-c85ba2a68636 --service f7326491-f6bb-498c-a58a-9baeb7dbcc40 flask --app james init-household
+```
+
+Danach an der HTTPS-Testadresse anmelden und weitere Person ueber Zusammen nutzen einladen. Die lokale Vorschau-Anmeldung gilt hier nicht. Vor Alltagsdaten bleiben Backup/Restore, echtes Login/Einladung und Geraeteabnahme erforderlich. Ein erneutes init-household bei vorhandenem User wird abgewiesen.
+

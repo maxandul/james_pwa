@@ -96,3 +96,9 @@ Dockerfile definiert Python 3.12, nur Laufzeitabhaengigkeiten und einen Benutzer
 railway.json waehlt den Docker-Build, fuehrt Alembic als Pre-Deploy-Kommando vor dem Webstart aus und prueft /health. Fehlgeschlagene Migration verhindert den neuen Webstart. Keine Migration in jedem Worker und keine automatisch angelegten Konten. Bestehende Datenbanken brauchen weiterhin Backup und einen geprueften Rueckweg.
 
 CI baut das echte Image und prueft Gunicorn gegen isoliertes Postgres mit Produktionseinstellungen. Dieser Nachweis ersetzt keine Railway-/TLS-/Proxy-Pruefung. Erstes Ziel ist ein getrenntes James-Testprojekt mit eigenem Postgres, HTTPS-Origin und Open-Food-Facts-Testkatalog. Noch keine Railway-Ressourcen angelegt.
+
+## Eingerichtete Testinfrastruktur
+
+Das getrennte Projekt james-pwa liegt im Workspace maxandul's Projects, Environment staging. james-web und Postgres befinden sich in europe-west4-drams3a. Postgres verwendet das aktuelle Railway-Template mit Version 18 und persistentem Volume; deshalb prueft die aktuelle CI ebenfalls Postgres 18 (fruehere Laeufe nutzten 16). Der Web-Service nutzt ausschliesslich die private DATABASE_URL-Referenz; es wurde kein oeffentlicher Datenbankproxy angelegt.
+
+HTTPS-Testdomain: https://james-web-staging.up.railway.app. Der Web-Service folgt feat/household-shopping; Pushes loesen Deployments aus. APP_ENV=production aktiviert die sicheren Cookie-/Konfigurationsregeln auch in staging. Produktvorschlaege verwenden weiterhin den Testkatalog. Pre-Deploy wendet Migrationen an und verifiziert db current sowie db check. Keine Benutzer automatisch angelegt; erster Owner per interaktiver CLI.
