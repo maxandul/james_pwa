@@ -99,19 +99,14 @@ def item_action(item_id):
 @main.app_context_processor
 def undo_context():
     event = None
-    label = None
-    if getattr(g, "household", None) and request.endpoint in {"main.home", "main.shopping"}:
-        # Persistent across navigation, but never offer an older action in place
-        # of a latest action that was undone or superseded by another member.
-        latest = db.session.scalar(select(Activity).where(
-            Activity.household_id == g.household.id,
-            Activity.user_id == current_user.id).order_by(Activity.id.desc()).limit(1))
-        if latest and latest.action != "undo" and not latest.reversed_by_id and latest.version_after == latest.item.version:
-            event = latest
-            labels = {"replenish": "Zum Nachkaufen vorgemerkt", "empty": "Als leer markiert",
-                "extra": "Zusätzliche Menge erfasst", "purchase": "Als gekauft markiert"}
-            label = labels.get(event.action, "Einkaufsliste aktualisiert")
-    return {"undo_event": event, "undo_label": label}
+    if getattr(g, "household", None):
+        activity_id = request.args.get("undo", type=int)
+        if activity_id:
+            event = db.session.scalar(select(Activity).join(HouseholdItem).where(
+                Activity.id == activity_id, Activity.household_id == g.household.id,
+                Activity.user_id == current_user.id, Activity.action != "undo",
+                Activity.reversed_by_id.is_(None), Activity.version_after == HouseholdItem.version))
+    return {"undo_event": event}
 
 
 @main.post("/activity/<int:activity_id>/undo")

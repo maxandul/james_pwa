@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='3') }}">
   <script src="{{ url_for('static', filename='app.js', v='1') }}" defer></script>
 </head>
 <body>
@@ -26,10 +26,7 @@
     <div id="offline-banner" class="notice notice--error" role="status" hidden>Keine Verbindung. Aenderungen koennen gerade nicht gespeichert werden.</div>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endwith %}
     {% if undo_event %}
-    <aside class="undo" aria-label="Deine letzte Änderung">
-      <div class="undo__details"><p class="undo__label">Deine letzte Änderung</p><p><strong>{{ undo_event.item.name }}</strong> · {{ undo_label }}</p><p class="undo__hint">Versehentlich angetippt? Hier kannst du diese Änderung zurücknehmen.</p></div>
-      <form method="post" action="{{ url_for('main.undo', activity_id=undo_event.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_id" value="{{ request_id() }}"><input type="hidden" name="version" value="{{ undo_event.version_after }}"><button class="button button--primary" type="submit">↶ Rückgängig machen</button></form>
-    </aside>
+    <div class="undo"><span>{{ undo_event.item.name }} · gespeichert</span><form method="post" action="{{ url_for('main.undo', activity_id=undo_event.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_id" value="{{ request_id() }}"><input type="hidden" name="version" value="{{ undo_event.version_after }}"><button class="button button--quiet" type="submit">Rueckgaengig</button></form></div>
     {% endif %}
     {% block content %}{% endblock %}
   </main>

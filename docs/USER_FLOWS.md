@@ -11,13 +11,13 @@ Stand: 01.11.2026. Soll-Ablaeufe mit erstem implementierten Ausschnitt. Text-Erf
 | Haushalt | Artikel, Produkte, Bestandsmodus und Nachkaufregeln |
 | Kochen | Spaeter Rezepte, Vorschlaege und Menueplan |
 
-Grosse Touch-Flaechen und kurze Wege am Tablet; gut lesbare Checkboxen auf dem Handy. Alltagsmeldungen brauchen keinen Verwaltungsdialog.
+Tablet und Handy sind die primaeren Geraete. Grosse Touch-Flaechen und kurze Wege am Tablet; gut lesbare Checkboxen auf dem Handy. Beim Fold-Handy Aussen-/Innendisplay, Orientierung und Groessenwechsel im laufenden Ablauf pruefen. Alltagsmeldungen brauchen keinen Verwaltungsdialog.
 
 ## 1. Letzte Reserve angebrochen
 
 1. Person tippt einen Favoriten an und waehlt "Nachkaufen".
 2. James legt die Standard-Nachkaufmenge als offenen Bedarf an oder verweist auf bereits offenen/geplanten Bedarf.
-3. Eine hervorgehobene Box "Deine letzte Aenderung" zeigt Artikel und Aktion mit dem Button "Rueckgaengig machen". Sie bleibt beim Wechsel zwischen Haushalt und Einkaufsliste sichtbar, solange die letzte eigene Listenaktion noch zur aktuellen Artikelversion passt.
+3. Sichtbare Rueckmeldung zeigt Artikel und Menge; Rueckgaengig ist erreichbar.
 4. Eine zweite Person sieht dieselbe Position.
 
 Wiederholtes Antippen oder ein Netzwerk-Retry darf keine weitere Position erzeugen. Eine gewuenschte Zusatzmenge wird ausdruecklich erfasst. Bei einem bereits bestellten Artikel zeigt James den Lieferstatus; neuer Bedarf bleibt bewusst hinzufuegbar.
