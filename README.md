@@ -43,3 +43,7 @@ Der erste praktische Browser-Test bestaetigt Produktsuche bei Coop und Galaxus s
 Vor Umsetzung das Konzept und die zum Paket passenden Dokumente lesen. Neue Entscheidungen und erreichte Abnahmekriterien in der Dokumentation nachfuehren. Shop-Tests immer mit Umgebung, Datum, Ergebnis und Grenzen dokumentieren.
 
 Dokumentations- und Feature-Aenderungen ueber Branch und Pull Request. Keine Zugangsdaten, Cookies, privaten Haushaltsdaten oder Bestelldetails im Repository speichern.
+
+## HTTPS-Vorschau vorbereiten
+
+Dockerfile und railway.json enthalten Produktionsstart, Pre-Deploy-Migration und Healthcheck. Die CI prueft das echte Containerimage gegen isoliertes Postgres. Die konkrete Einrichtung der getrennten Railway-Testumgebung steht im [Runbook](docs/RUNBOOK.md#konkrete-https-testumgebung-vorbereiten). Noch keine oeffentliche James-Instanz eingerichtet.

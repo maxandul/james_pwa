@@ -39,3 +39,5 @@ Listenfilter und Suchbegriff bleiben nach Kartenaktionen erhalten. Breiten-/Orie
 - Beim Sperren von Absende-Schaltflaechen den Namen/Wert von event.submitter als verstecktes Feld erhalten; sonst geht die explizite Katalogaktion verloren.
 
 Scan-Kontext: flow ist ausschliesslich create/assign/replenish; Ruecksprungziele werden serverseitig aus benannten Routes erzeugt, keine freie Return-URL. context_item_id bei assign wird bei jedem GET/POST erneut gegen den Haushalt geprueft. Bei Registrierung hat dieses gepruefte Ziel Vorrang vor item_id. Kontext bleibt in Formularen einschliesslich Katalogsuche und Fehlerkorrektur erhalten. Erfassen/Zuordnen bietet keine Kaufbuchung an.
+
+Deployment-Konfiguration wird mit dem Code versioniert: Dockerfile fuer die Laufzeit, railway.json fuer Build/Migration/Healthcheck. Container kopieren nur explizite Laufzeitpfade; keine lokalen Daten oder Secrets. CI prueft den gebauten Container mit Produktionseinstellungen gegen ausschliesslich isoliertes Postgres. scripts/check_deployment.py fuehrt nur oeffentliche Lesezugriffe ohne Anmeldedaten aus.

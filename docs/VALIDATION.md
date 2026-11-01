@@ -61,3 +61,9 @@ Postgres-CI prueft zusaetzlich gleichzeitige Erstregistrierung und konkurrierend
 ## Scan als Prozesshilfe
 
 Sechs zusaetzliche Integrationstests pruefen die Einstiege ohne Scan-Tab, Artikelanlage mit Rueckkehr und ohne Kauf, festes Artikelziel bei Zuordnung, fremde Kontextartikel, bestehende andere Zuordnungen sowie Kontexterhalt bei ungueltigem Code und Katalogfehler. Keine Schemaaenderung. Vollstaendige Pruefung inklusive Postgres ueber PR #2 / Checks. Visuelle Geraeteabnahme bleibt offen.
+
+## Deployment-Vorbereitung
+
+Dockerfile und railway.json sind fuer getrennten James-Testbetrieb vorbereitet. CI baut das Produktionsimage, startet den echten Gunicorn-Prozess gegen isoliertes Postgres und prueft Health, Login-HTML samt CSRF, no-store, CSP, HSTS und Secure/HttpOnly/SameSite-Cookie. Ergebnisse im aktuellen PR-Check.
+
+Lokal kein Docker-Befehl verfuegbar; kein lokaler Image-Build behauptet. Railway-CLI 5.28.0 startet, aber whoami/list scheitern an DNS fuer backboard.railway.com. Keine Railway-Ressource erstellt und keine Deployment- oder produktive DB-Aktion ausgefuehrt. Railway-Verbindung, HTTPS-/Proxy-Verhalten und echte Geraete bleiben offen.

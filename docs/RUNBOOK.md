@@ -73,3 +73,31 @@ OPENFOODFACTS_USER_AGENT identifiziert die App mit Versions-/Kontaktangabe; Stan
 Kamera braucht einen sicheren Browserkontext (HTTPS oder localhost) und BarcodeDetector-Unterstuetzung. Ein Handy erreicht ueber localhost nicht den PC. Fuer reale Geraetepruefung HTTPS-Vorschau bereitstellen; manuelle Eingabe bleibt als Rueckfallebene.
 
 JavaScript-Pruefung mit Node: `node --test tests/scanner.test.cjs`. Simuliert Kameralebenszyklus, spaete Berechtigungen/Ergebnisse und benannte Formularaktionen; kein Hardwaretest.
+
+## Konkrete HTTPS-Testumgebung vorbereiten
+
+Dateien: Dockerfile, .dockerignore und railway.json. Keine zusaetzliche Start-Command-Ueberschreibung im Railway-Dashboard notwendig. Das Image startet Gunicorn, die Railway-Konfiguration wendet Migrationen als Pre-Deploy an und erwartet /health innerhalb 120 Sekunden. Bei Migrationsfehlern das Deployment untersuchen, nicht durch einen zweiten Webstart umgehen.
+
+1. Separates Railway-Projekt James mit eigener Testumgebung, eigenem Web-Service und Postgres erstellen. Keine bestehenden Gourmen-Ressourcen verbinden. EU-Region fuer beide Services waehlen, sofern im Workspace verfuegbar.
+2. Web-Service mit maxandul/james_pwa verbinden, fuer diese Vorschau Branch feat/household-shopping. Nach spaeterem Merge bewusst auf main umstellen. Repository-Zugriff und Railway-Workspace muessen bestaetigt verfuegbar sein.
+3. Oeffentliche Railway-Domain erzeugen und diese HTTPS-Adresse als PUBLIC_BASE_URL setzen. Noch keine eigene DNS-Domain erforderlich.
+4. Variablen im Web-Service setzen:
+
+| Variable | Testumgebung |
+| --- | --- |
+| APP_ENV | production (sichere Cookies und Postgres-Pflicht auch in der Vorschau) |
+| DATABASE_URL | Railway-Referenz auf den privaten Postgres-Service, z.B. ${{Postgres.DATABASE_URL}} |
+| SECRET_KEY | Eigener zufaelliger Wert, mindestens 32 Zeichen; sicher erzeugen und nur in Railway speichern |
+| PUBLIC_BASE_URL | Exakter HTTPS-Origin der erzeugten Domain |
+| OPENFOODFACTS_ENVIRONMENT | staging fuer die technische Vorschau |
+| OPENFOODFACTS_USER_AGENT | App-/Versionsangabe mit Maintainer-Kontakt; kein Geheimnis |
+
+5. Deployment starten. Pre-Deploy-/Build-Logs und erwarteten Git-Commit kontrollieren. Im explizit angegebenen James-Projekt/Environment/Web-Service db current und db check ausfuehren. Keine Variablenwerte oder DB-URLs in Logs/Chat kopieren.
+6. Ersten Owner mit dem interaktiven init-household-Kommando im James-Web-Service einrichten; Passwort verdeckt eingeben. Keine eingebauten Demo-Zugaenge und keine automatische Uebernahme der lokalen Vorschau-Daten.
+7. `python scripts/check_deployment.py https://DEINE-DOMAIN` prueft Health, Anmeldeseite, CSRF-Feld, Cache-/Sicherheitsheader und sichere Sitzungscookies ohne Zugangsdaten. Das Skript prueft keine Anmeldung oder TLS-Terminierung hinter dem Proxy im Detail.
+8. Auf echten Geraeten anmelden, persoenliche Einladung oeffnen, gemeinsamen Bedarf erfassen, Seite neu laden, Rueckgaengig, Scan-Berechtigung und Kamera pruefen. Beide Fold-Displays, Drehen und Tablet einschliessen. Bei Scan-Ausfall manuelle Eingabe pruefen. Hinter Railway besonders IP-Loginlimits und Proxy-Header beobachten; kein pauschales ProxyFix ohne geklaerte Vertrauenskette.
+
+Vor privaten Alltagsdaten Backup/Restore in isolierter Datenbank nachweisen. Bis dahin nur Testdaten verwenden. Downgrade oder Zuruecksetzen einer befuellten Datenbank nicht als Deployment-Reparatur ausfuehren.
+
+Stand dieser Vorbereitung: Railway-CLI ist installiert, aber ihr API-Host ist aus der Agent-Shell nicht aufloesbar. Ein direkter Railway-Zugang muss noch verbunden werden. Deshalb noch keine Projekt-/Service-IDs, HTTPS-Adresse oder erfolgreiche Railway-Abnahme dokumentiert.
+

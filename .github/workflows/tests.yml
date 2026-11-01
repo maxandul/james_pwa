@@ -45,3 +45,22 @@ jobs:
           APP_ENV: development
           SECRET_KEY: ci-only-secret-key-not-for-real-deployment
           DATABASE_URL: postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
+      - name: Build production image
+        run: docker build --tag james-ci .
+      - name: Start production image against isolated Postgres
+        run: >-
+          docker run --detach --name james-smoke --network host
+          --env APP_ENV=production
+          --env PORT=8765
+          --env SECRET_KEY=ci-only-secret-key-not-for-real-deployment
+          --env PUBLIC_BASE_URL=https://james-ci.example.test
+          --env OPENFOODFACTS_ENVIRONMENT=staging
+          --env DATABASE_URL=postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
+          james-ci
+      - name: Check real Gunicorn process and production headers
+        run: python scripts/check_deployment.py http://127.0.0.1:8765
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs james-smoke 2>/dev/null || true
+          docker rm --force james-smoke 2>/dev/null || true

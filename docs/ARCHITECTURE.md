@@ -88,3 +88,11 @@ scanner.js verwendet ausschliesslich den nativen BarcodeDetector und getUserMedi
 catalog.py fragt Open Food Facts nur auf ausdruecklichen Wunsch mit dem Barcode ab, ohne Haushaltsdaten oder Bilder. Feste HTTPS-Hosts, keine Weiterleitungen, drei Sekunden Timeout und begrenzte Antwortgroesse. Oeffentliche Vorschlaege werden getrennt von Haushaltsdaten einen Tag gecacht, fehlende Treffer eine Stunde. Ein Datenbank-Gate begrenzt ausgehende Abfragen pro Umgebung auf eine alle fuenf Sekunden ueber alle Worker. Entwicklungsumgebung nutzt standardmaessig den Testkatalog; Konfiguration siehe RUNBOOK.md. Externe Vorschlaege bleiben manuell zu pruefen.
 
 Der Scanner ist als kontextbezogene Hilfsseite ohne eigenen Navigationstab integriert. scan.py erhaelt den Zweck Artikelanlage/Nachkaufen/Artikelzuordnung in expliziten Formularfeldern und erzeugt ausschliesslich lokale Ruecksprungziele. Zuordnungen aus der Artikelpflege sind an deren erneut geprueften Haushaltsartikel gebunden. Kein Schemawechsel.
+
+## Vorbereitetes Railway-Deployment
+
+Dockerfile definiert Python 3.12, nur Laufzeitabhaengigkeiten und einen Benutzer ohne Root-Rechte. Explizite COPY-Pfade und .dockerignore halten lokale Datenbanken, Secrets, Tests und Vorschau-Daten aus dem Image. Gunicorn startet wsgi:app mit zwei Workern und Railway-PORT (lokaler Containerstandard 8080).
+
+railway.json waehlt den Docker-Build, fuehrt Alembic als Pre-Deploy-Kommando vor dem Webstart aus und prueft /health. Fehlgeschlagene Migration verhindert den neuen Webstart. Keine Migration in jedem Worker und keine automatisch angelegten Konten. Bestehende Datenbanken brauchen weiterhin Backup und einen geprueften Rueckweg.
+
+CI baut das echte Image und prueft Gunicorn gegen isoliertes Postgres mit Produktionseinstellungen. Dieser Nachweis ersetzt keine Railway-/TLS-/Proxy-Pruefung. Erstes Ziel ist ein getrenntes James-Testprojekt mit eigenem Postgres, HTTPS-Origin und Open-Food-Facts-Testkatalog. Noch keine Railway-Ressourcen angelegt.
