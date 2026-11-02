@@ -244,6 +244,8 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         sync_sources(item, restore_ids=restored_sources)
     else:
         raise ValueError("Unbekannte Aktion.")
+    from .planning import clamp_reservations
+    clamp_reservations(item, need)
     # Version advances even when only ShoppingNeed changed, or the action was a no-op.
     item.version += 1
     db.session.flush()

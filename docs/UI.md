@@ -116,3 +116,8 @@ Artikelpflege fuehrt zu Produkte und Einkaufsorte: Varianten mit Marke/Packung/o
 | shopping-product | Gewaehlte Variante, Packungszahl und sichtbare Mehrmenge |
 
 CSS-/App-JS-Referenzversion 8, PWA-JS 2, Store-JS 1, Shell-Cache james-shell-v3. Offline-Snapshot zeigt alle Einkaufsorte als Text. Produkt-/Shop-Auswahl ist online; keine neuen Offline-Schreibaktionen. Geraeteabnahme fuer dieses Paket bleibt offen.
+
+
+## Einkaufsvorhaben
+
+Kein neuer Haupttab: Einstieg in der Einkaufsliste. Einkaufsort waehlen, offene Artikel mit frei verfuegbarer Menge markieren, Vorschlag speichern. Karten mit originaler und noch eingeplanter Menge, gerundeten Packungszahlen aus explizitem Inhalt und Produktlinks. Textliste kopieren oder per nativer Teilen-Funktion weitergeben. Bei fehlender Zuordnung bleibt die Produktwahl sichtbar offen. Bestellbestaetigung ist ein eigener aufklappbarer Schritt mit expliziter Checkbox; Kauf und Wareneingang bleiben getrennt. Auf Handy/Tablet bestehende gestapelte Formularkarten verwenden.

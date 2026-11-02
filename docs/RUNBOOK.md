@@ -174,3 +174,14 @@ Erkennung ist ein Vorschlag: Kopf-/Fusszeilen koennen als Kandidaten erscheinen,
 Bestaetigung sperrt zuerst den Haushalt und prueft signierte Artikelversionen. Alle Buchungen gemeinsam oder keine. Dieselbe Datei/derselbe normalisierte Text wird nur einmal pro Haushalt angelegt; identische legitime Belege ohne Datum muessen unterscheidbaren Belegtext besitzen. Quittungen verbleiben nach Ruecknahme gesperrt gegen erneutes Verbuchen. Gesammelte Ruecknahme nur ohne zwischenzeitliche Artikelaenderungen; neu angelegte Artikel bleiben erhalten.
 
 Pruefung: python -m pytest -q; node --test tests/scanner.test.cjs tests/pwa.test.cjs; python scripts/check_receipt_tools.py fuer echte synthetische PDF/JPEG/PNG-Erkennung. CI prueft das native OCR auch im Produktionsimage. Reale Coop-/Migros-Bons und Fold/Tablet weiter praktisch abnehmen.
+
+
+## Einkaufsvorhaben
+
+Neue additive Migration d6e2f6837481 nach 9172cfe4fad4 erstellt purchase_plan. Vorbereitung reserviert offene Artikeleinheiten unter der Haushaltssperre. Bedarf und Bestand bleiben unveraendert. Zwei gleichzeitige Vorhaben duerfen dieselben Bedarfsmengen nicht doppelt reservieren. Produkt-/Angebotsversionen und Artikeleinheiten werden bei Erstellung geprueft; gespeicherte Vorhaben behalten ihre Produkt-/Packungssnapshots.
+
+Einstieg Einkaufsliste → Einkauf vorbereiten. Shop waehlen, Artikel markieren, Menge bestaetigen, Vorhaben speichern. Konkrete Produkte/Packungszahlen und Shoplinks koennen manuell uebertragen, als Text kopiert oder mit der nativen Teilen-Funktion geteilt werden. Keine automatische Warenkorbbefuellung, keine Preise/Verfuegbarkeitsgarantie. Manuell bestaetigter Status bestellt fuehrt keinen Checkout und keinen Wareneingang aus. Beenden/Verwerfen gibt Reservierungen frei; es storniert nichts im Shop.
+
+Kauf, Belegimport oder Entfernen begrenzen verbleibende Reservierungen auf den noch offenen Bedarf (aelteste Vorhaben zuerst). Dabei wird nicht behauptet, welcher Bestellung eine Lieferung zugehoert. Nach erneutem Nachkaufen oder Ruecknahme werden freigegebene Reservierungen nicht automatisch reaktiviert. Neue Plaene bewusst pruefen. Versionswechsel verhindert das Ueberschreiben mit alten Statusformularen. Direkte Teil-/Lieferzuordnung bleibt spaeterer Ausbau.
+
+Pruefung: pytest inkl. Haushaltsgrenzen, Replay, parallelen Reservierungen, Kauf-/Beleg-/Entfernen-Pfaden, Ruecknahme und Packungsrundung. Keine private Shop-Sitzung verfuegbar; angemeldete Native-Uebergabe ist kein bestandenes Abnahmekriterium dieses Teilschritts.
