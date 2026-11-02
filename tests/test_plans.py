@@ -139,3 +139,14 @@ def test_multirow_plan_failure_rolls_back_all_reservations(app, client):
     assert client.post('/plans', data=data).status_code == 409
     with app.app_context():
         assert reservations(home) == {}
+
+
+def test_selected_item_disappearing_from_candidates_rejects_entire_plan(app, client):
+    item_id, home, user, shop = setup_plan(app, client)
+    data = plan_form(client, shop, **{f'include_{item_id}': '1', f'quantity_{item_id}': '1'})
+    with app.app_context():
+        change_item(home, user, item_id, 'remove', str(uuid4()), 2)
+        db.session.commit()
+    assert client.post('/plans', data=data).status_code == 409
+    with app.app_context():
+        assert len(db.session.scalars(select(PurchasePlan)).all()) == 0

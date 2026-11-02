@@ -63,8 +63,16 @@ def create_plan(household_id, source_id, review, data):
     if existing:
         return existing
     version_matches(source, review.get('source_version'))
+    try:
+        requested = {int(key.removeprefix('include_')) for key, value in data.items()
+            if key.startswith('include_') and value == '1'}
+    except ValueError:
+        raise ValueError('Bitte gueltige Artikel auswaehlen.') from None
+    rows = candidates(household_id, source)
+    if not requested.issubset({item.id for item, _, _ in rows}):
+        raise Conflict('Ein ausgewaehlter Artikel ist nicht mehr offen oder fuer diesen Laden verfuegbar. Bitte neu pruefen.')
     lines = []
-    for item, need, available in candidates(household_id, source):
+    for item, need, available in rows:
         if data.get(f'include_{item.id}') != '1':
             continue
         version_matches(item, review.get('versions', {}).get(str(item.id)))
