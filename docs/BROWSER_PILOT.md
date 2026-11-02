@@ -5,7 +5,48 @@ PR #8 ist gemergt und das schwebende Chatfenster vom Nutzer bestaetigt.
 Der bestehende API-Schluessel wird wiederverwendet. Layout bleibt ausserhalb
 dieses Arbeitsschritts.
 
-## Vorbereiteter Einzeltest: Freigabe noch ausstehend
+## Aktueller Stand: echter Agents-API-Warenkorbtest erfolgreich
+
+Nach der ausdruecklichen Freigabe "Ich erlaube diesen einmaligen API-Test ohne
+hartes Geldlimit" wurde exakt ein prepare-Lauf mit dem vorhandenen Schluessel
+ausgefuehrt. Der Aufruf erfolgte aus der Entwicklungsumgebung; Browser und
+Agent liefen in einer neuen OpenAI-gehosteten Sitzung mit `gpt-6-astra`.
+Kein manueller Eingriff ueber CUA in diesen API-Lauf.
+
+Der Hauptturn schloss innerhalb des vorgesehenen Beobachtungsfensters ab:
+`turn_completed`, 25 abgeschlossene Browseraufrufe, vier erhaltene Screenshots.
+Der letzte gespeicherte Screenshot wurde separat vom aufrufenden Assistenten
+visuell geprueft. Er zeigt genau diese drei Zeilen und Mengen:
+
+| Produkt | Packung | Galaxus-ID laut Agentenbericht | Sichtbare Menge |
+| --- | --- | --- | --- |
+| Cirio Pizza Sauce | 400 g | 37264242 | 1 |
+| Barilla Spaghetti n.5 | 500 g | 14730798 | 1 |
+| bluu Universal detergent sheets | 60 Waschgaenge | 14684120 | 2 |
+
+![Echter Agents-API-Warenkorb mit Mengen 1/1/2](evidence/galaxus-agents-api-cart-2026-11-02.jpg)
+
+Namen, Packungen und Mengen sind im Bild sichtbar. Die Artikelkennungen
+stammen aus dem Agentenbericht und den darin genannten Produktlinks, nicht
+aus dem Screenshot. Der Agent berichtete einen leeren Ausgangswarenkorb;
+auch der erste waehrend des Laufs separat betrachtete Screenshot zeigte
+einen leeren Gastwarenkorb. Keine anderen Positionen wurden uebernommen.
+
+Der Agent meldete, er habe den Warenkorb offengelassen. Das beschreibt nur
+den letzten Browserzustand: Der aufrufende Code hat anschliessend die
+Sitzung wie vereinbart geloescht; die API bestaetigte die Loeschung
+(`cleanup=deleted`). Der Gastwarenkorb ist damit keine dauerhafte Uebergabe
+und nicht auf dem persoenlichen Geraet verfuegbar. Keine Anmeldung, kein
+Checkout und keine Bestellung. Keine automatische Wiederholung gestartet.
+
+Die einmalige Freigabe ist verbraucht. Tatsaechliche Kosten dieses einzelnen
+Laufs wurden nicht separat abgerufen oder verifiziert; ein fester Geldbetrag
+war ausdruecklich nicht garantiert. Dieser kleine Funktionsnachweis belegt
+keine statistische Zuverlaessigkeit, sichere Anmeldung, Wiederholungsfestigkeit,
+Geraeteuebergabe oder Ausfuehrung aus Railway. Der laufende James-Chat wurde
+nicht geaendert oder mit einem Browserwerkzeug verbunden.
+
+## Einzeltest: ausdruecklich freigegeben und erfolgreich ausgefuehrt
 
 Die Nutzer-Screenshots bestaetigen fuer das einzige API-Projekt (Default
 project) ausdruecklich "Ausgabenlimit nicht verfuegbar". ChatGPT-Projekte
@@ -24,14 +65,15 @@ Auch bei fruehem Abschluss wird sie geloescht. Netzwerkfehler koennen
 Abbruch/Bereinigung verzoegern oder verhindern; ein fester Geldbetrag wird
 dadurch **nicht** garantiert. Offene Bereinigung muss gemeldet werden.
 
-Diese Option wurde nur mit Mocks getestet. Kein kostenpflichtiger Lauf
-ausgefuehrt; Nutzerfreigabe steht aus. Eine spaetere Freigabe darf nicht als
+Die Option wurde zunaechst nur mit Mocks getestet. Anschliessend gab der Nutzer
+den einmaligen API-Test ohne hartes Geldlimit ausdruecklich frei (Ergebnis unten).
+Diese Freigabe darf nicht als
 dauerhafte Erlaubnis fuer weitere Tests oder unbegrenzte Ausgaben interpretiert
 werden. Die vorherige automatische Ablehnung wird damit nicht umgangen:
 Eine Ausfuehrung benoetigt neue, konkrete Nutzerautorisierung und die
 erneute Werkzeugpruefung.
 
-## Aktueller Stand: Gastwarenkorb praktisch bestaetigt
+## Erster Nachweis: Gastwarenkorb ueber CUA praktisch bestaetigt
 
 Der Nutzer hat die Produktauswahl fuer den Proof of Concept ausdruecklich
 delegiert. In der verfuegbaren ChatGPT-Browserschnittstelle (CUA), **nicht aus
@@ -64,7 +106,7 @@ Der Gastwarenkorb wurde fuer die Sichtpruefung offengelassen. Seine URL
 `https://www.galaxus.ch/de/cart` uebertraegt weder Cookies noch Warenkorbinhalt
 auf das persoenliche Geraet. Das bleibt ein eigener Test.
 
-## Agents-API-Grenze und Kostenfreigabe
+## Fruehere Agents-API-Grenze vor der Einzelgenehmigung
 
 Ein neuer Cart-Pilot mit `spend_control={"limit":300}` wurde mit HTTP 400,
 `unknown_parameter`, Parameter `spend_control` abgelehnt. Die aktuelle offizielle
@@ -75,16 +117,17 @@ die automatische Sicherheitspruefung wegen moeglicher unbegrenzter
 API-/Sandboxkosten abgelehnt. Dieser Weg wurde nicht umgangen.
 
 Die anschliessende reine API-Bestandspruefung fand keine Cart-POC-Sitzung mit
-den eindeutigen Pilotinstruktionen. Es wurde kein API-Warenkorbauftrag
+den eindeutigen Pilotinstruktionen. Bis zur nachfolgenden Einzelgenehmigung war kein API-Warenkorbauftrag
 nachgewiesen. Die Browserprobe verlangt jetzt vor jeder Eingabe ein vom
 Server zurueckgeliefertes Limit von hoechstens 300 US-Cents. Eine neu erzeugte
 Sitzung ohne bestaetigtes Limit wird wieder geloescht, auch wenn Aufbewahrung
 angefordert wurde. Kein stiller Fallback auf unbegrenzte Sitzungen.
 
 Das vorbereitete Betreiberwerkzeug `scripts/jayjay_cart_poc.py` bietet die
-Phasen `prepare`, `recheck`, `verify` und `close` in derselben Sitzung. Es ist
-**noch nicht live abgenommen** und startet derzeit wegen der Kosten-Grenze
-keinen Warenkorbauftrag. Keine Anbindung als Chatwerkzeug oder Webroute.
+Phasen `prepare`, `recheck`, `verify` und `close` in derselben Sitzung. Der ausdruecklich freigegebene prepare-Einzeltest ist inzwischen live
+abgenommen; recheck/verify und der normale Modus mit serverseitigem Limit
+sind weiterhin nicht live abgenommen. Ohne gesonderte Freigabe startet der
+normale Modus wegen der Kosten-Grenze keinen Warenkorbauftrag. Keine Anbindung als Chatwerkzeug oder Webroute.
 Das Budget gilt pro Sitzung, die sechs Minuten sind nur das Beobachtungsbudget
 pro Turn; sie sind keine Garantie, dass ein unterbrochener Serverturn endet.
 

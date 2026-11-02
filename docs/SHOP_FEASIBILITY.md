@@ -114,3 +114,22 @@ abgelehnt. Die Implementierung verlangt jetzt ein bestaetigtes Limit.
 Persoenliches Konto, sichere Anmeldung, Geraeteuebergabe und automatischer
 Wiederholungs-/Parallelitaetstest bleiben offen. Details und Bildbeleg:
 [BROWSER_PILOT.md](BROWSER_PILOT.md).
+
+## Aktualisierung 02.11.2026: einmalig freigegebener Agents-API-Cart-Pilot
+
+Nach ausdruecklicher Freigabe eines einmaligen Tests ohne hartes Geldlimit
+hat der API-Agent selbst eine neue OpenAI-gehostete Galaxus-Gastsitzung
+verwendet und genau drei Positionen vorbereitet: bluu 14684120 (60
+Waschgaenge) x2, Barilla Spaghetti 14730798 (500 g) x1, Cirio Pizza Sauce
+37264242 (400 g) x1. Ein abgeschlossener Hauptturn, 25 Browseraufrufe und
+vier Screenshots wurden empfangen. Der letzte Screenshot wurde unabhaengig
+vom Modellbericht auf alle drei Produktnamen, Packungen und Mengen geprueft.
+Die Produktkennungen stehen im Agentenbericht, nicht im Screenshot.
+
+Keine Anmeldung, kein Checkout, keine Bestellung. Die API bestaetigte die
+anschliessende Loeschung der Sitzung. Kein dauerhaft oder persoenlich
+uebergebener Warenkorb; kein Railway-Nachweis. Keine weitere Ausfuehrung
+von dieser Einzelgenehmigung gedeckt. Die Kostenlimit-Funktion bleibt am
+vorhandenen Endpunkt nicht verfuegbar; der Erfolg hebt diese Grenze nicht auf.
+Der Einzeltest ist ein Funktionsnachweis, keine Zuverlaessigkeitsmessung.
+Bild und Details: [BROWSER_PILOT.md](BROWSER_PILOT.md).
