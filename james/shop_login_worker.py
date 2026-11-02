@@ -30,6 +30,15 @@ def cleanup(run_id):
     run = db.session.get(ShopLogin, run_id)
     if not run or run.state == 'closed':
         return True
+    if not run.outcome:
+        if run.state == 'unknown':
+            run.outcome = 'submission_unknown'
+        elif run.state == 'cancelled':
+            run.outcome = 'cancelled'
+        elif run.expires_at <= utcnow():
+            run.outcome = 'expired'
+        if run.outcome:
+            db.session.commit()
     if not run.session_id and not run.creation_started_at:
         run.state, run.active_user_id, run.active_household_id = 'closed', None, None
         db.session.commit()
@@ -68,6 +77,10 @@ def login_handler(app, run_id):
     used_roles = set()  # Never retry an account field in this session, even under a new request ID.
     def handle(approval, client, session_id):
         if approval.request.credential_origin != 'https://www.galaxus.ch':
+            with app.app_context():
+                db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
+                    ShopLogin.session_id == session_id).values(auth_progress='origin_rejected'))
+                db.session.commit()
             raise ValueError('Unbekanntes Anmeldeziel.')
         with app.app_context():
             run = db.session.get(ShopLogin, run_id)
@@ -77,6 +90,7 @@ def login_handler(app, run_id):
             run.request_id, run.turn_id = approval.request_id, approval.turn_id
             run.challenge_expires_at = min(run.expires_at, utcnow() + timedelta(seconds=120))
             run.state = 'pending'
+            run.auth_progress = 'request_seen'
             db.session.commit()
             # Read the current registered request rather than trusting a stale stream event.
             schema = challenge(run)
@@ -102,13 +116,15 @@ def login_handler(app, run_id):
                         'request_id': approval.request_id, 'response': response}])
                 except Exception:
                     db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
-                        ShopLogin.state == 'submitting').values(state='unknown'))
+                        ShopLogin.state == 'submitting').values(state='unknown', auth_progress='submission_unknown'))
                     db.session.commit()
                     raise ValueError('Ausgang der Anmeldung unklar; keine Wiederholung.') from None
                 db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
-                    ShopLogin.state == 'submitting').values(state='accepted'))
+                    ShopLogin.state == 'submitting').values(state='accepted', auth_progress='credentials_submitted'))
                 db.session.commit()
                 return
+            run.auth_progress = 'manual_step'
+            db.session.commit()
             db.session.rollback()
         until = monotonic() + 120
         while monotonic() < until:
@@ -123,6 +139,10 @@ def login_handler(app, run_id):
             if state not in ('pending', 'submitting'):
                 raise ValueError('Anmeldung abgebrochen oder Ausgang unklar.')
             Event().wait(1)
+        with app.app_context():
+            db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
+                ShopLogin.state == 'pending').values(auth_progress='manual_expired'))
+            db.session.commit()
         raise ValueError('Anmeldeanforderung abgelaufen.')
     return handle
 
@@ -136,6 +156,12 @@ def execute_run(app, run_id):
             or not app.config.get('GALAXUS_EMAIL') or not app.config.get('GALAXUS_PASSWORD')
             or run.expires_at <= utcnow()):
         if run:
+            run.outcome = ('disabled' if not app.config['SHOP_LOGIN_PILOT_ENABLED'] else
+                'consent_missing' if not run.cost_authorized_at else
+                'access_revoked' if not identity_valid(run) else
+                'account_unbound' if not account_bound(run.household_id) else
+                'credentials_missing' if not app.config.get('GALAXUS_EMAIL') or not app.config.get('GALAXUS_PASSWORD') else
+                'expired' if run.expires_at <= utcnow() else 'cancelled')
             run.state = 'cancelled'
             db.session.commit()
             cleanup(run_id)
@@ -190,6 +216,8 @@ def execute_run(app, run_id):
         finally:
             stop.set()
             watcher.join(timeout=2)
+            if result:
+                save_result(run_id, result)
             if result and result.get('cleanup') in ('deleted', 'not_created'):
                 db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id)
                     .values(state='closed', active_user_id=None, active_household_id=None))
@@ -197,7 +225,37 @@ def execute_run(app, run_id):
             else:
                 cleanup(run_id)
             state_path.unlink(missing_ok=True)
-        click.echo('Pilot beendet. Sitzungsstatus in James pruefen; Turnabschluss allein bestaetigt keinen Login.')
+        # Fixed categories only, never exception messages, provider text or identifiers.
+        observed = db.session.get(ShopLogin, run_id)
+        click.echo('Pilot-Ergebnis: ' + (observed.outcome or 'unknown') +
+            '; Fehlerkategorie: ' + (observed.error_category or 'none') +
+            '; HTTP: ' + str(observed.http_status or 0) +
+            '; Browseraktionen: ' + str(observed.browser_calls or 0) +
+            '; Anmeldung: ' + (observed.auth_progress or 'not_observed'))
+
+
+def save_result(run_id, result):
+    """Persist only allowlisted technical metadata, never arbitrary result values."""
+    run = db.session.get(ShopLogin, run_id, populate_existing=True)
+    if run is None:
+        return
+    status = result.get('status')
+    outcomes = {'turn_completed', 'no_browser_evidence', 'failed', 'timeout', 'disconnected'}
+    # Preserve a locally observed cancellation/uncertain submission over a generic runner error.
+    run.outcome = ('submission_unknown' if run.state == 'unknown' else
+        'cancelled' if run.state == 'cancelled' else status if isinstance(status, str) and status in outcomes else 'failed')
+    code = result.get('http_status')
+    run.http_status = code if type(code) is int and 400 <= code <= 599 else None
+    count = result.get('browser_calls')
+    run.browser_calls = count if type(count) is int and 0 <= count <= 100000 else None
+    error = result.get('error_type')
+    stage = result.get('failure_stage')
+    run.error_category = ('api' if run.http_status else
+        'connection' if error in ('APIConnectionError', 'APITimeoutError', 'TimeoutError') else
+        'request_validation' if error in ('ValueError', 'BadRequest', 'Gone', 'Forbidden') else
+        'internal' if error else stage if stage in ('environment_failed', 'agent_failed', 'turn_failed', 'turn_cancelled') else
+        'provider_failed' if status == 'failed' else None)
+    db.session.commit()
 
 
 
@@ -224,6 +282,10 @@ def worker_once(app):
         execute_run(app, identifier)
     except Exception:
         db.session.rollback()
+        run = db.session.get(ShopLogin, identifier)
+        if run and not run.outcome:
+            run.outcome, run.error_category = 'failed', 'internal'
+            db.session.commit()
         cleanup(identifier)
         click.echo('Anmeldetest fehlgeschlagen; gespeicherten Bereinigungsstatus pruefen.')
     return True

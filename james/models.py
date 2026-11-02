@@ -268,6 +268,11 @@ class ShopLogin(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     challenge_expires_at = db.Column(db.DateTime)
+    outcome = db.Column(db.String(32))
+    error_category = db.Column(db.String(32))
+    http_status = db.Column(db.Integer)
+    browser_calls = db.Column(db.Integer)
+    auth_progress = db.Column(db.String(24))
     __table_args__ = (db.UniqueConstraint('user_id', 'start_request_id', name='shop_login_user_start'),
         db.CheckConstraint(
         "state IN ('queued','creating','running','pending','submitting','accepted','cancelled','unknown','closed','cleanup_pending')",

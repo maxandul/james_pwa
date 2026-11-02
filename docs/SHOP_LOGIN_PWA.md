@@ -1,8 +1,10 @@
 # Gemeinsames Galaxus-Konto im PWA-Anmeldepilot
 
-Implementiert, noch nicht auf Railway bereitgestellt oder aktiviert. Kein neuer
-kostenpflichtiger API-Test in dieser Etappe. Der einmalig genehmigte
-Gastwarenkorbtest bleibt der bisherige Live-Nachweis.
+Der Anmeldepilot ist nach ausdruecklicher Freigabe auf Railway in `staging`
+bereitgestellt und aktiviert. Die Shop-Zugangsdaten wurden vom Nutzer direkt
+im Worker hinterlegt; ihre Werte wurden nicht ausgelesen. Ein erster
+PWA-Anmeldetest endete mit der bisherigen unspezifischen Abschlussmeldung.
+Ein erfolgreicher Kontologin ist damit weiterhin nicht nachgewiesen.
 
 ## Ziel und aktueller Umfang
 
@@ -65,7 +67,11 @@ Nach einer unklaren Uebermittlung wird abgebrochen und bereinigt.
 
 `ShopLogin` speichert nur Auftrag, Person, Haushalt, Auth-Version,
 API-Sitzungs-/Anforderungsreferenzen, Fristen, Kostenfreigabe und Zustand. Keine
-Passwoerter, Codes, Cookies, Modelltexte oder Bilder. Private Seiten verwenden
+Passwoerter, Codes, Cookies, Modelltexte oder Bilder. Zusaetzlich werden
+ausschliesslich feste technische Ergebniskategorien, ein gueltiger HTTP-Fehlercode,
+die Anzahl beobachteter Browseraktionen und der Anmeldeschritt gespeichert.
+Diese Angaben bleiben nach der Sitzungsbereinigung erhalten. Freie API- oder
+Exceptiontexte werden weder gespeichert noch ausgegeben. Private Seiten verwenden
 `Cache-Control: no-store`. Authentifizierte Seiten und POSTs werden nicht vom
 Service Worker gecacht. Andere Haushaltsmitglieder sehen keine fremden
 Anmeldeformulare. Abmelden, Rechteentzug und Fristablauf loesen Abbruch aus.
@@ -102,8 +108,9 @@ flask --app james shop-login-cleanup
 
 ## Bereitstellung und Abnahme
 
-`deployment/shop-login-worker.json` ist die vorbereitete Referenz, nicht bereits
-angewandte Konfiguration. Webdienst, Datenbank und Railway wurden nicht veraendert.
+`deployment/shop-login-worker.json` dokumentiert die Bereitstellungsreferenz.
+Webdienst und Worker sind im Runtimebranch `feat/household-shopping` aktiv.
+Die folgenden Schritte beschreiben die urspruengliche kontrollierte Einrichtung.
 
 1. Tests und Migration pruefen. Migration lehnt bereits vorhandene parallele
    offene Auftraege eines Haushalts ab, statt einen still zu verwerfen.
@@ -116,3 +123,22 @@ angewandte Konfiguration. Webdienst, Datenbank und Railway wurden nicht veraende
 5. Echte Kontoanmeldung, MFA, Abbruch und Smartphone pruefen. Anschliessend den
    angemeldeten Drei-Produkte-Warenkorb und die geraeteuebergreifende Sichtbarkeit
    implementieren und abnehmen. Weiterhin kein Bestellabschluss.
+
+## Diagnose des ersten Kontotests
+
+Die urspruengliche Implementierung speicherte nur den Bereinigungszustand und
+verwarf das technische Ergebnis nach dem Lauf. `closed` bedeutet lediglich,
+dass keine offene Browsersitzung mehr zu bereinigen ist, nicht dass der Login
+erfolgreich war. Aus dem ersten Lauf kann deshalb nachtraeglich kein genauer
+Fehlergrund oder Login-Erfolg rekonstruiert werden. Die Workerlogs bestaetigen
+nur den Abschluss, ohne Ursache. Keine Vermutung ueber falsche Zugangsdaten
+oder eine Shop-Sperre als Nachweis ausgeben.
+
+Die Korrektur trennt Ergebnis und Bereinigung. Die PWA zeigt kuenftig u.a.
+Browserabschluss ohne Loginbeweis, API-Fehler, Verbindungsabbruch, Zeitablauf,
+fehlende Konfiguration oder lokale Ablehnung an. Registrierte Anmeldung,
+Uebermittlung, manueller Schritt und abweichendes Anmeldeziel werden als feste
+Stufen erfasst. Ein alter oder unterbrochener Lauf ohne Ergebnis bleibt
+ausdruecklich unbekannt. Kein automatischer neuer Test, keine Wiederholung
+von Zugangsdaten und keine Aufweichung der Origin-Grenze. Ein neuer bezahlter
+Anmeldeversuch braucht erneut die ausdrueckliche Bestaetigung in der PWA.

@@ -23,7 +23,51 @@
 {% elif run.state == 'submitting' %}<p>Uebermittlung laeuft. Bitte nicht erneut senden.</p>
 {% elif run.state == 'unknown' %}<p>Der Ausgang der Uebermittlung ist unklar. Nicht erneut senden; der Test wird abgebrochen und geprueft.</p>
 {% elif run.state == 'cleanup_pending' %}<p>Die Bereinigung der Browsersitzung ist noch offen.</p>
-{% else %}<p>Dieser Anmeldetest ist beendet oder wurde abgebrochen.</p>{% endif %}
+{% else %}<p>Die Bearbeitung dieses Tests ist abgeschlossen. Das Ergebnis steht unten.</p>{% endif %}
+{% endif %}
+{% if run.outcome or run.state in ['closed', 'cleanup_pending'] %}
+<section aria-label="Testergebnis">
+<h2>Testergebnis</h2>
+<p>{{ {
+    'turn_completed': 'Der Browserauftrag wurde beendet. Ein erfolgreicher Login ist damit noch nicht nachgewiesen.',
+    'no_browser_evidence': 'Der Auftrag endete ohne nachgewiesene Browseraktivitaet.',
+    'failed': 'Der Browserauftrag ist fehlgeschlagen.',
+    'timeout': 'Das Zeitlimit wurde erreicht. Abbruch und Bereinigung wurden angefordert.',
+    'expired': 'Der Test ist abgelaufen.',
+    'disconnected': 'Die Verbindung zum Browserauftrag wurde unterbrochen.',
+    'cancelled': 'Der Test wurde abgebrochen.',
+    'submission_unknown': 'Der Ausgang einer Eingabenuebermittlung ist unklar. Sie wurde nicht automatisch wiederholt.',
+    'disabled': 'Der Pilot war bei der Ausfuehrung deaktiviert. Kein Browserauftrag gestartet.',
+    'consent_missing': 'Die Kostenfreigabe fehlte. Kein Browserauftrag gestartet.',
+    'access_revoked': 'Die Zugangsberechtigung ist nicht mehr gueltig. Kein Browserauftrag gestartet.',
+    'account_unbound': 'Die Haushaltszuordnung passt nicht. Kein Browserauftrag gestartet.',
+    'credentials_missing': 'Die Shop-Zugangsdaten sind in der Dienstkonfiguration unvollstaendig. Kein Browserauftrag gestartet.'
+}.get(run.outcome, 'Fuer diesen aelteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestaetigt.') }}</p>
+{% if run.auth_progress %}<p>{{ {
+    'request_seen': 'Eine registrierte Anmeldeanforderung wurde erkannt.',
+    'credentials_submitted': 'Gespeicherte Zugangsdaten wurden an die registrierte Anmeldung uebermittelt.',
+    'manual_step': 'Eine manuelle Bestaetigung war erforderlich.',
+    'manual_expired': 'Die Frist fuer die manuelle Bestaetigung ist abgelaufen.',
+    'origin_rejected': 'Das Anmeldeziel wich vom freigegebenen Shop ab. Fuer diesen Schritt wurden keine Zugangsdaten uebermittelt.',
+    'manual_submitted': 'Manuelle Eingaben wurden uebermittelt.',
+    'submission_unknown': 'Der Ausgang der Eingabenuebermittlung ist unklar.'
+}.get(run.auth_progress, 'Der Anmeldefortschritt ist nicht nachgewiesen.') }}</p>
+{% elif run.outcome %}<p>Keine registrierte Anmeldeanforderung wurde protokolliert.</p>{% endif %}
+{% if run.http_status %}<p>OpenAI-API hat den Aufruf mit HTTP {{ run.http_status }} abgewiesen.</p>
+{% elif run.error_category %}<p>{{ {
+    'connection': 'Technischer Hinweis: Verbindungsfehler zur API.',
+    'request_validation': 'Technischer Hinweis: Eine Anforderung wurde durch die lokale Pruefung gestoppt.',
+    'internal': 'Technischer Hinweis: Interner Verarbeitungsfehler.',
+    'environment_failed': 'Technischer Hinweis: Die Browserumgebung ist fehlgeschlagen.',
+    'agent_failed': 'Technischer Hinweis: Die API hat einen Agentenfehler gemeldet.',
+    'turn_failed': 'Technischer Hinweis: Die API hat den Browserauftrag als fehlgeschlagen gemeldet.',
+    'turn_cancelled': 'Technischer Hinweis: Die API hat den Browserauftrag als abgebrochen gemeldet.',
+    'provider_failed': 'Technischer Hinweis: Die API hat keinen genaueren Fehlernachweis geliefert.',
+    'api': 'Technischer Hinweis: API-Fehler.'
+}.get(run.error_category, 'Technischer Ausgang nicht naeher bestimmbar.') }}</p>{% endif %}
+{% if run.browser_calls is not none %}<p>Beobachtete Browseraktionen: {{ run.browser_calls }}</p>{% endif %}
+{% if run.state == 'closed' %}<p>Die Bereinigung dieses Tests ist abgeschlossen.</p>{% endif %}
+</section>
 {% endif %}
 <p><a class="button button--outline" href="{{ url_for('shop_login.login', run_id=run.id) }}">Status aktualisieren</a></p>
 {% if run.state in ['queued','creating','running','pending','submitting','accepted'] %}<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit" name="action" value="cancel">Test abbrechen</button></form>{% endif %}
