@@ -147,6 +147,19 @@ def test_unknown_tool_and_extra_fields_are_rejected(app):
                 execute_tool(turn_id, user, home, name, args, {})
 
 
+def test_whitespace_cannot_bypass_existing_article_detection(app):
+    _, home, user = seed_item(app)
+    turn_id, _ = new_turn(app, user, home)
+    with app.app_context():
+        reads = {}
+        execute_tool(turn_id, user, home, 'list_items', {'query':'Kaffee','view':'active'}, reads)
+        with pytest.raises(ValueError, match='bereits vorhanden'):
+            execute_tool(turn_id, user, home, 'create_item',
+                {'name':' Kaffee ', 'unit':'Packung', 'default_quantity':1}, reads)
+        db.session.rollback()
+        assert db.session.scalar(select(func.count(HouseholdItem.id))) == 1
+
+
 def test_chat_is_private_and_escapes_user_and_model_text(app, client, monkeypatch):
     _, home, user = seed_item(app)
     enable(app)

@@ -96,6 +96,9 @@ def validate_args(name, args):
 
 def execute_tool(turn_id, user_id, household_id, name, args, reads):
     validate_args(name, args)
+    if name == 'create_item':
+        args = {**args, 'name': clean_text(args['name'], 'Artikelname', 100),
+            'unit': clean_text(args['unit'], 'Einheit', 20)}
     authorize(user_id, household_id, turn_id)
     if name == 'list_items':
         query = args['query'].casefold().strip()
