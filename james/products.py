@@ -94,7 +94,8 @@ def manage(item_id, product_id=None):
 def offer(item_id, product_id, offer_id=None):
     item = scoped_item(item_id)
     try:
-        save_offer(g.household.id, item_id, product_id, request.form, offer_id)
+        save_offer(g.household.id, item_id, product_id, request.form, offer_id,
+            expected_unit=request.form.get("item_unit", ""))
         db.session.commit()
         flash("Shop-Zuordnung gespeichert. Es wurde nichts bestellt.", "success")
         return redirect(url_for("products.manage", item_id=item_id))

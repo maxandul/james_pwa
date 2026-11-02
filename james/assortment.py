@@ -138,7 +138,7 @@ def sync_sources(item, data=None, restore_ids=None):
 
 def get_item(household_id, item_id):
     item = db.session.scalar(select(HouseholdItem).where(
-        HouseholdItem.id == item_id, HouseholdItem.household_id == household_id).with_for_update())
+        HouseholdItem.id == item_id, HouseholdItem.household_id == household_id).with_for_update().execution_options(populate_existing=True))
     if not item:
         abort(404)
     if item.archived:
@@ -210,9 +210,11 @@ def safe_url(value):
     return value
 
 
-def save_offer(household_id, item_id, product_id, data, offer_id=None):
+def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expected_unit=None):
     lock_household(household_id)
     item = get_item(household_id, item_id)
+    if expected_unit is not None and expected_unit != item.unit:
+        raise Conflict("Die Artikeleinheit wurde geaendert. Bitte neu laden und den Packungsinhalt erneut pruefen.")
     product = db.session.scalar(select(Product).where(Product.id == product_id,
         Product.household_id == household_id, Product.item_id == item_id))
     if not product:

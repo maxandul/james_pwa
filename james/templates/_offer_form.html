@@ -2,6 +2,7 @@
 {% set failed = failed_product_id is defined and failed_product_id == product.id and failed_offer_id == (offer.id if offer else none) %}
 {% set fv = offer_values if failed else {} %}
 <form method="post" class="form offer-form" action="{{ url_for('products.offer', item_id=item.id, product_id=product.id, offer_id=offer.id if offer else none) }}">
+<input type="hidden" name="item_unit" value="{{ item.unit }}">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 {% if offer %}<input type="hidden" name="version" value="{{ fv.get('version', offer.version) }}">{% endif %}
 <div class="form-grid"><label>Einkaufsort<select name="source_id" required><option value="">Bitte waehlen</option>{% for source in purchase_sources %}<option value="{{ source.id }}" {% if fv.get('source_id', offer.source_id|string if offer else '') == source.id|string %}selected{% endif %}>{{ source.name }}</option>{% endfor %}</select></label>

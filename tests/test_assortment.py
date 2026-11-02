@@ -262,3 +262,32 @@ def test_undo_unit_change_is_blocked_after_new_pack_mapping(app):
             change_item(home, user, item_id, 'undo', str(uuid4()), 2, activity_id=event_id)
         db.session.rollback()
         assert db.session.get(HouseholdItem, item_id).unit == 'Liter'
+
+
+@pytest.mark.parametrize('existing', [False, True])
+def test_offer_rejects_stale_unit_on_creation_and_reactivation(app, client, existing):
+    item_id, home, user = seed_item(app)
+    product_id = variant(app, home, item_id)
+    coop = source(app, home, 'Coop')
+    offer_id = offer(app, home, item_id, product_id, coop, active='0') if existing else None
+    login(client)
+    assert 'name="item_unit" value="Packung"' in client.get(f'/items/{item_id}/products').text
+    with app.app_context():
+        change_item(home, user, item_id, 'edit', str(uuid4()), 1, data={
+            'name': 'Milch', 'source': 'Laden', 'category': 'Vorrat',
+            'quantity': '2', 'unit': 'Liter', 'stock_status': 'unknown'})
+        db.session.commit()
+    path = f'/items/{item_id}/products/{product_id}/offers' + (f'/{offer_id}' if existing else '')
+    data = {'csrf_token': csrf(client, '/'), 'source_id': str(coop),
+            'units_per_pack': '6', 'item_unit': 'Packung', 'active': '1', 'version': '1'}
+    assert client.post(path, data=data).status_code == 409
+    with app.app_context():
+        if existing:
+            assert not db.session.get(ShopOffer, offer_id).active
+        else:
+            assert db.session.scalar(select(func.count(ShopOffer.id))) == 0
+    # Missing units cannot bypass the check, and a freshly reviewed conversion succeeds.
+    data.pop('item_unit')
+    assert client.post(path, data=data).status_code == 409
+    data['item_unit'] = 'Liter'
+    assert client.post(path, data=data).status_code == 302
