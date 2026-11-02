@@ -118,6 +118,8 @@ class Product(db.Model):
     brand = db.Column(db.String(100), nullable=False, default="")
     package_text = db.Column(db.String(80), nullable=False, default="")
     data_source = db.Column(db.String(24), nullable=False, default="manual")
+    version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": version}
     item = db.relationship(HouseholdItem)
 
 
@@ -141,3 +143,51 @@ class CatalogCache(db.Model):
 class CatalogGate(db.Model):
     key = db.Column(db.String(20), primary_key=True)
     next_allowed_at = db.Column(db.DateTime, nullable=False)
+
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    name = db.Column(db.String(60), nullable=False)
+    name_key = db.Column(db.String(240), nullable=False)
+    aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": version}
+    __table_args__ = (db.UniqueConstraint("household_id", "name_key", name="category_household_name"),)
+
+
+class PurchaseSource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    name = db.Column(db.String(60), nullable=False)
+    name_key = db.Column(db.String(240), nullable=False)
+    aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": version}
+    __table_args__ = (db.UniqueConstraint("household_id", "name_key", name="source_household_name"),)
+
+
+class ItemSource(db.Model):
+    item_id = db.Column(db.Integer, db.ForeignKey("household_item.id"), primary_key=True)
+    source_id = db.Column(db.Integer, db.ForeignKey("purchase_source.id"), primary_key=True)
+    source = db.relationship(PurchaseSource)
+
+
+class ShopOffer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("product.id"), nullable=False, index=True)
+    source_id = db.Column(db.Integer, db.ForeignKey("purchase_source.id"), nullable=False)
+    url = db.Column(db.String(1000), nullable=False, default="")
+    shop_sku = db.Column(db.String(80), nullable=False, default="")
+    units_per_pack = db.Column(db.Numeric(12, 3), nullable=False, default=1, server_default="1")
+    preferred = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
+    version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    product = db.relationship(Product)
+    source = db.relationship(PurchaseSource)
+    __mapper_args__ = {"version_id_col": version}
+    __table_args__ = (
+        db.UniqueConstraint("product_id", "source_id", name="offer_product_source"),
+        db.CheckConstraint("units_per_pack > 0 AND units_per_pack <= 999999", name="offer_pack_units"),
+    )

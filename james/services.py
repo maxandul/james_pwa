@@ -115,27 +115,43 @@ def valid_status(value):
 
 
 def item_state(item, need):
+    from .assortment import source_ids
     return {"status": item.stock_status, "quantity": need.quantity,
         "name": item.name, "category": item.category, "source": item.source,
         "unit": item.unit, "default_quantity": item.default_quantity,
-        "is_favorite": item.is_favorite, "archived": item.archived}
+        "is_favorite": item.is_favorite, "archived": item.archived, "source_ids": source_ids(item)}
 
 
 def create_item(household_id, data):
-    item = HouseholdItem(household_id=household_id, **item_values(data),
+    from .assortment import canonical_labels, lock_household, sync_sources
+    lock_household(household_id)
+    values = item_values(data)
+    values["category"], values["source"] = canonical_labels(household_id, values["category"], values["source"])
+    item = HouseholdItem(household_id=household_id, **values,
         is_favorite=data.get("favorite") == "1",
         stock_status=valid_status(data.get("stock_status", "unknown")))
     db.session.add(item)
     db.session.flush()
     db.session.add(ShoppingNeed(item_id=item.id, quantity=0))
+    sync_sources(item, data)
+    db.session.flush()
     return item
 
 
 def change_item(household_id, user_id, item_id, action, request_id, expected_version, quantity=None, activity_id=None, data=None):
+    # Catalogue/link lookups must not flush metadata halfway through a versioned action.
+    with db.session.no_autoflush:
+        return _change_item(household_id, user_id, item_id, action, request_id, expected_version,
+            quantity, activity_id, data)
+
+
+def _change_item(household_id, user_id, item_id, action, request_id, expected_version, quantity=None, activity_id=None, data=None):
+    from .assortment import canonical_labels, lock_household, sync_sources
     try:
         request_id = str(UUID(str(request_id)))
     except (ValueError, TypeError, AttributeError):
         raise ValueError("Ungueltige Anfrage. Bitte die Seite neu laden.") from None
+    lock_household(household_id)
     item = db.session.scalar(select(HouseholdItem).where(
         HouseholdItem.id == item_id, HouseholdItem.household_id == household_id).with_for_update())
     if not item:
@@ -183,12 +199,18 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
         item.is_favorite = data["favorite"] == "1"
     elif action == "edit":
         values = item_values(data)
+        values["category"], values["source"] = canonical_labels(household_id, values["category"], values["source"])
         if need.quantity and values["unit"] != item.unit:
             raise Conflict("Die Einheit kann bei offenem Einkaufsbedarf nicht geaendert werden. Bitte zuerst die Position von der Liste entfernen.")
+        if values["unit"] != item.unit:
+            from .assortment import offer_source_ids
+            if offer_source_ids(item):
+                raise Conflict("Aktive Produktzuordnungen verwenden diese Einheit. Bitte zuerst die Shop-Zuordnungen deaktivieren und danach die Packungsmengen neu pruefen.")
         for field, value in values.items():
             setattr(item, field, value)
         item.stock_status = valid_status(data.get("stock_status"))
         item.is_favorite = data.get("favorite") == "1"
+        sync_sources(item, data)
     elif action == "archive":
         if need.quantity:
             raise Conflict("Der Artikel steht noch auf der Einkaufsliste. Bitte zuerst den offenen Bedarf erledigen oder von der Liste entfernen.")
@@ -201,12 +223,21 @@ def change_item(household_id, user_id, item_id, action, request_id, expected_ver
             Activity.item_id == item.id).with_for_update())
         if not undo_target or undo_target.action == "undo" or undo_target.reversed_by_id or undo_target.version_after != item.version:
             raise Conflict("Rueckgaengig ist nach einer weiteren Aenderung nicht mehr moeglich.")
+        if undo_target.before_state.get("unit", item.unit) != item.unit:
+            from .assortment import offer_source_ids
+            if offer_source_ids(item):
+                raise Conflict("Aktive Produktzuordnungen verwenden die aktuelle Einheit. Bitte zuerst die Shop-Zuordnungen deaktivieren.")
         item.stock_status = undo_target.before_state["status"]
         need.quantity = undo_target.before_state["quantity"]
         # Existing activities may predate metadata snapshots.
         for field in ("name", "category", "source", "unit", "default_quantity", "is_favorite", "archived"):
             if field in undo_target.before_state:
                 setattr(item, field, undo_target.before_state[field])
+        item.category, item.source = canonical_labels(household_id, item.category, item.source)
+        restored_sources = undo_target.before_state.get("source_ids")
+        if restored_sources is None and "source" in undo_target.before_state:
+            restored_sources = []
+        sync_sources(item, restore_ids=restored_sources)
     else:
         raise ValueError("Unbekannte Aktion.")
     # Version advances even when only ShoppingNeed changed, or the action was a no-op.

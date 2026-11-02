@@ -53,9 +53,11 @@ def shopping_snapshot():
                 HouseholdItem.household_id == membership.household_id,
                 HouseholdItem.archived.is_(False), ShoppingNeed.quantity > 0
             ).order_by(HouseholdItem.category, HouseholdItem.name)).all()
+            from .assortment import shopping_options
+            allowed, _ = shopping_options(rows)
             response = jsonify(owner=owner_key(membership), household=membership.household.name,
                 saved_at=captured_at, items=[{
-                    "name": item.name, "category": item.category, "source": item.source,
+                    "name": item.name, "category": item.category, "source": " / ".join(sorted(allowed[item.id])),
                     "quantity": need.quantity, "unit": item.unit,
                 } for item, need in rows])
     result = make_response(response)

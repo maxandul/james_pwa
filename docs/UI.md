@@ -99,3 +99,20 @@ Die Offline-Ansicht zeigt Haushaltsname, Mengen, Einheiten, Kategorie, Bezugsque
 Die globale hidden-Regel erzwingt versteckte Elemente auch gegen display-Regeln der Button-/Rasterkomponenten. Reale Installation, Flugmodus-Neustart und beide Fold-Displays bleiben auf den Zielgeraeten abzunehmen.
 
 Der Speicherstatus meldet Offline bereit erst nach erfolgreicher Installation der oeffentlichen Offline-Huelle; vorher wird die Vorbereitung angezeigt.
+
+
+## Mehrere Produkte und Einkaufsorte
+
+Warengruppe und bevorzugter Einkaufsort sind echte Auswahlfelder. Weitere Orte werden als Checkboxen angeboten; aktive Produktzuordnungen sind sichtbar fest zugeordnet. Warengruppen und Einkaufsorte lassen sich ueber einen verlinkten Verwaltungsbereich hinzufuegen/umbenennen. Keine neue Hauptnavigation.
+
+Artikelpflege fuehrt zu Produkte und Einkaufsorte: Varianten mit Marke/Packung/optionalem Barcode, pro Variante aufklappbare Shop-Zuordnungen mit Inhalt in Artikeleinheiten und optionalem Vorzug. Kleine Displays stapeln Felder und Aktionen; kein festes Fold-Format. Archivierte Artikel zeigen nur lesbare Zuordnungen.
+
+| Neue Klassen | Zweck |
+| --- | --- |
+| catalogue-row | Umbruchfaehige Umbenennungszeile |
+| variant-card, variant-card__heading | Variantenkarte mit Bearbeitungsaktion |
+| offer-details, offer-form | Aufklappbare Shop-Zuordnung und Formularraster |
+| source-options | Mehrfachauswahl von Einkaufsorten |
+| shopping-product | Gewaehlte Variante, Packungszahl und sichtbare Mehrmenge |
+
+CSS-/App-JS-Referenzversion 8, PWA-JS 2, Store-JS 1, Shell-Cache james-shell-v3. Offline-Snapshot zeigt alle Einkaufsorte als Text. Produkt-/Shop-Auswahl ist online; keine neuen Offline-Schreibaktionen. Geraeteabnahme fuer dieses Paket bleibt offen.

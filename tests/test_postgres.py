@@ -139,3 +139,30 @@ def test_catalog_gate_is_shared_across_workers(app):
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(reserve, range(2)))
     assert sorted(results) == ["limited", "reserved"]
+
+
+def test_simultaneous_shop_preferences_leave_one_choice(app):
+    from james.assortment import save_offer, save_product
+    from james.models import PurchaseSource, ShopOffer
+    with app.app_context():
+        if db.engine.dialect.name != "postgresql":
+            pytest.skip("Concurrent preference selection requires Postgres.")
+        home = db.session.scalar(select(Membership.household_id).where(Membership.role == "owner"))
+        item = create_item(home, {"name": "Milch"})
+        first = save_product(home, item.id, {"product_name": "A"})
+        second = save_product(home, item.id, {"product_name": "B"})
+        coop = db.session.scalar(select(PurchaseSource.id).where(PurchaseSource.household_id == home, PurchaseSource.name == "Coop"))
+        db.session.commit()
+        item_id, product_ids = item.id, [first.id, second.id]
+    barrier = Barrier(2)
+    def prefer(product_id):
+        with app.app_context():
+            barrier.wait(timeout=10)
+            save_offer(home, item_id, product_id, {"source_id": coop, "units_per_pack": "1", "preferred": "1"})
+            db.session.commit()
+            db.session.remove()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        list(executor.map(prefer, product_ids))
+    with app.app_context():
+        offers = db.session.scalars(select(ShopOffer).where(ShopOffer.source_id == coop)).all()
+        assert len(offers) == 2 and sum(offer.preferred for offer in offers) == 1

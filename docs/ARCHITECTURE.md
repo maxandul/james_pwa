@@ -1,6 +1,6 @@
 # Architekturvorschlag
 
-Stand: 01.11.2026. Flask-Basis und erster Einkaufsablauf implementiert. Postgres ist das Betriebsziel; Railway ist noch nicht eingerichtet. Weitere Komponenten bleiben Vorschlaege.
+Stand: 01.11.2026. Flask-Basis und erster Einkaufsablauf implementiert. Postgres 18 und James-Web laufen getrennt auf Railway-staging. Weitere Komponenten bleiben Vorschlaege.
 
 ## Komponenten und Verantwortung
 
@@ -118,3 +118,10 @@ Der Service Worker cached nur eine explizite Liste oeffentlicher Assets und die 
 pwa.js speichert die bestaetigte JSON-Liste getrennt im lokalen Geraetespeicher. offline-store.js bindet die einzelne Kopie an User, Auth-Version und Haushalt. Konto-/Sitzungswechsel oder Abmelden entfernen sie; Generationskennungen verhindern Wiederherstellung durch verspaetete Antworten. Aeltere Antworten duerfen neuere Snapshots nicht ersetzen. Logout setzt zusaetzlich Clear-Site-Data fuer storage/cache. Keine Passwoerter, CSRF-Token oder Einladungen im Offline-Speicher.
 
 Die Offline-Kopie ist lesbar fuer Personen mit Zugriff auf dieses Browserprofil/Geraet. Rechteentzug kann ohne Verbindung nicht neu geprueft werden; beim naechsten Online-Abgleich werden 401/403 geloescht. Keine Offline-Schreibwarteschlange. Browser koennen Speicher entfernen; kein Ersatz fuer ein Serverbackup. Keine neue Datenbankmigration oder externe Abhaengigkeit.
+
+
+## Produkt- und Einkaufsort-Grundlage
+
+assortment.py verwaltet haushaltseigene Warengruppen, Einkaufsorte, konkrete Produktvarianten und Shop-Zuordnungen. products.py stellt die zugehoerigen Formulare bereit. Routes besitzen Commit/Rollback; die Services buchen bei Metadatenpflege weder Bestand noch Einkaufsbedarf. Schreibende Artikel-/Katalog-/Angebotsaktionen sperren zuerst Household, danach HouseholdItem, damit konkurrierende Vorzugsprodukte und Umbenennungen konsistent bleiben.
+
+Ein HouseholdItem ist der gemeinsame Bedarf (Milch). Product beschreibt eine konkrete Variante, ShopOffer deren Bezug bei einem Einkaufsort. ItemSource erlaubt mehrere Einkaufsorte auch ohne hinterlegte Produkte. Die Einkaufsliste filtert denselben Bedarf nach allen moeglichen Orten; sie erstellt keine Kopien. Shoplinks werden nur angezeigt, nicht serverseitig abgerufen. Keine Warenkorb-, Preis-, Verfuegbarkeits- oder Bestellintegration in diesem Paket.

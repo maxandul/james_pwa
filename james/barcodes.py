@@ -43,10 +43,13 @@ def register_barcode(household_id, data):
     brand = clean_text(data.get("brand"), "Marke", 100) if data.get("brand", "").strip() else ""
     package = clean_text(data.get("package_text"), "Packungsangabe", 80) if data.get("package_text", "").strip() else ""
     if target == "new":
-        item = create_item(household_id, {"name": data.get("item_name", "").strip() or name[:100],
+        item_data = {"name": data.get("item_name", "").strip() or name[:100],
             "category": data.get("category") or "Vorrat", "source": data.get("source") or "Laden",
             "quantity": data.get("quantity") or "1", "unit": data.get("unit") or "Packung",
-            "favorite": data.get("favorite", "0")})
+            "favorite": data.get("favorite", "0")}
+        if data.get("sources_present") == "1":
+            item_data.update(sources_present="1", source_ids=data.getlist("source_ids") if hasattr(data, "getlist") else data.get("source_ids", []))
+        item = create_item(household_id, item_data)
     else:
         try:
             target_id = int(target)
