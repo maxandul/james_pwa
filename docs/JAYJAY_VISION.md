@@ -15,3 +15,10 @@ Nutzernotiz vom 02.11.2026. Diese Vision erweitert das Zielbild; sie aendert die
 ## Naechste Schritte bleiben
 
 Produkt-/Shop-Grundlage ist ausgeliefert. Es folgen Belegimport mit Pruefansicht, nachgewiesene Warenkorbuebergabe und James-Chat mit denselben Haushaltsrechten und Buchungsregeln. Weitere Integrationen erst anschliessend konkretisieren.
+
+
+## Architekturentscheid vom 02.11.2026
+
+Bestaetigt: Ein zentraler Butler in der PWA spricht und schreibt mit dem Haushalt. Er ruft direkt Haushaltswerkzeuge und bei Bedarf spaeter Spezialagenten auf. Dieselben Haushaltsservices sollen auch per MCP fuer ChatGPT erreichbar werden. Spezialagenten fuer Einkauf/Browser, Kueche, Alltag und Entwicklung werden erst mit konkreten Aufgaben angeschlossen. Die neue Chat-Grundlage ist textbasiert; Sprache und britische Stimme folgen.
+
+API-Zugang ist noch nicht eingerichtet. Keine Annahme, dass die PWA vorhandene ChatGPT-Chats, Erinnerungen oder Browser-/Shop-Sitzungen uebernimmt. Eigene Rechte, Haushaltsdaten und Agentenzustaende verwalten.

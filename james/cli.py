@@ -7,6 +7,24 @@ from .services import clean_email, clean_text, validate_password
 
 
 def register_cli(app):
+    @app.cli.command('jayjay-check')
+    def jayjay_check():
+        """Verify model access without sending household records or enabling chat."""
+        import time
+        from .jayjay import responses_request
+        if not app.config['OPENAI_API_KEY'] or not app.config['OPENAI_MODEL']:
+            raise click.ClickException('OPENAI_API_KEY und OPENAI_MODEL fehlen.')
+        try:
+            result = responses_request([{'role': 'user', 'content': 'Dies ist ein Verbindungstest. Antworte nur mit Bereit und verwende keine Werkzeuge.'}], time.monotonic() + 20)
+            output = result.get('output', [])
+            text = any(part.get('type') == 'output_text' and part.get('text') for item in output
+                if item.get('type') == 'message' for part in item.get('content', []))
+            if result.get('status') != 'completed' or not text or any(item.get('type') == 'function_call' for item in output):
+                raise ValueError('Verbindungstest wurde nicht vollstaendig abgeschlossen.')
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo('OpenAI-Verbindung erfolgreich. Haushaltsdaten wurden nicht uebertragen; Chat-Aktivierung bleibt separat.')
+
     @app.cli.command("init-household")
     @click.option("--email", prompt="E-Mail")
     @click.option("--name", prompt="Dein Name")

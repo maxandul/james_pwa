@@ -185,3 +185,14 @@ Einstieg Einkaufsliste → Einkauf vorbereiten. Shop waehlen, Artikel markieren,
 Kauf, Belegimport oder Entfernen begrenzen verbleibende Reservierungen auf den noch offenen Bedarf (aelteste Vorhaben zuerst). Dabei wird nicht behauptet, welcher Bestellung eine Lieferung zugehoert. Nach erneutem Nachkaufen oder Ruecknahme werden freigegebene Reservierungen nicht automatisch reaktiviert. Neue Plaene bewusst pruefen. Versionswechsel verhindert das Ueberschreiben mit alten Statusformularen. Direkte Teil-/Lieferzuordnung bleibt spaeterer Ausbau.
 
 Pruefung: pytest inkl. Haushaltsgrenzen, Replay, parallelen Reservierungen, Kauf-/Beleg-/Entfernen-Pfaden, Ruecknahme und Packungsrundung. Keine private Shop-Sitzung verfuegbar; angemeldete Native-Uebergabe ist kein bestandenes Abnahmekriterium dieses Teilschritts.
+
+
+## JayJay – deaktivierte Chat-Grundlage
+
+Revision f382b4dafa19 nach d6e2f6837481 erstellt chat_turn. Ohne JAYJAY_ENABLED=1 sowie OPENAI_API_KEY und OPENAI_MODEL erfolgt kein Modellaufruf. API-Schluessel ausschliesslich als Railway-Geheimnis setzen, nie in Chat, Repo oder normale Protokolle kopieren. Modell erst nach Pruefung des Kontozugangs auswaehlen. Auf Railway sind bislang keine OpenAI-Werte eingerichtet; Live-Test steht aus. OpenAI Developers kann die Kontoeinrichtung unterstuetzen.
+
+Nach Zugangseinrichtung zunaechst JAYJAY_ENABLED=0 lassen und flask --app james jayjay-check ausfuehren. Dieser Test verwendet keinen Haushaltsinhalt und fuehrt keine Werkzeugaktionen aus. Erst nach erfolgreichem Modellzugriff und Freigabe der Kosten-/Datenverarbeitung JAYJAY_ENABLED=1 setzen und neu ausliefern. Produktionstest mit expliziten Testartikeln: lesen, nachkaufen, Zusatzmenge, Ruecknahme, zweite Person, Verbindungsabbruch und Replay. Testnachrichten gehen an OpenAI; zuvor keine echten Haushaltsdaten fuer den Test verwenden.
+
+Tageslimit: 20 Nachrichten pro Haushalt, Reset 00:00 UTC. Vier Modellrunden/maximal vier Aenderungen pro Nachricht. Ein hängender Lauf wird nicht automatisch fortgesetzt. Nach einer Minute kann eine neue Nachricht begonnen werden; vorher tatsächliche Änderungen prüfen. Kein exaktes CHF-Budget. OpenAI-Projektbudget und Modellkosten separat pruefen.
+
+Erst unterstuetzt: Artikel lesen/anlegen, Nachkauf/Extra/Entfernen, Bestandsstatus, Favoriten, Archiv/Wiederaktivierung. Keine endgueltige Loeschung, keine Metadatenbearbeitung, keine Bestellungen, keine Rezepte/Kalender/Wetter/Spotify/Sprache. Fehler nach Buchung: gespeicherte Aktionen beachten und gezielt ueber vorhandene Activity-Ruecknahme korrigieren. Chatturns werden im Browser niemals offline gespeichert.

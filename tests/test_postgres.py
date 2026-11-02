@@ -231,3 +231,26 @@ def test_simultaneous_plans_cannot_reserve_the_same_demand_twice(app):
     assert sorted(results) == ['conflict', 'ok']
     with app.app_context():
         assert reservations(home) == {item_id: 2}
+
+
+def test_simultaneous_chat_retry_starts_exactly_one_run(app):
+    from james.jayjay import start_turn
+    from james.models import ChatTurn
+    with app.app_context():
+        if db.engine.dialect.name != 'postgresql':
+            pytest.skip('Concurrent chat replay requires Postgres.')
+        member = db.session.scalar(select(Membership).where(Membership.role == 'owner'))
+        home, user = member.household_id, member.user_id
+    barrier = Barrier(2)
+    request_id = str(uuid4())
+    def start(_):
+        with app.app_context():
+            barrier.wait(timeout=10)
+            _, created = start_turn(user, home, 'Kaffee nachkaufen', request_id)
+            db.session.remove()
+            return created
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(start, range(2)))
+    assert sorted(results) == [False, True]
+    with app.app_context():
+        assert len(db.session.scalars(select(ChatTurn)).all()) == 1

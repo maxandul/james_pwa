@@ -130,3 +130,14 @@ Ein HouseholdItem ist der gemeinsame Bedarf (Milch). Product beschreibt eine kon
 ## Belegimport
 
 receipt_text.py fuehrt native PDF-/OCR-Werkzeuge mit Laufzeit-/Ressourcenlimits in temporaeren Verzeichnissen aus. receipts.py erstellt haushaltsbezogene Entwuerfe und verwendet dieselben change_item-/Activity-Regeln fuer atomare Kauf-/Ruecknahmebuchungen. ReceiptImport speichert Fingerabdruck, Text, erkannte Zeilen, bestaetigte Zuordnungen/Mengen, Status und Activity-Referenzen. Vorhandene Bedarfe werden bis null reduziert, Bestandsstatus auf vorhanden gesetzt; kein numerischer Lagerbestand wird behauptet. Wiederholte Bestaetigung ist idempotent.
+
+
+## JayJay als zentraler Butler
+
+chat.py stellt den persoenlichen Textdialog bereit. jayjay.py verwendet die Responses API mit einer strikt begrenzten Werkzeugliste. list_items liest nur den angemeldeten Haushalt. change_item/create_item verwenden dieselben Fachregeln wie die Oberflaeche. Der Agent besitzt keinen freien SQL-, Shell-, Browser- oder Netzwerkzugang. Spezialagenten werden spaeter hinter dieser zentralen Gespraechsfuehrung angeschlossen.
+
+ChatTurn bindet Nachricht und Werkzeug-Aenderungsprotokoll an Benutzer und Haushalt. Ein Request startet hoechstens einen Agentenlauf; Status running/done/failed bleibt nachvollziehbar. Pro Ressource und Lauf hoechstens eine Aenderung; Wiederholung identischer Parameter liefert das bereits gespeicherte Ergebnis. Activity und ChatTurn.actions werden in derselben Transaktion gespeichert. Ein Fehler nach einem erfolgreichen Werkzeugaufruf entfernt dessen Buchung nicht und fuehrt nicht zu einer automatischen Wiederholung. Die UI zeigt tatsaechliche Aenderungen getrennt vom generierten Text.
+
+Keine Datenbanksperren waehrend externer Modellanfragen. Mitgliedschaft, aktiver Benutzer und auth_version werden vor Werkzeugausfuehrung erneut geprueft. Vier Modellrunden, maximal vier Aenderungen, 1200 Ausgabetoken je Antwort, 20 Sekunden Laufzeitbudget und 20 Nachrichten pro Haushalt/UTC-Tag begrenzen den ersten Pilot. Das ist kein Franken-Kostendach. Chat ist standardmaessig ausgeschaltet und benoetigt API-Schluessel sowie explizites Modell.
+
+Letzte vier abgeschlossene Dialoge derselben Person plus benoetigte Artikeldaten werden mit store=false an OpenAI uebermittelt. Chatverlauf bleibt privat pro Benutzer; Haushaltsaktionen bleiben gemeinsam sichtbar. Kein Zugriff auf persoenliche ChatGPT-Erinnerungen oder bestehende ChatGPT-Gespraeche.

@@ -24,6 +24,7 @@
   <nav class="nav" aria-label="Hauptnavigation">
     <a {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}">Mein Haushalt</a>
     <a {% if request.endpoint == 'main.shopping' %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}">Einkaufsliste</a>
+    <a {% if request.endpoint == 'chat.index' %}aria-current="page"{% endif %} href="{{ url_for('chat.index') }}">JayJay</a>
     {% if g.membership.role == 'owner' %}<a {% if request.endpoint == 'main.household' %}aria-current="page"{% endif %} href="{{ url_for('main.household') }}">Zusammen nutzen</a>{% endif %}
   </nav>
   {% endif %}

@@ -75,3 +75,12 @@ Offizielle Anbieterbeschreibungen bestaetigen geteilte Listen/Warenkoerbe, liefe
 - Coop: https://www.coop.ch/de/ihr-online-supermarkt/einkaufsliste.html
 
 James erhaelt deshalb zuerst speicherbare Einkaufsvorhaben mit geprueften Produkt-/Packungsvorschlaegen, vorhandenen Shoplinks und kopier-/teilbarer Textliste. Diese Funktion befuellt keinen nativen Shop-Warenkorb. Nach externem Checkout kann der Haushalt die Bestellung manuell markieren; Liefer-/Kaufbuchung erfolgt separat ueber Einkaufsliste oder Beleg. Keine Zugangsdaten, Shop-API oder Browserautomation hinzugefuegt.
+
+
+## Browser-Einkaufsagent: Pruefplan
+
+Nachweis noch offen. Vorgesehen ist ein separater Agentenlauf ueber die OpenAI Agents API mit gehostetem Browser, nicht eine Fernsteuerung des persoenlichen ChatGPT-Chats. Ohne API-Zugang kein echter Prototyp-Lauf oder Konto-/Warenkorbtest. Keine Shop-Sitzung eingerichtet.
+
+Offizielle technische Grundlage (02.11.2026): https://developers.openai.com/api/docs/guides/agents-api/tools/computer-use und https://developers.openai.com/api/docs/guides/agents/orchestration . Als Ersttest oeffentliche Produktseite lesen; anschliessend interaktive Shop-Anmeldung und genau drei vorgegebene Artikel einschliesslich Menge 2 im angemeldeten Warenkorb nachweisen. Vorhandene Inhalte respektieren, Wiederholungen nicht verdoppeln, Sitzungsabbruch fortsetzbar machen und Warenkorb auf dem persoenlichen Geraet verifizieren. Keine Bestellabgabe im Prototyp. Anmelde-/Websitefreigaben muessen an die Person durchgereicht werden; keine stillen Cookie-/Passwortuebernahmen.
+
+Die Haushaltswerkzeuge der ersten Chat-Stufe besitzen bewusst keinen Browserzugang. Die Browserfunktion wird erst nach Konto-/Sitzungs-/Freigabetest als gesondertes Werkzeug fuer JayJay angeschlossen.
