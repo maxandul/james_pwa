@@ -43,8 +43,8 @@ def test_full_chat_turn_reads_then_changes_and_replay_never_calls_again(app, cli
     login(client)
     import json
     replies = iter([
-        {'output': [{'type': 'function_call', 'call_id': 'read', 'name': 'list_items', 'arguments': json.dumps({'query':'Kaffee','view':'active'})}]},
-        {'output': [{'type': 'function_call', 'call_id': 'write', 'name': 'change_item', 'arguments': json.dumps(change_args(item_id))}]},
+        {'status': 'completed', 'output': [{'type': 'function_call', 'call_id': 'read', 'name': 'list_items', 'arguments': json.dumps({'query':'Kaffee','view':'active'})}]},
+        {'status': 'completed', 'output': [{'type': 'function_call', 'call_id': 'write', 'name': 'change_item', 'arguments': json.dumps(change_args(item_id))}]},
         {'status': 'completed', 'output': [{'type': 'message', 'content': [{'type':'output_text','text':'Sehr wohl. Kaffee ist vorgemerkt.'}]}]},
     ])
     calls = []
@@ -196,3 +196,14 @@ def test_run_scope_checked_before_provider_is_called(app, monkeypatch):
     monkeypatch.setattr('james.jayjay.responses_request', lambda *args: pytest.fail('Cannot read foreign turn'))
     with app.app_context(), pytest.raises(NotFound):
         run_turn(turn_id, foreign_user, foreign_home)
+
+
+def test_incomplete_model_response_never_executes_its_tools(app, monkeypatch):
+    _, home, user = seed_item(app)
+    turn_id, _ = new_turn(app, user, home)
+    monkeypatch.setattr('james.jayjay.responses_request', lambda *args: {'status':'incomplete',
+        'output':[{'type':'function_call','call_id':'partial','name':'list_items','arguments':'{}'}]})
+    monkeypatch.setattr('james.jayjay.execute_tool', lambda *args: pytest.fail('No partial response tools'))
+    with app.app_context():
+        turn = run_turn(turn_id, user, home)
+        assert turn.state == 'failed' and turn.actions == []

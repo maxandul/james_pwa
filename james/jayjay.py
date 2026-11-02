@@ -230,14 +230,14 @@ def run_turn(turn_id, user_id, household_id):
             response = responses_request(messages, deadline)
             if time.monotonic() >= deadline:
                 raise ValueError('Der Auftrag hat zu lange gedauert.')
+            if response.get('status') != 'completed':
+                raise ValueError('Die Modellantwort wurde nicht vollstaendig abgeschlossen.')
             output = response.get('output', [])
             if not isinstance(output, list) or not all(isinstance(item, dict) for item in output):
                 raise ValueError('Ungueltige Modellantwort.')
             messages.extend(output)
             calls = [item for item in output if item.get('type') == 'function_call']
             if not calls:
-                if response.get('status') != 'completed':
-                    raise ValueError('Die Antwort wurde nicht vollstaendig abgeschlossen.')
                 reply = '\n'.join(part['text'] for item in output if item.get('type') == 'message'
                     for part in item.get('content', []) if part.get('type') == 'output_text')[:6000]
                 if not reply:
