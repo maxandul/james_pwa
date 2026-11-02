@@ -9,6 +9,12 @@ Die anschliessend vorbereitete isolierte Anmeldeschicht und ihre Grenzen
 sind in [SHOP_LOGIN_PILOT.md](SHOP_LOGIN_PILOT.md) dokumentiert. Noch kein
 echter Shop-Login und keine Einbindung dieser Maske in die gehostete PWA.
 
+Die PWA-Einbindung ist inzwischen separat implementiert, aber noch nicht
+bereitgestellt oder aktiviert: [SHOP_LOGIN_PWA.md](SHOP_LOGIN_PWA.md).
+Sie verwendet persoenliche, dauerhaft referenzierte Auftraege und einen
+separaten Pilotdienst; das lokale Loopback-Portal wird nicht oeffentlich
+exponiert. Noch kein weiterer echter Login-/API-Test.
+
 ## Aktueller Stand: echter Agents-API-Warenkorbtest erfolgreich
 
 Nach der ausdruecklichen Freigabe "Ich erlaube diesen einmaligen API-Test ohne

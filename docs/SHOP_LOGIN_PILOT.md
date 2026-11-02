@@ -1,5 +1,9 @@
 # Shop-Anmeldung: lokaler Pilot und anschliessende PWA-Einbindung
 
+Die gehostete Einbindung ist nun separat implementiert (noch nicht deployt):
+[SHOP_LOGIN_PWA.md](SHOP_LOGIN_PWA.md). Diese Datei dokumentiert weiterhin
+den lokalen Vorversuch; dessen Loopback-Server wird nicht veroeffentlicht.
+
 Stand 02.11.2026. Der echte Agents-API-Gastwarenkorb mit drei Positionen ist
 nachgewiesen. Nun folgt die Kontoanmeldung; ein echter Login wurde in dieser
 Etappe noch nicht gestartet. Die vorherige Kostenfreigabe galt genau fuer den

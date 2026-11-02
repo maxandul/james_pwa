@@ -34,6 +34,7 @@ def create_app(test_config=None):
         JAYJAY_ENABLED=os.getenv('JAYJAY_ENABLED', '') == '1',
         OPENAI_API_KEY=os.getenv('OPENAI_API_KEY', ''),
         OPENAI_MODEL=os.getenv('OPENAI_MODEL', ''),
+        SHOP_LOGIN_PILOT_ENABLED=os.getenv('SHOP_LOGIN_PILOT_ENABLED', '') == '1',
     )
     if test_config:
         app.config.update(test_config)
@@ -89,6 +90,7 @@ def create_app(test_config=None):
     from .receipts import receipts
     from .plans import plans
     from .chat import chat
+    from .shop_login import shop_login
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
@@ -97,7 +99,10 @@ def create_app(test_config=None):
     app.register_blueprint(receipts)
     app.register_blueprint(plans)
     app.register_blueprint(chat)
+    app.register_blueprint(shop_login)
     register_cli(app)
+    from .shop_login_worker import register_shop_cli
+    register_shop_cli(app)
 
     @app.after_request
     def response_headers(response):

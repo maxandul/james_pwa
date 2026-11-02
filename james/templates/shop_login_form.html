@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Galaxus anmelden · James{% endblock %}
+{% block content %}
+<h1>Galaxus-Anmeldung</h1>
+{% if schema %}
+<p>Anmeldeziel: <strong>{{ schema.credential_origin }}</strong></p>
+<p>Deine Eingaben werden an den OpenAI-gehosteten Shopbrowser uebermittelt und dort fuer die Galaxus-Anmeldung verwendet. James speichert sie nicht im Chat oder in der Datenbank.</p>
+{% if schema.options and selected is none %}
+<form method="get"><label>Anmeldemethode<select name="option">{% for option in schema.options %}<option value="{{ option.id }}">{{ option.label }}</option>{% endfor %}</select></label><button class="button" type="submit">Methode auswaehlen</button></form>
+{% else %}
+<form method="post" autocomplete="off">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="request_id" value="{{ run.request_id }}">
+<input type="hidden" name="option" value="{{ selected or '' }}">
+{% for field in fields %}<label>{{ field.label }}<input type="password" name="value_{{ loop.index0 }}" maxlength="2048" autocomplete="off" {% if field.required %}required{% endif %}></label>{% endfor %}
+<label><input type="checkbox" name="destination_confirmed" value="yes" required> Ich habe das Anmeldeziel geprueft und moechte die Eingaben an diesen Shopbrowser uebermitteln.</label>
+<button class="button" type="submit" name="action" value="submit">Anmeldung uebermitteln</button>
+</form>{% endif %}
+{% else %}
+{% if run.state == 'accepted' %}<p>Eingaben uebermittelt. Eine erfolgreiche Anmeldung ist damit noch nicht bestaetigt. Aktualisiere die Seite, falls ein weiterer Schritt erforderlich ist.</p>
+{% elif run.state == 'queued' %}<p>Der Anmeldetest ist vorgemerkt. Der Pilotdienst uebernimmt ihn. Ohne rechtzeitigen Start laeuft er automatisch ab.</p>
+{% elif run.state in ['creating','running'] %}<p>Der Browser bereitet die Anmeldung vor. Bitte die Seite aktualisieren.</p>
+{% elif run.state == 'submitting' %}<p>Uebermittlung laeuft. Bitte nicht erneut senden.</p>
+{% elif run.state == 'unknown' %}<p>Der Ausgang der Uebermittlung ist unklar. Nicht erneut senden; der Test wird abgebrochen und geprueft.</p>
+{% elif run.state == 'cleanup_pending' %}<p>Die Bereinigung der Browsersitzung ist noch offen.</p>
+{% else %}<p>Dieser Anmeldetest ist beendet oder wurde abgebrochen.</p>{% endif %}
+{% endif %}
+<p><a class="button button--outline" href="{{ url_for('shop_login.login', run_id=run.id) }}">Status aktualisieren</a></p>
+{% if run.state in ['queued','creating','running','pending','submitting','accepted'] %}<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit" name="action" value="cancel">Test abbrechen</button></form>{% endif %}
+{% endblock %}

@@ -18,6 +18,7 @@ COPY --chown=james:james james ./james
 COPY --chown=james:james migrations ./migrations
 COPY --chown=james:james wsgi.py ./
 COPY --chown=james:james scripts/check_receipt_tools.py ./scripts/check_receipt_tools.py
+COPY --chown=james:james scripts/jayjay_browser_probe.py ./scripts/jayjay_browser_probe.py
 RUN mkdir -p /app/instance && chown james:james /app/instance
 
 USER james

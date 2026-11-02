@@ -46,7 +46,8 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
 
 def run_task(client, url, state_path, *, instructions, task, seconds=120,
              screenshot_path=None, session_id=None, keep_session=False,
-             authorized_uncapped_test=False, authentication_handler=None):
+             authorized_uncapped_test=False, authentication_handler=None,
+             session_handler=None, session_metadata=None):
     """One task, no retries. Keep its ID before sending any browser input."""
     origin = origin_for(url)
     if authentication_handler is not None and (screenshot_path or keep_session):
@@ -78,10 +79,13 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                        'tools': [{'type': 'computer_use', 'include_screenshots': True}]},
                 **cost_options,
                 environment={'type': 'openai_hosted', 'desktop': {'enabled': True},
-                             'network': {'access': 'enabled'}})
+                             'network': {'access': 'enabled'}},
+                metadata=session_metadata or {})
             session_id = session.id
             created_here = True
         save()
+        if session_handler is not None:
+            session_handler(session_id)
         spending = getattr(session, 'spend_control', None)
         if not authorized_uncapped_test and (
                 not spending or type(spending.limit) is not int or not 0 < spending.limit <= 300):
