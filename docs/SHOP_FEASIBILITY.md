@@ -64,3 +64,14 @@ Noch nicht zugesagt werden koennen: stabiler API-Zugriff, angemeldeter Coop-Ware
 Angemeldete Tests benoetigen eine von der Person eingerichtete Sitzung. Passwoerter, Cookies und sonstige Zugangsdaten werden nicht im Chat oder Repository hinterlegt. Checkout wird erst in einem gesondert autorisierten Test behandelt.
 
 Pro weiterem Test Datum, Umgebung, konkrete Produkte, beobachtetes Ergebnis, Aufraeumen und Grenzen ergaenzen.
+
+
+## Aktualisierung 02.11.2026: manuelle Vorbereitung
+
+Offizielle Anbieterbeschreibungen bestaetigen geteilte Listen/Warenkoerbe, liefern aber in unserer Recherche keinen nachgewiesenen externen James-Import. Das ist keine Aussage, dass eine Integration unmoeglich ist. Angemeldeter Native-Warenkorbtest bleibt offen.
+
+- Migros: https://support.migros.ch/hc/de/articles/32901177026194-Kann-ich-die-Produkte-auf-der-Einkaufsliste-auch-einfach-online-bestellen
+- Migros geteilte Warenkoerbe: https://support.migros.ch/hc/de/articles/32900760025106-Ich-will-etwas-bestimmtes-auf-die-Einkaufsliste-setzen-und-finde-es-nicht
+- Coop: https://www.coop.ch/de/ihr-online-supermarkt/einkaufsliste.html
+
+James erhaelt deshalb zuerst speicherbare Einkaufsvorhaben mit geprueften Produkt-/Packungsvorschlaegen, vorhandenen Shoplinks und kopier-/teilbarer Textliste. Diese Funktion befuellt keinen nativen Shop-Warenkorb. Nach externem Checkout kann der Haushalt die Bestellung manuell markieren; Liefer-/Kaufbuchung erfolgt separat ueber Einkaufsliste oder Beleg. Keine Zugangsdaten, Shop-API oder Browserautomation hinzugefuegt.

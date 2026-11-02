@@ -123,3 +123,10 @@ ShopOffer.units_per_pack ist Numeric(12,3), >0 und <=999999. Household-/Produkt-
 Backfill erzeugt je vorhandenem Haushalt Standardoptionen plus bestehende individuelle Namen und verknuepft den bisherigen Einkaufsort. Gross-/Kleinschreibvarianten ergeben einen Eintrag. Artikeltext, Versionen, Bestand, Bedarf, Barcodes und Activity bleiben erhalten. Alte Activity-Snapshots sind kompatibel; neue enthalten source_ids. Aktive Angebotsorte bleiben auch bei Ruecknahme erhalten.
 
 Downgrade entfernt ausschliesslich die neuen Tabellen und Product.version, also neue Zuordnungen/Katalognamen. Artikel, Produkte und Barcodes bleiben erhalten. Kein Anwender-Reparaturschritt; vor Live-Migration Backup erstellen und Restore pruefen.
+
+
+## Implementierte Einkaufsvorhaben
+
+Revision d6e2f6837481 erstellt PurchasePlan: Haushalt, Einkaufsort (FK), eindeutige request_id je Haushalt, versionierter Status draft/ordered/closed/cancelled, optionale manuelle Bestellreferenz und JSON-Zeilensnapshots. Zeilen enthalten item_id, Namen/Einheit, urspruengliche quantity, verbleibende reserved-Menge sowie Produktname, expliziten Packungsinhalt und HTTPS-Link. JSON-Referenzen werden serverseitig gegen Haushalt und aktuelle Artikel-/Produkt-/Angebotsversionen geprueft. Keine separaten Order-/Lieferobjekte und keine Shop-Sitzungen.
+
+Aktive Vorhaben reservieren zusammen hoechstens den aktuellen offenen Bedarf; Haushaltssperre serialisiert Erstellung und Artikelaktionen. Eine Kauf-/Entfernen-Aktion begrenzt Reservierungen auf verbleibenden Bedarf. Freigaben werden beim Rueckgaengigmachen nicht automatisch reaktiviert. Version des Vorhabens erhoeht sich auch bei solchen Mengenanpassungen. Alte Produkt-/Packungssnapshots werden nicht nachtraeglich umgerechnet. Bestellung ist eine ausdrueckliche manuelle Statusbestaetigung, keine behauptete Shop-Antwort.

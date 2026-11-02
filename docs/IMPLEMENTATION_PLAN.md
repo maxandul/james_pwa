@@ -12,7 +12,7 @@ Stand: 02.11.2026. Konzept zusammengefuehrt; ein erster durchgaengiger Ablauf is
 | P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Text, Favoriten, Artikelpflege und einfacher Status fertig; Barcode-Zuordnung und Kameraablauf implementiert; Hardwareabnahme/Mengenbestand offen |
 | P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Nachkauf, Zusatz-/Teilkauf, Entfernen und Ruecknahme implementiert; visuelle Abnahme offen |
 | P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Railway online, Ersteinrichtung bestaetigt; Installation und Offline-Lesen implementiert. PWA-/Offline-Test vom Nutzer bestaetigt; Kamera-/Fold-Abnahme, Backup/Restore und eingeschraenkter Geraetezugang offen |
-| P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Produkt-/Shop-Grundlage auf staging ausgeliefert; Belegimport in Umsetzung; Bestellobjekte offen |
+| P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Produkt-/Shop-Grundlage auf staging ausgeliefert; Belegimport ausgeliefert; manuelle Einkaufsvorhaben in Umsetzung |
 | P7 Shop-Uebergabe | Pro Shop nachgewiesener Warenkorbweg | Angemeldeter Test, mehrere Mengen, Wiederholungen und Sitzungsablauf geprueft | Offen |
 | P8 Wochenroutine | Serverseitiger Vorschlag und Benachrichtigung | Ein Vorschlag je Haushalt und Termin; keine Abhaengigkeit von geoeffneter PWA; manueller Start bleibt moeglich | Offen |
 | P9 ChatGPT und Kochen | MCP, Rezepte und Menuevorschlaege | Gleiche Haushaltsrechte und Fachregeln; unsichere Bestaende sichtbar; Zutaten erst nach Bestaetigung erfasst | Offen |
@@ -50,8 +50,8 @@ Akzeptierte Reihenfolge: (1) Produkt-/Shop-Grundlage und eigene Kataloge, (2) Ka
 | Paket | Stand |
 | --- | --- |
 | Eigene Warengruppen/Einkaufsorte, mehrere Varianten/Laeden, Vorzug und Packungsmengen | Ausgeliefert auf staging, Migration und Healthcheck bestaetigt; neue Masken auf Zielgeraeten noch pruefen |
-| Foto/PDF-Belege fuer alle Positionen | Implementiert: lokale PDF-/Foto-Texterkennung, manuelle Textalternative, Pruefansicht, atomare Buchung und Ruecknahme; CI und Auslieferung folgen |
-| Coop/Migros/Galaxus-Warenkoerbe | Geplant; angemeldeter Uebergabeweg noch nachzuweisen |
+| Foto/PDF-Belege fuer alle Positionen | Implementiert: lokale PDF-/Foto-Texterkennung, manuelle Textalternative, Pruefansicht, atomare Buchung und Ruecknahme; auf staging ausgeliefert, 130 Postgres-Tests erfolgreich |
+| Coop/Migros/Galaxus-Warenkoerbe | Manuelle Einkaufsvorbereitung implementiert; native automatische Uebergabe und angemeldeter Nachweis weiterhin offen |
 | James-Chat mit Lesen/Aendern/Loeschen und Einkaufsvorbereitung | Geplant; keine KI-/Shop-Schluessel eingerichtet |
 
 Nutzer bestaetigt laufende Online-App und PWA-/Offline-Test. Kamera bei schlechtem Licht noch ohne Erfolg; reale Scan-/Fold-/Tablet-Abnahme und Backup/Restore bleiben offen. Eingeschraenkter Tablet-Zugang und Mengenbestand sind weiter offen.

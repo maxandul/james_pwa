@@ -195,3 +195,39 @@ def test_simultaneous_receipt_confirmation_books_only_once(app):
     with app.app_context():
         assert len(db.session.scalars(select(Activity).where(Activity.action == 'receipt')).all()) == 1
         assert db.session.get(ReceiptImport, receipt_id).state == 'confirmed'
+
+
+def test_simultaneous_plans_cannot_reserve_the_same_demand_twice(app):
+    from james.models import PurchaseSource
+    from james.planning import create_plan, reservations
+    from james.services import Conflict
+    with app.app_context():
+        if db.engine.dialect.name != 'postgresql':
+            pytest.skip('Concurrent reservations require Postgres.')
+        home = db.session.scalar(select(Membership.household_id).where(Membership.role == 'owner'))
+        item = create_item(home, {'name': 'Milch'})
+        need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item.id))
+        need.quantity = 2
+        shop = db.session.scalar(select(PurchaseSource).where(PurchaseSource.household_id == home, PurchaseSource.name == 'Laden'))
+        db.session.commit()
+        item_id, source_id, item_version, source_version = item.id, shop.id, item.version, shop.version
+    barrier = Barrier(2)
+    def reserve(_):
+        with app.app_context():
+            barrier.wait(timeout=10)
+            review = {'request_id': str(uuid4()), 'source_version': source_version,
+                'versions': {str(item_id): item_version}, 'offers': {str(item_id): []}}
+            try:
+                create_plan(home, source_id, review, {f'include_{item_id}': '1', f'quantity_{item_id}': '2'})
+                db.session.commit()
+                return 'ok'
+            except Conflict:
+                db.session.rollback()
+                return 'conflict'
+            finally:
+                db.session.remove()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(reserve, range(2)))
+    assert sorted(results) == ['conflict', 'ok']
+    with app.app_context():
+        assert reservations(home) == {item_id: 2}

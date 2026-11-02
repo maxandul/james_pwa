@@ -118,8 +118,9 @@ def shopping():
     if source:
         rows = [(item, need) for item, need in rows if source in allowed[item.id]]
     choices = {item.id: selected_offer(offers[item.id], source, need.quantity) for item, need in rows} if source else {}
+    from .planning import reservations
     return render_template("shopping.html", rows=rows, sources=sources, selected_source=source,
-        allowed_sources=allowed, choices=choices)
+        allowed_sources=allowed, choices=choices, planned=reservations(g.household.id))
 
 
 @main.post("/items/<int:item_id>/action")

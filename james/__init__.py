@@ -53,6 +53,10 @@ def create_app(test_config=None):
             # Multipart decoder needs room for a read chunk plus its buffered remainder.
             request.max_form_memory_size = 256 * 1024
             request.max_form_parts = 300
+        elif request.path == '/plans' or request.path.startswith('/plans/'):
+            request.max_content_length = 256 * 1024
+            request.max_form_memory_size = 256 * 1024
+            request.max_form_parts = 2500
 
     db.init_app(app)
     csrf.init_app(app)
@@ -80,12 +84,14 @@ def create_app(test_config=None):
     from .pwa import pwa
     from .products import products
     from .receipts import receipts
+    from .plans import plans
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
     app.register_blueprint(pwa)
     app.register_blueprint(products)
     app.register_blueprint(receipts)
+    app.register_blueprint(plans)
     register_cli(app)
 
     @app.after_request

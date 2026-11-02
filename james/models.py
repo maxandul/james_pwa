@@ -209,3 +209,21 @@ class ReceiptImport(db.Model):
         db.UniqueConstraint("household_id", "text_digest", name="receipt_household_text"),
         db.CheckConstraint("state IN ('draft','confirmed','reversed')", name="receipt_state"),
     )
+
+
+class PurchasePlan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    source_id = db.Column(db.Integer, db.ForeignKey("purchase_source.id"), nullable=False)
+    request_id = db.Column(db.String(36), nullable=False)
+    lines = db.Column(db.JSON, nullable=False)
+    state = db.Column(db.String(12), nullable=False, default="draft")
+    reference = db.Column(db.String(100), nullable=False, default="")
+    version = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    source = db.relationship(PurchaseSource)
+    __mapper_args__ = {"version_id_col": version}
+    __table_args__ = (
+        db.UniqueConstraint("household_id", "request_id", name="plan_household_request"),
+        db.CheckConstraint("state IN ('draft','ordered','closed','cancelled')", name="plan_state"),
+    )
