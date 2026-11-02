@@ -35,7 +35,7 @@ def test_exact_origin_and_authentication_boundaries():
 def fake_client(events):
     client = MagicMock()
     sessions = client.beta.agents.sessions
-    sessions.create.return_value = NS(id='synthetic-session')
+    sessions.create.return_value = NS(id='synthetic-session', spend_control=NS(limit=300))
     sessions.events.stream.return_value.__enter__.return_value = iter(events)
     return client, sessions
 
@@ -96,3 +96,39 @@ def test_cleanup_failure_keeps_session_id_for_operator(tmp_path):
     assert result['cleanup'] == 'pending'
     assert 'synthetic-session' in state.read_text()
     assert 'secret' not in state.read_text()
+
+
+def test_guest_cart_session_is_retained_and_reused_without_new_creation(tmp_path):
+    client, sessions = fake_client([
+        NS(type='agent.session.turn.completed', turn=NS(subagent_id=None)),
+    ])
+    sessions.retrieve.return_value = NS(status='idle', required_actions=[], spend_control=NS(limit=300))
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'repeat.json',
+        instructions='test', task='verify only', session_id='existing-test-session', keep_session=True)
+    assert result['cleanup'] == 'retained'
+    sessions.create.assert_not_called()
+    sessions.delete.assert_not_called()
+    sessions.events.create.assert_called_once()
+
+
+@pytest.mark.parametrize('keep_session', [False, True])
+def test_missing_spending_limit_never_sends_task(tmp_path, keep_session):
+    client, sessions = fake_client([])
+    sessions.create.return_value = NS(id='synthetic-session', spend_control=None)
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'uncapped.json',
+        instructions='test', task='must not be sent', keep_session=keep_session)
+    assert result['status'] == 'failed'
+    sessions.events.create.assert_not_called()
+    sessions.delete.assert_called_once_with('synthetic-session')
+
+
+def test_busy_session_is_inspected_without_resending_or_deleting(tmp_path):
+    client, sessions = fake_client([])
+    sessions.retrieve.return_value = NS(status='in_progress', required_actions=[])
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'busy.json',
+        instructions='test', task='must not be sent', session_id='existing-test-session', keep_session=True)
+    assert result['status'] == 'failed'
+    assert result['cleanup'] == 'retained'
+    sessions.events.create.assert_not_called()
+    sessions.create.assert_not_called()
+    sessions.delete.assert_not_called()

@@ -96,3 +96,21 @@ uebereinstimmende Produktberichte, jedoch keine Screenshot-Bilddaten.
 Kein angemeldeter Warenkorb und keine Uebergabe auf ein persoenliches Geraet
 wurden nachgewiesen. Keine Bestellung oder Warenkorbaenderung ausgefuehrt.
 Details, reproduzierbare Probe und Grenzen: [BROWSER_PILOT.md](BROWSER_PILOT.md).
+
+## Aktualisierung 02.11.2026: Drei-Produkt-Gastwarenkorb
+
+Mit der verfuegbaren CUA-Browserschnittstelle wurde ein zuvor leerer
+Galaxus-Gastwarenkorb mit genau drei Testprodukten befuellt: bluu 14684120
+(60 Waschgaenge, Menge 2), Barilla Spaghetti 14730798 (500 g, Menge 1) und
+Cirio Pizza Sauce 37264242 (400 g, Menge 1). Warenkorbzeilen, Mengen und
+Persistenz nach Neuladen wurden gelesen und per Screenshot belegt. Keine
+Anmeldung, kein Checkout, keine Bestellung. Produktauswahl vom Nutzer fuer
+den POC delegiert; keine abgeleiteten Haushaltspraeferenzen.
+
+Dieser Nachweis stammt nicht aus James, Railway oder einem Agents-API-Lauf.
+Der API-Cart-Pilot ist blockiert: Der Endpunkt lehnt das dokumentierte
+`spend_control`-Feld ab; eine Ausfuehrung ohne Kostenlimit wurde automatisch
+abgelehnt. Die Implementierung verlangt jetzt ein bestaetigtes Limit.
+Persoenliches Konto, sichere Anmeldung, Geraeteuebergabe und automatischer
+Wiederholungs-/Parallelitaetstest bleiben offen. Details und Bildbeleg:
+[BROWSER_PILOT.md](BROWSER_PILOT.md).

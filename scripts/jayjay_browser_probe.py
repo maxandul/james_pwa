@@ -39,13 +39,20 @@ def approval_response(request, allowed_origin):
 
 
 def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
+    return run_task(client, url, state_path, instructions=INSTRUCTIONS,
+        task='Read only this public product page: ' + url,
+        seconds=seconds, screenshot_path=screenshot_path)
+
+
+def run_task(client, url, state_path, *, instructions, task, seconds=120,
+             screenshot_path=None, session_id=None, keep_session=False):
     """One task, no retries. Keep its ID before sending any browser input."""
     origin = origin_for(url)
     # Exclusive creation prevents accidentally overwriting an unresolved session.
     fd = os.open(state_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    session_id = None
     result = {'status': 'starting', 'browser_calls': 0, 'screenshots': 0,
               'model_report': '', 'cleanup': 'not_created'}
+    created_here = budget_verified = False
 
     def save():
         with open(state_path, 'w', encoding='utf-8') as target:
@@ -54,12 +61,24 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
     os.close(fd)
     save()
     try:
-        session = client.beta.agents.sessions.create(
-            agent={'model': 'gpt-6-astra', 'instructions': INSTRUCTIONS,
-                   'tools': [{'type': 'computer_use', 'include_screenshots': True}]},
-            environment={'type': 'openai_hosted', 'desktop': {'enabled': True},
-                         'network': {'access': 'enabled'}})
-        session_id = session.id
+        if session_id:
+            session = client.beta.agents.sessions.retrieve(session_id)
+            if session.status != 'idle' or session.required_actions:
+                raise ValueError('Sitzung ist nicht bereit; bestehenden Auftrag zuerst pruefen.')
+        else:
+            session = client.beta.agents.sessions.create(
+                agent={'model': 'gpt-6-astra', 'instructions': instructions,
+                       'tools': [{'type': 'computer_use', 'include_screenshots': True}]},
+                spend_control={'limit': 300},
+                environment={'type': 'openai_hosted', 'desktop': {'enabled': True},
+                             'network': {'access': 'enabled'}})
+            session_id = session.id
+            created_here = True
+        save()
+        spending = getattr(session, 'spend_control', None)
+        if not spending or type(spending.limit) is not int or not 0 < spending.limit <= 300:
+            raise ValueError('Kein bestaetigtes API-Ausgabenlimit; kein Browserauftrag gesendet.')
+        budget_verified = True
         result.update(status='running', cleanup='pending')
         save()
         seen = set()
@@ -77,7 +96,7 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
                 client.beta.agents.sessions.events.create(session_id, events=[{
                     'type': 'agent.session.input.message', 'input': [{
                         'role': 'user', 'content': [{'type': 'input_text',
-                        'text': 'Read only this public product page: ' + url}]}]}])
+                        'text': task}]}]}])
                 for event in events:
                     if event.type == 'agent.session.requires_action':
                         current = client.beta.agents.sessions.retrieve(session_id)
@@ -102,6 +121,7 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
                                     if screenshot_path:
                                         Path(screenshot_path).write_bytes(base64.b64decode(
                                             image_url.split(',', 1)[1], validate=True))
+                        save()
                     elif event.type == 'agent.session.turn.output_text.done':
                         result['model_report'] += event.text
                     elif event.type == 'agent.session.turn.completed' and event.turn.subagent_id is None:
@@ -123,14 +143,22 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
     except Exception as exc:
         # Exception strings may contain request material. Only expose the class.
         result.update(status='failed', error_type=type(exc).__name__)
+        if getattr(exc, 'status_code', None):
+            result['http_status'] = exc.status_code
+            result['error_code'] = getattr(exc, 'code', None)
+            result['error_param'] = getattr(exc, 'param', None)
+            if exc.status_code in (400, 401, 403, 404, 422, 429) and not session_id:
+                result['cleanup'] = 'not_created'
     finally:
-        if session_id:
+        if session_id and keep_session and (not created_here or budget_verified):
+            result['cleanup'] = 'retained'
+        elif session_id:
             try:
                 client.beta.agents.sessions.delete(session_id)
                 result['cleanup'] = 'deleted'
             except Exception as exc:
                 result.update(cleanup='pending', cleanup_error_type=type(exc).__name__)
-        elif result['status'] == 'failed':
+        elif result['status'] == 'failed' and result['cleanup'] != 'not_created':
             result['cleanup'] = 'creation_outcome_unknown'
         save()
     return result

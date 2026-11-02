@@ -5,6 +5,69 @@ PR #8 ist gemergt und das schwebende Chatfenster vom Nutzer bestaetigt.
 Der bestehende API-Schluessel wird wiederverwendet. Layout bleibt ausserhalb
 dieses Arbeitsschritts.
 
+## Aktueller Stand: Gastwarenkorb praktisch bestaetigt
+
+Der Nutzer hat die Produktauswahl fuer den Proof of Concept ausdruecklich
+delegiert. In der verfuegbaren ChatGPT-Browserschnittstelle (CUA), **nicht aus
+James oder Railway und nicht ueber die Agents API**, wurden folgende Produkte
+in einen zuvor leeren, nicht angemeldeten Galaxus-Warenkorb gelegt:
+
+| Produkt | Packung | Galaxus-ID | Ziel / beobachtet |
+| --- | --- | --- | --- |
+| bluu Universal Waschstreifen, Alpen Frische | 60 Waschgaenge | 14684120 | 2 / 2 |
+| Barilla Spaghetti n.5 | 500 g | 14730798 | 1 / 1 |
+| Cirio Pizza Sauce | 400 g | 37264242 | 1 / 1 |
+
+Alle drei Zeilen und Mengen wurden direkt in der Warenkorboberflaeche gelesen
+und in einem Screenshot bestaetigt. Nach einem vollstaendigen Neuladen waren
+dieselben drei Produkte mit 2/1/1 weiterhin vorhanden. Fuer einen wiederholten
+Auftrag waren damit keine weiteren Add-Aktionen erforderlich. Das belegt den
+manuell vom Agenten eingehaltenen Sollmengenabgleich; ein automatischer
+Replay-/Parallelitaetstest der James-Implementierung ist es noch nicht.
+
+![Gastwarenkorb mit drei Testprodukten und Mengen 2/1/1](evidence/galaxus-cart-poc-2026-11-02.jpg)
+
+Die Anzeige am Warenkorbsymbol zaehlt Stuecke, nicht unterschiedliche
+Positionen. Fuer die Abnahme sind die drei Warenkorbzeilen massgeblich.
+Ein Klick aus der Suchliste wurde nicht als gespeicherte Position bestaetigt;
+nach Lesen des Warenkorbs wurde das fehlende Produkt ueber seine eindeutige
+Detailseite hinzugefuegt. Es entstand keine doppelte Position.
+
+Keine Anmeldung, keine persoenlichen Daten, kein Checkout und keine Bestellung.
+Der Gastwarenkorb wurde fuer die Sichtpruefung offengelassen. Seine URL
+`https://www.galaxus.ch/de/cart` uebertraegt weder Cookies noch Warenkorbinhalt
+auf das persoenliche Geraet. Das bleibt ein eigener Test.
+
+## Agents-API-Grenze und Kostenfreigabe
+
+Ein neuer Cart-Pilot mit `spend_control={"limit":300}` wurde mit HTTP 400,
+`unknown_parameter`, Parameter `spend_control` abgelehnt. Die aktuelle offizielle
+[API-Referenz](https://developers.openai.com/api/reference/python/resources/beta/subresources/agents/subresources/sessions/methods/create)
+dokumentiert das Feld in US-Cents; der tatsaechliche Endpunkt akzeptiert es
+bei diesem Zugang jedoch nicht. Ohne Limit wurde der weitere Versuch durch
+die automatische Sicherheitspruefung wegen moeglicher unbegrenzter
+API-/Sandboxkosten abgelehnt. Dieser Weg wurde nicht umgangen.
+
+Die anschliessende reine API-Bestandspruefung fand keine Cart-POC-Sitzung mit
+den eindeutigen Pilotinstruktionen. Es wurde kein API-Warenkorbauftrag
+nachgewiesen. Die Browserprobe verlangt jetzt vor jeder Eingabe ein vom
+Server zurueckgeliefertes Limit von hoechstens 300 US-Cents. Eine neu erzeugte
+Sitzung ohne bestaetigtes Limit wird wieder geloescht, auch wenn Aufbewahrung
+angefordert wurde. Kein stiller Fallback auf unbegrenzte Sitzungen.
+
+Das vorbereitete Betreiberwerkzeug `scripts/jayjay_cart_poc.py` bietet die
+Phasen `prepare`, `recheck`, `verify` und `close` in derselben Sitzung. Es ist
+**noch nicht live abgenommen** und startet derzeit wegen der Kosten-Grenze
+keinen Warenkorbauftrag. Keine Anbindung als Chatwerkzeug oder Webroute.
+Das Budget gilt pro Sitzung, die sechs Minuten sind nur das Beobachtungsbudget
+pro Turn; sie sind keine Garantie, dass ein unterbrochener Serverturn endet.
+
+Naechste Integrationsarbeit: eine nachweislich begrenzte API-/Browserlaufzeit
+waehlen, sichere interaktive Anmeldung ermoeglichen, den Warenkorbzustand
+strukturiert gegen einen fixierten Auftrag abgleichen und die Uebergabe in
+das persoenliche Shopkonto testen. Der heutige Shoptest belegt den UI-Weg,
+ersetzt aber keinen dieser Integrationsnachweise.
+
 ## Erster technischer Nachweis
 
 Die Agents API hat mit dem vorhandenen Zugang eine Sitzung mit
@@ -64,13 +127,15 @@ pruefen, keinen neuen Lauf automatisch starten.
 beobachtet. Die Modellmeldung ist **kein Produkt- oder Warenkorbnachweis**.
 Screenshot und Shopzustand separat pruefen. Nicht fuer angemeldete Seiten
 oder echte Warenkorbaenderungen verwenden. Ein Browserlauf verursacht
-API-/Sandboxkosten; es handelt sich nicht um ein finanzielles Kostendach.
+API-/Sandboxkosten. Neue Sitzungen verlangen inzwischen ein bestaetigtes
+API-Limit von hoechstens 300 US-Cents; am aktuellen Endpunkt ist dieser Start
+blockiert (siehe oben).
 
 ## Naechster Warenkorbtest
 
-Die gelesene Uebergabe und SHOP_FEASIBILITY.md nennen noch keine Liste aus
-drei verbindlich ausgewaehlten Produkten samt Mengen. Vor diesem Test vom
-Nutzer festlegen lassen:
+Die urspruengliche Uebergabe enthielt keine drei verbindlichen Testprodukte.
+Der Nutzer hat die Auswahl anschliessend delegiert; die obige Dreierliste ist
+fuer weitere POC-Laeufe fixiert. Fuer einen persoenlichen Einkauf spaeter klaeren:
 
 1. Shop und drei exakte Varianten/Packungen, vorzugsweise Produktlinks.
 2. Jeweilige Packungszahl; mindestens eine Position mit Menge 2.
@@ -103,6 +168,12 @@ nicht. Zugang zur Agents API ersetzt weder diese Interaktion noch die
 Warenkorbabnahme.
 
 ## Lokale Validierung
+
+Ergaenzung nach Cart-POC: 16 Browser-Lifecycle-Tests bestanden, einschliesslich
+Sitzungswiederverwendung, beschaeftigter Sitzung und Verweigerung/Bereinigung
+bei fehlendem Kostenlimit. Der bisherige PR-Stand hatte ausserdem eine
+erfolgreiche GitHub-CI einschliesslich Postgres und Containerpruefung.
+Die nachfolgende Liste beschreibt den frueheren ersten Prueflauf.
 
 - Neue isolierte Browserprobe: 12 Tests bestanden. Exakte Origin-Freigabe,
   Abbruch bei Anmeldung, fehlender Bild-/Browsernachweis, Verbindungsabbruch
