@@ -1,114 +1,118 @@
-# Shop-Anmeldepilot in der gehosteten PWA
+# Gemeinsames Galaxus-Konto im PWA-Anmeldepilot
 
 Implementiert, noch nicht auf Railway bereitgestellt oder aktiviert. Kein neuer
 kostenpflichtiger API-Test in dieser Etappe. Der einmalig genehmigte
 Gastwarenkorbtest bleibt der bisherige Live-Nachweis.
 
-## Nutzerablauf
+## Ziel und aktueller Umfang
 
-Nach bewusster Aktivierung erscheint in James **Shop-Anmeldung**. Die Seite
-erklaert die API-Kosten, das fehlende garantierte Geldlimit und das
-sechsminuetige Abbruch-/Bereinigungsbudget. Die Person bestaetigt jeden Test
-mit einer eigenen Checkbox. Erst dieser CSRF-geschuetzte POST stellt einen
-Auftrag in die Warteschlange. Ein GET startet keinen Browser. Gleiche
-Anfragekennung erzeugt keinen zweiten Auftrag; ein offener/ungeklaerter Test
-sperrt einen weiteren. Hoechstens zwei vorgemerkte Tests pro Person/UTC-Tag.
+Ein bestehendes Galaxus-Konto gehoert zum Haushalt. Berechtigte Mitglieder
+koennen einen Test starten; der zugehoerige Auftrag und manuelle Anmeldeschritte
+bleiben nur fuer die startende Person sichtbar. Pro Haushalt darf genau ein
+Auftrag offen sein, auch bei unklarer Bereinigung. Die Datenbank erzwingt dies
+mit einem eindeutigen aktiven Haushaltsslot. Hoechstens zwei Tests pro UTC-Tag
+und Haushalt. Ein vorheriger Slot wird erst bei abgeschlossener Bereinigung frei.
 
-Der separate Pilotdienst uebernimmt genau einen Auftrag atomar und startet
-den API-Browser. Sobald dieser eine registrierte Galaxus-Anmeldung anfordert,
-erscheint das Eingabeformular auf der persoenlichen Statusseite. Die Person
-aktualisiert die Seite bei Bedarf selbst, damit keine Eingaben durch einen
-automatischen Refresh verloren gehen. Weitere Login-Schritte, etwa MFA,
-erscheinen als neue Anforderungen. Eingaben werden nicht erneut vorausgefuellt.
+Dieser Pilot testet **nur die Anmeldung**. Er erstellt keine Konten, aendert
+keine Einstellungen oder Warenkoerbe und bestellt nicht. Angemeldeter Warenkorb
+und Sichtbarkeit auf dem persoenlichen Geraet sind die anschliessende Abnahme,
+kein bereits implementierter Nachweis. Die temporaere Browsersitzung wird nach
+dem Test geloescht; dauerhafte Cookies werden nicht gespeichert.
 
-Die Maske erlaubt nur den exakten Credential-Origin `https://www.galaxus.ch`.
-Andere SSO-/Login-Origins stoppen den Pilot; sie werden nicht ungeprueft
-freigegeben. Das Ziel und die Uebermittlung an den OpenAI-gehosteten Browser
-muessen vor dem Absenden bestaetigt werden. Passwoerter und Codes gehoeren
-niemals in den JayJay-Chat.
+## Konfiguration auf Railway
 
-Der derzeitige Auftrag testet nur eine bestehende Anmeldung. Keine
-Kontoerstellung, Aenderung von Kontoeinstellungen, Warenkorbaenderung oder
-Bestellung. Ein abgeschlossener API-Turn oder eine angenommene Eingabe ist
-kein unabhaengiger Beleg fuer einen erfolgreichen Login. Die Sitzung wird
-nach dem Test geloescht. Kontoverknuepfung und persoenliche Warenkorbübergabe
-sind damit noch nicht dauerhaft implementiert.
+| Variable | Ort | Inhalt |
+| --- | --- | --- |
+| `GALAXUS_HOUSEHOLD_ID` | Webdienst; Referenz im Worker | Tatsaechliche interne ID eures Haushalts aus der Datenbank |
+| `GALAXUS_EMAIL` | Nur Worker, versiegelt setzen | E-Mail des bestehenden gemeinsamen Shopkontos |
+| `GALAXUS_PASSWORD` | Nur Worker, versiegelt setzen | Passwort dieses Kontos |
+| `SHOP_LOGIN_PILOT_ENABLED` | Webdienst; Referenz im Worker | Zunaechst `0`, erst nach Betriebspruefung `1` |
+| `OPENAI_API_KEY` | Bestehende geschuetzte Konfiguration | Unveraendert weiterverwenden, im Worker referenzieren |
 
-## Persistenz und Zugriff
+Keine echten Werte in Chat, Git, Kommandoausgaben oder PR schreiben. E-Mail und
+Passwort direkt in Railways Variables-Oberflaeche eintragen. Der Webdienst
+benoetigt diese beiden Geheimnisse nicht. Fehlende Zugangsdaten verhindern eine
+neue API-Sitzung im Worker. Eine fehlende/falsche Haushaltsbindung verhindert das
+Vormerken im Web und die Ausfuehrung. Es gibt keinen geratenen Standardhaushalt.
+Das ist bewusst eine Installation fuer **einen** Haushalt, keine allgemeine
+Mehrhaushalts-Kontoverwaltung.
 
-`ShopLogin` speichert UUID-Referenz, Auftragskennung, Person, Haushalt,
-Auth-Version, API-Sitzungs-/Anforderungsreferenzen, Kostenfreigabezeitpunkt,
-Fristen und Zustand. Keine Anmeldedaten, Cookies, Modelltexte oder Bilder.
-Ein eindeutiger aktiver Nutzer-Slot verhindert parallele Tests auch ueber
-mehrere Webworker hinweg. Geschlossene Auftraege geben diesen Slot frei.
+## Ablauf und Umgang mit Geheimnissen
 
-Jeder Zugriff prueft Person, Haushalt und Auth-Version erneut. Andere
-Haushaltsmitglieder sehen die Anmeldung nicht. Vor einer Uebermittlung wird
-die aktuelle API-Anforderung erneut gelesen und nach dem HTTP-Aufruf die
-Identitaet und Frist nochmals geprueft. Eine atomare Reservierung auf
-`submitting` verhindert doppelte Credential-POSTs. Kein DB-Lock bleibt
-waehrend einer HTTP-Anfrage offen. Bei unklarem Ergebnis wird nicht erneut
-uebermittelt. Rohantworten und Exceptiontexte werden nicht weitergegeben.
+Die Person bestaetigt einen einmaligen kostenpflichtigen Anmeldetest sowie die
+Nutzung des hinterlegten Haushaltskontos im OpenAI-gehosteten Shopbrowser. Erst
+ein CSRF-geschuetzter POST reiht den Auftrag ein. Ein GET startet keinen Browser;
+dieselbe Anfragekennung erzeugt keinen zweiten Auftrag. Kein hartes Geldlimit
+wird versprochen. Nach sechs Minuten werden Abbruch und Bereinigung angefordert;
+bei Dienst-/Netzausfall kann sich das verzoegern.
 
-Privates HTML hat `Cache-Control: no-store`; die vorhandenen Service-Worker-
-Regeln cachen die Loginseiten oder POSTs nicht. Das Abmelden markiert aktive
-Tests als abgebrochen. Der separate Observer bemerkt auch Rechtewechsel,
-Auth-Version-Wechsel und Fristablauf und fordert Cancellation an.
+Der beaufsichtigte Worker uebernimmt genau einen Auftrag atomar. Er verwendet
+Zugangsdaten ausschliesslich in registrierten `browser_authentication`-
+Kontrollereignissen, nie in Modellanweisungen oder Chatnachrichten. Vor dem
+Senden wird die aktuelle API-Anforderung erneut gelesen und Identitaet,
+Haushaltsbindung, Sitzung, Zustand und Fristen werden erneut geprueft. Das
+Anmeldeziel muss exakt `https://www.galaxus.ch` sein. Andere SSO-/Login-Origins
+stoppen den Pilot und brauchen zuerst eine verifizierte Anpassung.
 
-## Betrieb und Bereinigung
+Nur eindeutig erkannte E-Mail-/Benutzername- und Passwortfelder werden befuellt.
+Getrennte E-Mail- und Passwortschritte sind moeglich. Jedes dieser Felder wird
+hoechstens einmal pro Browsersitzung automatisch uebermittelt. Mehrdeutige
+Methoden, unbekannte Felder und MFA-/Einmalcodes bleiben manuelle Anforderungen
+auf der privaten Statusseite. Es wird kein SMS-Code automatisch beschafft oder
+MFA-Geheimnis hinterlegt. Die Person aktualisiert die Seite selbst und gibt den
+geforderten Schritt ein. Keine Eingaben werden vorausgefuellt oder wiederholt.
+Nach einer unklaren Uebermittlung wird abgebrochen und bereinigt.
 
-Der beaufsichtigte Dienst laeuft mit:
+`ShopLogin` speichert nur Auftrag, Person, Haushalt, Auth-Version,
+API-Sitzungs-/Anforderungsreferenzen, Fristen, Kostenfreigabe und Zustand. Keine
+Passwoerter, Codes, Cookies, Modelltexte oder Bilder. Private Seiten verwenden
+`Cache-Control: no-store`. Authentifizierte Seiten und POSTs werden nicht vom
+Service Worker gecacht. Andere Haushaltsmitglieder sehen keine fremden
+Anmeldeformulare. Abmelden, Rechteentzug und Fristablauf loesen Abbruch aus.
+
+Eine angenommene Eingabe oder ein abgeschlossener API-Turn beweist keinen Login.
+Echte Anmeldung, MFA und Warenkorbuebergabe muessen am Konto separat abgenommen
+werden. Der Browser kann nach dem Login persoenliche Kontodaten sehen.
+
+## Betrieb und Kosten
+
+Der zusaetzliche Railway-Dienst laeuft mit einer Replik ohne oeffentliche Domain:
 
 ```bash
 flask --app james shop-login-worker --watch
 ```
 
-Er prueft die Queue etwa alle 30 Sekunden, bearbeitet jeweils einen Test und
-gleicht abgebrochene, unklare und abgelaufene Sitzungen ab. Nach Neustart wird
-ein bereits begonnener Auftrag **nicht** automatisch neu erstellt. Falls der
-Prozess nach API-Erstellung, aber vor dem Speichern der Sitzungs-ID starb,
-wird ueber eine eindeutige UUID in API-Metadaten abgeglichen. Ein ungeklaerter
-Abgleich bleibt `cleanup_pending` und sperrt einen neuen Test dieser Person.
-Der begrenzte Abgleich liest die letzten 100 Sitzungen; aeltere oder nicht
-auffindbare Faelle brauchen Betreiberpruefung.
+Er prueft die Datenbankqueue etwa alle 30 Sekunden, bearbeitet einen Test und
+bereinigt abgebrochene, unklare oder abgelaufene Sitzungen. Er erzeugt im Leerlauf
+keine OpenAI-Sitzungen, verbraucht aber Railway-RAM und etwas CPU. Die tatsaechlichen
+Infrastrukturkosten werden nach Bereitstellung anhand der Messwerte beurteilt;
+OpenAI-Kosten entstehen separat bei einem bewusst gestarteten Test.
 
-Cancellation und Loeschung sind getrennte API-Aufrufe. Eine Loeschung kann
-bei noch aktivem Turn oder Netzfehler scheitern; dann bleibt die Bereinigung
-offen und wird beim naechsten Durchlauf erneut geprueft. Das ist weiterhin
-kein hartes Kostenlimit. Bei einem laufenden Pilot kann der Queue-Dienst
-bis zum Testende beschaeftigt sein; beim Ausfall des gesamten Dienstes ist
-die Bereinigung bis zu dessen Wiederanlauf verzoegert. Ein Betreiber muss
-Fehler/Restart und `cleanup_pending` ueberwachen. Einmaliger Abgleich:
+Nach Neustart wird eine begonnene Sitzung nicht erneut erstellt. Bei unbekanntem
+Erstellungsausgang erfolgt Abgleich anhand der eindeutigen Auftrags-UUID in den
+letzten 100 API-Sitzungen. Nicht auffindbare oder aeltere Faelle bleiben
+`cleanup_pending` und brauchen Betreiberpruefung. Cancellation und Loeschung
+sind getrennte Aufrufe; fehlgeschlagene Bereinigung wird erneut versucht. Bei
+laufendem Test oder Worker-Ausfall kann sie verzoegert sein. Kein garantiertes
+Geldlimit. Einmaliger manueller Abgleich:
 
 ```bash
 flask --app james shop-login-cleanup
 ```
 
-Der API-Schluessel bleibt ausschliesslich in den bestehenden geschuetzten
-Laufzeitvariablen. Der zusaetzliche Railway-Dienst verwendet Referenzen auf
-dieselben James-Ressourcen; keine Geheimnisse in Konfigurationsdateien oder
-Werkzeugausgaben. Er benoetigt keine oeffentliche Domain und keinen Zugriff
-auf die persoenliche ChatGPT-Browsersitzung.
-
 ## Bereitstellung und Abnahme
 
-`deployment/shop-login-worker.json` beschreibt die vorbereitete Zielkonfiguration,
-wird aber nicht automatisch von Railway angewandt. Die Bereitstellung braucht
-einen zusaetzlichen kleinen, dauerhaft beaufsichtigten Railway-Dienst und
-verursacht dort Infrastrukturkosten. Er wurde noch nicht angelegt.
+`deployment/shop-login-worker.json` ist die vorbereitete Referenz, nicht bereits
+angewandte Konfiguration. Webdienst, Datenbank und Railway wurden nicht veraendert.
 
-1. CI und Migration pruefen. Web-Code und neue Tabelle zunaechst bei
-   `SHOP_LOGIN_PILOT_ENABLED=0` bereitstellen.
-2. Den Pilotdienst mit einer Replik, Restart-Verhalten und denselben
-   James-Konfigurationsreferenzen einrichten. Queue-/Restart-/Bereinigungs-
-   pruefung ohne neue API-Sitzung durchfuehren.
-3. Erst danach bewusst aktivieren. Der naechste bezahlte Loginversuch wird
-   von der Person selbst in der PWA separat bestaetigt. Die bisherige
-   Einzelgenehmigung deckt ihn nicht ab.
-4. Login/MFA/Abbruch am echten Konto, Smartphone und Tablet pruefen. Dann
-   erst angemeldeten Warenkorb, Wiederholungen und die Uebergabe auf das
-   persoenliche Geraet untersuchen.
-
-Der laufende James-Service, seine Konfiguration und die Datenbank wurden in
-dieser Implementierungsetappe noch nicht veraendert. Die neue Migration
-liegt als eigener Schema-Commit vor.
+1. Tests und Migration pruefen. Migration lehnt bereits vorhandene parallele
+   offene Auftraege eines Haushalts ab, statt einen still zu verwerfen.
+2. Code/Schema zunaechst bei deaktiviertem Pilot bereitstellen. Den beaufsichtigten
+   Worker mit einer Replik einrichten; Haushalt-ID pruefen und setzen.
+3. Die beiden Shop-Geheimnisse direkt und nur im Worker hinterlegen. Leere Queue,
+   Neustart und Bereinigung ohne neue kostenpflichtige API-Sitzung pruefen.
+4. Kontrolliert aktivieren. Ein neuer bezahlter Test startet erst nach bewusster
+   Bestaetigung in James. Die fruehere Einzelgenehmigung ist verbraucht.
+5. Echte Kontoanmeldung, MFA, Abbruch und Smartphone pruefen. Anschliessend den
+   angemeldeten Drei-Produkte-Warenkorb und die geraeteuebergreifende Sichtbarkeit
+   implementieren und abnehmen. Weiterhin kein Bestellabschluss.

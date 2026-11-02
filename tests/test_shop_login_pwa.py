@@ -11,6 +11,15 @@ from james.shop_login_worker import cleanup, worker_once
 from test_app import csrf, login
 
 
+@pytest.fixture(autouse=True)
+def bound_account(app):
+    with app.app_context():
+        owner = db.session.scalar(select(User).where(User.email == 'owner@example.test'))
+        member = db.session.scalar(select(Membership).where(Membership.user_id == owner.id))
+        app.config.update(GALAXUS_HOUSEHOLD_ID=str(member.household_id),
+            GALAXUS_EMAIL='synthetic-account@example.test', GALAXUS_PASSWORD='synthetic-account-password')
+
+
 @pytest.fixture
 def prepared(app, client, monkeypatch):
     app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
@@ -290,8 +299,177 @@ def test_daily_start_limit_includes_completed_and_cancelled_attempts(app, client
         assert response.status_code == 302
         with app.app_context():
             row = db.session.scalars(select(ShopLogin).order_by(ShopLogin.id.desc())).first()
-            row.state, row.active_user_id = 'closed', None
+            row.state, row.active_user_id, row.active_household_id = 'closed', None, None
             db.session.commit()
     response = client.post('/shop-login', data={'csrf_token': csrf(client, '/shop-login'),
         'start_request_id': str(uuid4()), 'cost_consent': 'yes'})
     assert response.status_code == 409
+
+
+def test_household_member_can_start_but_cannot_overlap_shared_account(app, client):
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
+    login(client)
+    payload = {'csrf_token': csrf(client, '/shop-login'), 'start_request_id': str(uuid4()), 'cost_consent': 'yes'}
+    assert client.post('/shop-login', data=payload).status_code == 302
+    # Separate browser, no logout cancellation of the owner's active run.
+    member = app.test_client()
+    login(member, 'member@example.test')
+    assert member.post('/shop-login', data={'csrf_token': csrf(member, '/shop-login'),
+        'start_request_id': str(uuid4()), 'cost_consent': 'yes'}).status_code == 409
+    with app.app_context():
+        run = db.session.scalar(select(ShopLogin))
+        run.state, run.active_user_id, run.active_household_id = 'closed', None, None
+        db.session.commit()
+    assert member.post('/shop-login', data={'csrf_token': csrf(member, '/shop-login'),
+        'start_request_id': str(uuid4()), 'cost_consent': 'yes'}).status_code == 302
+
+
+def test_unbound_household_cannot_queue_account(app, client):
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
+    login(client, 'other@example.test')
+    assert client.get('/shop-login').status_code == 403
+    assert client.post('/shop-login', data={'csrf_token': csrf(client, '/'),
+        'start_request_id': str(uuid4()), 'cost_consent': 'yes'}).status_code == 403
+    with app.app_context():
+        assert db.session.scalar(select(ShopLogin)) is None
+
+
+def test_database_enforces_single_household_account_slot(app, prepared):
+    from sqlalchemy.exc import IntegrityError
+    identifier, _, _ = prepared
+    with app.app_context():
+        first = db.session.get(ShopLogin, identifier)
+        member = db.session.scalar(select(User).where(User.email == 'member@example.test'))
+        db.session.add(ShopLogin(user_id=member.id, household_id=first.household_id,
+            auth_version=member.auth_version, expires_at=utcnow() + timedelta(minutes=6)))
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+
+
+def test_automatic_credentials_use_control_event_without_ui_or_persistence(app, client, prepared):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import login_handler
+    identifier, _, schema = prepared
+    schema['fields'][0]['label'] = 'E-Mail'
+    api_client = MagicMock()
+    approval = SimpleNamespace(request=SimpleNamespace(credential_origin='https://www.galaxus.ch'),
+        request_id='request-1', turn_id='turn-1')
+    login_handler(app, identifier)(approval, api_client, 'synthetic-session')
+    call = api_client.beta.agents.sessions.events.create.call_args
+    assert call.args == ('synthetic-session',)
+    event = call.kwargs['events'][0]
+    assert event['type'] == 'agent.session.input.computer_use_approval_request_result'
+    assert event['response']['fields'] == [
+        {'field_id': 'email', 'value': 'synthetic-account@example.test'},
+        {'field_id': 'password', 'value': 'synthetic-account-password'}]
+    with app.app_context():
+        run = db.session.get(ShopLogin, identifier)
+        assert run.state == 'accepted'
+        saved = repr({c.name: getattr(run, c.name) for c in run.__table__.columns})
+        assert 'synthetic-account-password' not in saved
+    page = client.get(f'/shop-login/{identifier}').data
+    assert b'synthetic-account-password' not in page and b'synthetic-account@example.test' not in page
+
+
+def test_automatic_uncertain_submission_stops_without_retry(app, prepared):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import login_handler
+    identifier, _, schema = prepared
+    schema['fields'][0]['label'] = 'E-Mail'
+    api_client = MagicMock()
+    api_client.beta.agents.sessions.events.create.side_effect = RuntimeError('synthetic-account-password')
+    approval = SimpleNamespace(request=SimpleNamespace(credential_origin='https://www.galaxus.ch'),
+        request_id='request-1', turn_id='turn-1')
+    handler = login_handler(app, identifier)
+    with pytest.raises(ValueError, match='keine Wiederholung') as error:
+        handler(approval, api_client, 'synthetic-session')
+    assert 'synthetic-account-password' not in str(error.value)
+    with pytest.raises(ValueError):
+        handler(approval, api_client, 'synthetic-session')
+    assert api_client.beta.agents.sessions.events.create.call_count == 1
+    with app.app_context():
+        assert db.session.get(ShopLogin, identifier).state == 'unknown'
+
+
+def test_mfa_is_manual_and_saved_password_is_never_reused_for_code(app, prepared, monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import login_handler
+    identifier, _, schema = prepared
+    schema['fields'] = [{'id': 'otp', 'label': 'Bestaetigungscode', 'type': 'password', 'required': True}]
+    api_client = MagicMock()
+    def user_confirmation(_):
+        with app.app_context():
+            row = db.session.get(ShopLogin, identifier)
+            assert row.state == 'pending'
+            row.state = 'accepted'
+            db.session.commit()
+    monkeypatch.setattr('james.shop_login_worker.Event', lambda: SimpleNamespace(wait=user_confirmation))
+    approval = SimpleNamespace(request=SimpleNamespace(credential_origin='https://www.galaxus.ch'),
+        request_id='request-1', turn_id='turn-1')
+    login_handler(app, identifier)(approval, api_client, 'synthetic-session')
+    api_client.beta.agents.sessions.events.create.assert_not_called()
+
+
+@pytest.mark.parametrize('change', ['household', 'missing_password', 'session', 'cancelled'])
+def test_auto_login_rejects_wrong_binding_and_missing_credentials_before_api(app, prepared, monkeypatch, change):
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import execute_run
+    identifier, _, _ = prepared
+    client_constructor = MagicMock()
+    monkeypatch.setattr('openai.OpenAI', client_constructor)
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.session_id = None
+        row.state = 'creating'
+        row.cost_authorized_at = utcnow()
+        if change == 'household':
+            app.config['GALAXUS_HOUSEHOLD_ID'] = '999999'
+        elif change == 'missing_password':
+            app.config['GALAXUS_PASSWORD'] = ''
+        elif change == 'session':
+            row.creation_started_at = utcnow()
+        else:
+            row.state = 'cancelled'
+        db.session.commit()
+        execute_run(app, identifier)
+    client_constructor.assert_not_called()
+
+
+def test_credential_mapping_handles_split_login_and_never_retries_roles(app):
+    from james.shop_account import credential_response
+    email = {'id': 'login-email', 'label': 'E-Mail', 'type': 'email', 'required': True}
+    password = {'id': 'login-password', 'label': 'Passwort', 'type': 'password', 'required': True}
+    schema = {'credential_origin': 'https://www.galaxus.ch', 'fields': [email], 'options': []}
+    with app.app_context():
+        response, roles = credential_response(schema, app.config, set())
+        assert roles == {'email'}
+        schema['fields'] = [password]
+        _, next_roles = credential_response(schema, app.config, roles)
+        assert next_roles == {'password'}
+        assert credential_response(schema, app.config, roles | next_roles) is None
+        schema['fields'] = [email, password]
+        schema['options'] = [{'id': 'existing-account', 'label': 'Anmelden', 'field_ids': ['login-email', 'login-password']}]
+        response, _ = credential_response(schema, app.config, set())
+        assert response['selected_option'] == 'existing-account'
+        schema['options'].append({'id': 'other-method', 'label': 'Andere', 'field_ids': ['login-email', 'login-password']})
+        assert credential_response(schema, app.config, set()) is None
+        schema['options'] = []
+        schema['credential_origin'] = 'https://www.galaxus.ch.evil.example'
+        assert credential_response(schema, app.config, set()) is None
+
+
+@pytest.mark.parametrize('field', [
+    {'id': 'otp', 'label': 'Einmalpasswort', 'type': 'password', 'required': True},
+    {'id': 'new', 'label': 'Neues Passwort', 'type': 'password', 'required': True},
+    {'id': 'consent', 'label': 'Passwort', 'type': 'checkbox', 'required': True},
+    {'id': 'unknown', 'label': 'Unbekannt', 'type': 'text', 'required': True},
+])
+def test_unrecognised_fields_cannot_receive_server_secret(app, field):
+    from james.shop_account import credential_response
+    with app.app_context():
+        assert credential_response({'credential_origin': 'https://www.galaxus.ch',
+            'fields': [field], 'options': []}, app.config, set()) is None

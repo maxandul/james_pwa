@@ -254,3 +254,34 @@ def test_simultaneous_chat_retry_starts_exactly_one_run(app):
     assert sorted(results) == [False, True]
     with app.app_context():
         assert len(db.session.scalars(select(ChatTurn)).all()) == 1
+
+
+def test_simultaneous_household_shop_starts_reserve_one_account(app):
+    from datetime import timedelta
+    from sqlalchemy.exc import IntegrityError
+    from james.models import ShopLogin, User, utcnow
+    with app.app_context():
+        if db.engine.dialect.name != 'postgresql':
+            pytest.skip('Shared account reservation requires isolated Postgres.')
+        members = db.session.execute(select(Membership.user_id, Membership.household_id, User.auth_version)
+            .join(User).where(User.email.in_(('owner@example.test', 'member@example.test')))).all()
+        data = [tuple(row) for row in members]
+    barrier = Barrier(2)
+    def start(row):
+        user, household, version = row
+        with app.app_context():
+            barrier.wait(timeout=10)
+            try:
+                db.session.add(ShopLogin(user_id=user, household_id=household, auth_version=version,
+                    state='queued', cost_authorized_at=utcnow(), expires_at=utcnow() + timedelta(minutes=6)))
+                db.session.commit()
+                return 'queued'
+            except IntegrityError:
+                db.session.rollback()
+                return 'conflict'
+            finally:
+                db.session.remove()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        assert sorted(executor.map(start, data)) == ['conflict', 'queued']
+    with app.app_context():
+        assert len(db.session.scalars(select(ShopLogin)).all()) == 1

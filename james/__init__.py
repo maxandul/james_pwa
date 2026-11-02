@@ -35,6 +35,9 @@ def create_app(test_config=None):
         OPENAI_API_KEY=os.getenv('OPENAI_API_KEY', ''),
         OPENAI_MODEL=os.getenv('OPENAI_MODEL', ''),
         SHOP_LOGIN_PILOT_ENABLED=os.getenv('SHOP_LOGIN_PILOT_ENABLED', '') == '1',
+        GALAXUS_HOUSEHOLD_ID=os.getenv('GALAXUS_HOUSEHOLD_ID', ''),
+        GALAXUS_EMAIL=os.getenv('GALAXUS_EMAIL', ''),
+        GALAXUS_PASSWORD=os.getenv('GALAXUS_PASSWORD', ''),
     )
     if test_config:
         app.config.update(test_config)

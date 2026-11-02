@@ -254,6 +254,8 @@ class ShopLogin(db.Model):
     start_request_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid4()))
     active_user_id = db.Column(db.Integer, unique=True,
         default=lambda context: context.get_current_parameters()['user_id'])
+    active_household_id = db.Column(db.Integer, unique=True,
+        default=lambda context: context.get_current_parameters()['household_id'])
     cost_authorized_at = db.Column(db.DateTime)
     creation_started_at = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)

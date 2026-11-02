@@ -20,6 +20,11 @@ SHOP_ORIGIN = 'https://www.galaxus.ch'
 ACTIVE = ('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')
 
 
+def account_bound(household_id):
+    """Deployment-level single-account pilot; no guessed/default household."""
+    return str(current_app.config.get('GALAXUS_HOUSEHOLD_ID', '')) == str(household_id)
+
+
 class ProviderUnavailable(Exception):
     def __init__(self, message, status=None):
         super().__init__(message)
@@ -120,6 +125,11 @@ def private_headers(response):
 @shop_login.route('/shop-login', methods=['GET', 'POST'])
 @household_required
 def index():
+    if not account_bound(g.household.id):
+        message = 'Fuer diesen Haushalt ist noch kein Galaxus-Konto eingerichtet.'
+        if not current_app.config.get('GALAXUS_HOUSEHOLD_ID') and g.membership.role == 'owner':
+            message += f' Fuer die Einrichtung ist eure Haushaltskennung {g.household.id}.'
+        return render_template('error.html', message=message), 403
     if request.method == 'POST':
         if request.form.get('cost_consent') != 'yes':
             abort(400)
@@ -133,13 +143,13 @@ def index():
             if old.household_id != g.household.id or old.auth_version != current_user.auth_version:
                 abort(409)
             return redirect(url_for('shop_login.login', run_id=old.id))
-        if db.session.scalar(select(ShopLogin.id).where(ShopLogin.active_user_id == current_user.id)):
+        if db.session.scalar(select(ShopLogin.id).where(ShopLogin.active_household_id == g.household.id)):
             abort(409)
         today = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         count = db.session.scalar(select(func.count(ShopLogin.id)).where(
-            ShopLogin.user_id == current_user.id, ShopLogin.created_at >= today))
+            ShopLogin.household_id == g.household.id, ShopLogin.created_at >= today))
         if count >= 2:
-            return render_template('error.html', message='Heute sind bereits zwei Anmeldetests gestartet worden.'), 409
+            return render_template('error.html', message='Heute sind bereits zwei Anmeldetests fuer euren Haushalt gestartet worden.'), 409
         run = ShopLogin(user_id=current_user.id, active_user_id=current_user.id,
             household_id=g.household.id, auth_version=current_user.auth_version,
             start_request_id=start_id, state='queued', cost_authorized_at=utcnow(),

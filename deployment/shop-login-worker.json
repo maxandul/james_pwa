@@ -14,7 +14,8 @@
     "SECRET_KEY": "${{james-web.SECRET_KEY}}",
     "OPENAI_API_KEY": "${{james-web.OPENAI_API_KEY}}",
     "PUBLIC_BASE_URL": "${{james-web.PUBLIC_BASE_URL}}",
-    "SHOP_LOGIN_PILOT_ENABLED": "${{james-web.SHOP_LOGIN_PILOT_ENABLED}}"
+    "SHOP_LOGIN_PILOT_ENABLED": "${{james-web.SHOP_LOGIN_PILOT_ENABLED}}",
+    "GALAXUS_HOUSEHOLD_ID": "${{james-web.GALAXUS_HOUSEHOLD_ID}}"
   },
   "activation_order": [
     "Review and pass CI; merge only after deployment approval.",
@@ -22,5 +23,9 @@
     "Provision and verify this supervised worker while the pilot is still disabled.",
     "Verify empty queue, restart recovery and cleanup status without creating an API session.",
     "Enable the pilot for the controlled trial; a paid session starts only after an explicit user POST with cost consent."
+  ],
+  "worker_only_sealed_variables_to_enter_manually": [
+    "GALAXUS_EMAIL",
+    "GALAXUS_PASSWORD"
   ]
 }
