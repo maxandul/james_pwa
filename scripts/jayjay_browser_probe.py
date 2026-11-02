@@ -153,10 +153,14 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                         break
                     elif event.type in {'error', 'agent.session.failed', 'agent.session.environment.failed'}:
                         result['status'] = 'failed'
+                        result['failure_stage'] = ('environment_failed' if event.type == 'agent.session.environment.failed'
+                            else 'agent_failed')
                         break
                     elif event.type in {'agent.session.turn.failed', 'agent.session.turn.cancelled'}:
                         if event.turn.subagent_id is None:
                             result['status'] = 'failed'
+                            result['failure_stage'] = ('turn_cancelled' if event.type == 'agent.session.turn.cancelled'
+                                else 'turn_failed')
                             break
                 if timed_out:
                     result['status'] = 'timeout'

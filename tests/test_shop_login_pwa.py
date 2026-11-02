@@ -473,3 +473,76 @@ def test_unrecognised_fields_cannot_receive_server_secret(app, field):
     with app.app_context():
         assert credential_response({'credential_origin': 'https://www.galaxus.ch',
             'fields': [field], 'options': []}, app.config, set()) is None
+
+
+def test_old_closed_test_does_not_claim_success(client, app, prepared):
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+        db.session.commit()
+    page = client.get(f'/shop-login/{identifier}').text
+    assert 'kein genauer Ergebnisnachweis' in page
+    assert 'erfolgreicher Login ist nicht bestaetigt' in page
+    assert 'beendet oder wurde abgebrochen' not in page
+
+
+def test_executor_preserves_failure_details_after_successful_cleanup(app, client, prepared, monkeypatch, capsys):
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import execute_run
+    identifier, _, _ = prepared
+    monkeypatch.setattr('openai.OpenAI', MagicMock())
+    def fake_run(client, url, path, **options):
+        options['session_handler']('synthetic-created-session')
+        return {'status': 'failed', 'cleanup': 'deleted', 'http_status': 403, 'browser_calls': 0,
+            'error_type': 'PermissionDeniedError', 'model_report': 'private-page-content',
+            'error_code': 'synthetic-account-password', 'error_param': 'synthetic-account@example.test'}
+    monkeypatch.setattr('scripts.jayjay_browser_probe.run_task', fake_run)
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.session_id, row.state, row.cost_authorized_at = None, 'creating', utcnow()
+        db.session.commit()
+        execute_run(app, identifier)
+        db.session.expire_all()
+        row = db.session.get(ShopLogin, identifier)
+        assert row.state == 'closed' and row.active_household_id is None
+        assert (row.outcome, row.http_status, row.browser_calls, row.error_category) == ('failed', 403, 0, 'api')
+        persisted = repr({c.name: getattr(row, c.name) for c in row.__table__.columns})
+    page = client.get(f'/shop-login/{identifier}').text
+    logs = capsys.readouterr().out
+    for secret in ('synthetic-account-password', 'synthetic-account@example.test', 'private-page-content'):
+        assert secret not in persisted and secret not in page and secret not in logs
+    assert 'HTTP 403' in page and 'Browserauftrag ist fehlgeschlagen' in page
+    assert 'Bereinigung dieses Tests ist abgeschlossen' in page
+    assert 'HTTP: 403' in logs
+
+
+@pytest.mark.parametrize('result,outcome,error', [
+    ({'status': 'timeout', 'browser_calls': 12}, 'timeout', None),
+    ({'status': 'turn_completed'}, 'turn_completed', None),
+    ({'status': 'failed', 'failure_stage': 'environment_failed'}, 'failed', 'environment_failed'),
+    ({'status': 'failed', 'error_type': 'APIConnectionError'}, 'failed', 'connection'),
+    ({'status': 'failed', 'error_type': 'private-secret'}, 'failed', 'internal'),
+    ({'status': ['private-secret'], 'http_status': True, 'browser_calls': -1}, 'failed', None),
+])
+def test_only_safe_result_metadata_is_retained(app, prepared, result, outcome, error):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        save_result(identifier, result)
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == outcome and row.error_category == error
+        if type(result.get('http_status')) is not int:
+            assert row.http_status is None
+        assert 'private-secret' not in repr({c.name: getattr(row, c.name) for c in row.__table__.columns})
+
+
+def test_cleanup_retains_user_cancellation_reason(app, prepared):
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.state, row.session_id = 'cancelled', None
+        db.session.commit()
+        assert cleanup(identifier)
+        row = db.session.get(ShopLogin, identifier)
+        assert row.state == 'closed' and row.outcome == 'cancelled'

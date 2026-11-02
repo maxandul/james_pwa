@@ -178,3 +178,18 @@ def test_auth_mode_rejects_disk_screenshot_before_creating_session(tmp_path):
             instructions='test', task='login', authentication_handler=lambda *args: None,
             screenshot_path=tmp_path / 'private.jpg')
     sessions.create.assert_not_called()
+
+
+@pytest.mark.parametrize('event_type,stage', [
+    ('agent.session.environment.failed', 'environment_failed'),
+    ('agent.session.failed', 'agent_failed'),
+    ('agent.session.turn.failed', 'turn_failed'),
+    ('agent.session.turn.cancelled', 'turn_cancelled'),
+])
+def test_terminal_failure_stage_is_fixed_metadata_only(tmp_path, event_type, stage):
+    client, _ = fake_client([NS(type=event_type, turn=NS(subagent_id=None), message='private-secret')])
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'failure.json',
+        instructions='test', task='test only', authentication_handler=lambda *args: None)
+    assert result['status'] == 'failed' and result['failure_stage'] == stage
+    assert result['cleanup'] == 'deleted'
+    assert 'private-secret' not in str(result)

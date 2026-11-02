@@ -29,6 +29,7 @@ class ProviderUnavailable(Exception):
     def __init__(self, message, status=None):
         super().__init__(message)
         self.status = status
+        self.status_code = status  # Safe HTTP metadata for the runner's redacted error report.
 
 
 def api(method, path, body=None):
@@ -230,7 +231,8 @@ def login(run_id):
         except ProviderUnavailable:
             state = 'unknown'
         db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
-            ShopLogin.state == 'submitting').values(state=state))
+            ShopLogin.state == 'submitting').values(state=state,
+                auth_progress='manual_submitted' if state == 'accepted' else 'submission_unknown'))
         db.session.commit()
         return redirect(url_for('shop_login.login', run_id=run_id))
     except ProviderUnavailable:
