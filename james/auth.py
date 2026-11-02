@@ -63,6 +63,13 @@ def login():
 
 @auth.post("/logout")
 def logout():
+    if current_user.is_authenticated:
+        from sqlalchemy import update
+        from .models import ShopLogin
+        db.session.execute(update(ShopLogin).where(ShopLogin.user_id == current_user.id,
+            ShopLogin.state.in_(('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')))
+            .values(state='cancelled'))
+        db.session.commit()
     logout_user()
     session.clear()
     response = redirect(url_for("auth.login"))

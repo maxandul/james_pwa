@@ -1,0 +1,2 @@
+# Optional operator pilot; deliberately separate from the web service.
+openai==3.42.1

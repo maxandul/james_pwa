@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -244,3 +245,30 @@ class ChatTurn(db.Model):
         db.UniqueConstraint('user_id', 'request_id', name='chat_user_request'),
         db.CheckConstraint("state IN ('running','done','failed')", name='chat_turn_state'),
     )
+
+
+class ShopLogin(db.Model):
+    """Private API-session references only. Never credentials or model/browser output."""
+    id = db.Column(db.Integer, primary_key=True)
+    reference = db.Column(db.String(36), nullable=False, unique=True, default=lambda: str(uuid4()))
+    start_request_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid4()))
+    active_user_id = db.Column(db.Integer, unique=True,
+        default=lambda context: context.get_current_parameters()['user_id'])
+    active_household_id = db.Column(db.Integer, unique=True,
+        default=lambda context: context.get_current_parameters()['household_id'])
+    cost_authorized_at = db.Column(db.DateTime)
+    creation_started_at = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False)
+    auth_version = db.Column(db.Integer, nullable=False)
+    session_id = db.Column(db.String(128), unique=True)
+    request_id = db.Column(db.String(128))
+    turn_id = db.Column(db.String(128))
+    state = db.Column(db.String(20), nullable=False, default='creating')
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    challenge_expires_at = db.Column(db.DateTime)
+    __table_args__ = (db.UniqueConstraint('user_id', 'start_request_id', name='shop_login_user_start'),
+        db.CheckConstraint(
+        "state IN ('queued','creating','running','pending','submitting','accepted','cancelled','unknown','closed','cleanup_pending')",
+        name='shop_login_state'),)
