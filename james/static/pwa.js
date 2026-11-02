@@ -84,6 +84,7 @@
   } else {
     sync();
     window.addEventListener('online', sync);
+    window.addEventListener('james:household-changed', sync);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync(); });
     window.addEventListener('pageshow', event => { if (event.persisted) sync(); });
   }

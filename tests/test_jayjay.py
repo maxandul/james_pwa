@@ -251,3 +251,42 @@ def test_incomplete_model_response_never_executes_its_tools(app, monkeypatch):
     with app.app_context():
         turn = run_turn(turn_id, user, home)
         assert turn.state == 'failed' and turn.actions == []
+
+
+def test_floating_chat_is_available_on_app_pages_without_a_navigation_tab(app, client):
+    seed_item(app)
+    assert 'id="jayjay-launcher"' not in client.get('/login').text
+    login(client)
+    for path in ('/', '/shopping', '/household'):
+        html = client.get(path).text
+        assert 'id="jayjay-launcher"' in html and 'id="jayjay-dialog"' in html
+        nav = re.search(r'<nav class="nav".*?</nav>', html, re.S)[0]
+        assert '/jayjay' not in nav
+    panel = client.get('/jayjay?panel=1')
+    assert panel.is_json and panel.headers['Cache-Control'] == 'no-store'
+    assert panel.json['changed'] is False
+    assert '<html' not in panel.json['html']
+
+
+def test_panel_submission_returns_private_escaped_history_and_does_not_repeat_actions(app, client, monkeypatch):
+    import json
+    item, home, user = seed_item(app)
+    enable(app)
+    login(client)
+    responses = iter([
+        {'status':'completed','output':[{'type':'function_call','call_id':'read','name':'list_items','arguments':json.dumps({'query':'Kaffee','view':'active'})}]},
+        {'status':'completed','output':[{'type':'function_call','call_id':'write','name':'change_item','arguments':json.dumps(change_args(item))}]},
+        {'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':'<script>saved</script>'}]}]},
+    ])
+    monkeypatch.setattr('james.jayjay.responses_request', lambda *args: next(responses))
+    data = {'csrf_token':csrf(client, '/jayjay'), 'request_id':str(uuid4()), 'message':'Kaffee nachkaufen (privater Testauftrag)'}
+    result = client.post('/jayjay?panel=1', data=data)
+    assert result.status_code == 200 and result.json['changed'] is True
+    assert result.json['owner'].startswith(str(user) + ':')
+    assert '&lt;script&gt;' in result.json['html'] and '<script>' not in result.json['html']
+    assert client.post('/jayjay?panel=1', data=data).status_code == 200
+    with app.app_context():
+        assert db.session.scalar(select(func.count(Activity.id))) == 1
+    client.post('/logout', data={'csrf_token':csrf(client, '/')})
+    login(client, 'member@example.test')
+    assert 'privater Testauftrag' not in client.get('/jayjay?panel=1').json['html']
