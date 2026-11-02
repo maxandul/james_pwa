@@ -5,6 +5,10 @@ PR #8 ist gemergt und das schwebende Chatfenster vom Nutzer bestaetigt.
 Der bestehende API-Schluessel wird wiederverwendet. Layout bleibt ausserhalb
 dieses Arbeitsschritts.
 
+Die anschliessend vorbereitete isolierte Anmeldeschicht und ihre Grenzen
+sind in [SHOP_LOGIN_PILOT.md](SHOP_LOGIN_PILOT.md) dokumentiert. Noch kein
+echter Shop-Login und keine Einbindung dieser Maske in die gehostete PWA.
+
 ## Aktueller Stand: echter Agents-API-Warenkorbtest erfolgreich
 
 Nach der ausdruecklichen Freigabe "Ich erlaube diesen einmaligen API-Test ohne

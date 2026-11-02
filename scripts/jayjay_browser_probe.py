@@ -46,9 +46,11 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
 
 def run_task(client, url, state_path, *, instructions, task, seconds=120,
              screenshot_path=None, session_id=None, keep_session=False,
-             authorized_uncapped_test=False):
+             authorized_uncapped_test=False, authentication_handler=None):
     """One task, no retries. Keep its ID before sending any browser input."""
     origin = origin_for(url)
+    if authentication_handler is not None and (screenshot_path or keep_session):
+        raise ValueError('Loginpilot: keine Screenshotdateien oder Sitzungsaufbewahrung.')
     if authorized_uncapped_test and (keep_session or session_id or not 0 < seconds <= 360):
         raise ValueError('Freigegebener Einzeltest: nur neue Sitzung, maximal 360 Sekunden, keine Aufbewahrung.')
     # Exclusive creation prevents accidentally overwriting an unresolved session.
@@ -118,6 +120,10 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                                 raise ValueError('Unerwartete Aktion; manuelle Pruefung erforderlich.')
                             if action.request_id in seen:
                                 continue
+                            if action.request.type == 'browser_authentication' and authentication_handler is not None:
+                                authentication_handler(action, client, session_id)
+                                seen.add(action.request_id)
+                                continue
                             response = approval_response(action.request, origin)
                             client.beta.agents.sessions.events.create(session_id, events=[{
                                 'type': 'agent.session.input.computer_use_approval_request_result',
@@ -136,7 +142,8 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                                             image_url.split(',', 1)[1], validate=True))
                         save()
                     elif event.type == 'agent.session.turn.output_text.done':
-                        result['model_report'] += event.text
+                        if authentication_handler is None:
+                            result['model_report'] += event.text
                     elif event.type == 'agent.session.turn.completed' and event.turn.subagent_id is None:
                         result['status'] = 'turn_completed' if result['browser_calls'] else 'no_browser_evidence'
                         break
@@ -156,6 +163,13 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
     except Exception as exc:
         # Exception strings may contain request material. Only expose the class.
         result.update(status='failed', error_type=type(exc).__name__)
+        if session_id and result['cleanup'] == 'pending':
+            try:
+                client.beta.agents.sessions.events.create(session_id,
+                    events=[{'type': 'agent.session.input.cancel'}])
+                result['failure_cancel'] = 'requested'
+            except Exception as cancel_error:
+                result.update(failure_cancel='pending', cancel_error_type=type(cancel_error).__name__)
         if getattr(exc, 'status_code', None):
             result['http_status'] = exc.status_code
             result['error_code'] = getattr(exc, 'code', None)

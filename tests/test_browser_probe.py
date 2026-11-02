@@ -84,7 +84,8 @@ def test_uncertain_submission_not_retried_and_error_is_redacted(tmp_path):
     assert result['status'] == 'failed'
     assert result['error_type'] == 'RuntimeError'
     assert 'secret-request-material' not in str(result)
-    sessions.events.create.assert_called_once()
+    assert [c.kwargs['events'][0]['type'] for c in sessions.events.create.call_args_list] == [
+        'agent.session.input.message', 'agent.session.input.cancel']
     sessions.delete.assert_called_once()
 
 
@@ -156,3 +157,24 @@ def test_uncapped_authorization_cannot_expand_into_persistent_or_longer_run(tmp_
             instructions='test', task='never send', authorized_uncapped_test=True, **options)
     sessions.create.assert_not_called()
     sessions.events.create.assert_not_called()
+
+
+def test_auth_mode_never_persists_private_model_text(tmp_path):
+    client, sessions = fake_client([
+        NS(type='agent.session.turn.output_text.done', text='synthetic-private-account'),
+        NS(type='agent.session.turn.completed', turn=NS(subagent_id=None)),
+    ])
+    state = tmp_path / 'login.json'
+    result = module.run_task(client, 'https://www.galaxus.ch', state,
+        instructions='test', task='login', authentication_handler=lambda *args: None)
+    assert result['model_report'] == ''
+    assert 'synthetic-private-account' not in state.read_text()
+
+
+def test_auth_mode_rejects_disk_screenshot_before_creating_session(tmp_path):
+    client, sessions = fake_client([])
+    with pytest.raises(ValueError):
+        module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'login.json',
+            instructions='test', task='login', authentication_handler=lambda *args: None,
+            screenshot_path=tmp_path / 'private.jpg')
+    sessions.create.assert_not_called()
