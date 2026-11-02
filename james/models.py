@@ -227,3 +227,20 @@ class PurchasePlan(db.Model):
         db.UniqueConstraint("household_id", "request_id", name="plan_household_request"),
         db.CheckConstraint("state IN ('draft','ordered','closed','cancelled')", name="plan_state"),
     )
+
+
+class ChatTurn(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    auth_version = db.Column(db.Integer, nullable=False)
+    request_id = db.Column(db.String(36), nullable=False)
+    prompt = db.Column(db.String(2000), nullable=False)
+    reply = db.Column(db.Text, nullable=False, default='')
+    state = db.Column(db.String(12), nullable=False, default='running')
+    actions = db.Column(db.JSON, nullable=False, default=list)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'request_id', name='chat_user_request'),
+        db.CheckConstraint("state IN ('running','done','failed')", name='chat_turn_state'),
+    )

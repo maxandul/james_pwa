@@ -31,6 +31,9 @@ def create_app(test_config=None):
         MAX_FORM_PARTS=30,
         OPENFOODFACTS_ENVIRONMENT=os.getenv("OPENFOODFACTS_ENVIRONMENT", "staging" if environment == "development" else "production"),
         OPENFOODFACTS_USER_AGENT=os.getenv("OPENFOODFACTS_USER_AGENT", "JamesPWA/0.1 (+https://github.com/maxandul/james_pwa)"),
+        JAYJAY_ENABLED=os.getenv('JAYJAY_ENABLED', '') == '1',
+        OPENAI_API_KEY=os.getenv('OPENAI_API_KEY', ''),
+        OPENAI_MODEL=os.getenv('OPENAI_MODEL', ''),
     )
     if test_config:
         app.config.update(test_config)
@@ -85,6 +88,7 @@ def create_app(test_config=None):
     from .products import products
     from .receipts import receipts
     from .plans import plans
+    from .chat import chat
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
@@ -92,6 +96,7 @@ def create_app(test_config=None):
     app.register_blueprint(products)
     app.register_blueprint(receipts)
     app.register_blueprint(plans)
+    app.register_blueprint(chat)
     register_cli(app)
 
     @app.after_request
