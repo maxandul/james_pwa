@@ -1,0 +1,98 @@
+"""Probe boundaries and uncertain outcomes; no API calls or shop data."""
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+from types import SimpleNamespace as NS
+from unittest.mock import MagicMock
+
+import pytest
+
+spec = spec_from_file_location('browser_probe', Path(__file__).parents[1] / 'scripts/jayjay_browser_probe.py')
+module = module_from_spec(spec)
+spec.loader.exec_module(module)
+
+
+@pytest.mark.parametrize('url', [
+    'http://www.coop.ch', 'https://user:secret@www.coop.ch',
+    'https://127.0.0.1', 'https://localhost', 'https://host.local',
+    'https://www.coop.ch:8443',
+])
+def test_reject_non_public_or_credential_urls(url):
+    with pytest.raises(ValueError):
+        module.origin_for(url)
+
+
+def test_exact_origin_and_authentication_boundaries():
+    assert module.origin_for('https://WWW.COOP.CH/de/p/3032108') == 'https://www.coop.ch'
+    for origin, decision in [('https://www.coop.ch', 'approve'),
+                             ('https://www.coop.ch.evil.test', 'deny'),
+                             ('https://login.coop.ch', 'deny')]:
+        assert module.approval_response(NS(type='browser_origin_access', origin=origin),
+            'https://www.coop.ch')['decision'] == decision
+    assert module.approval_response(NS(type='browser_authentication'),
+        'https://www.coop.ch') == {'type': 'browser_authentication', 'action': 'cancel'}
+
+
+def fake_client(events):
+    client = MagicMock()
+    sessions = client.beta.agents.sessions
+    sessions.create.return_value = NS(id='synthetic-session')
+    sessions.events.stream.return_value.__enter__.return_value = iter(events)
+    return client, sessions
+
+
+def test_disconnect_never_replays_and_deletes_session(tmp_path):
+    client, sessions = fake_client([])
+    state = tmp_path / 'state.json'
+    result = module.probe(client, 'https://www.coop.ch/de/p/3032108', state)
+    assert result['status'] == 'disconnected'
+    assert result['cleanup'] == 'deleted'
+    sessions.events.create.assert_called_once()
+    sessions.delete.assert_called_once_with('synthetic-session')
+    assert state.stat().st_mode & 0o777 == 0o600
+    with pytest.raises(FileExistsError):
+        module.probe(client, 'https://www.coop.ch/de/p/3032108', state)
+    assert sessions.create.call_count == 1
+
+
+def test_completion_text_alone_is_not_browser_evidence(tmp_path):
+    client, _ = fake_client([
+        NS(type='agent.session.turn.output_text.done', text='Product found'),
+        NS(type='agent.session.turn.completed', turn=NS(subagent_id=None)),
+    ])
+    result = module.probe(client, 'https://www.coop.ch/de/p/3032108', tmp_path / 'state.json')
+    assert result['status'] == 'no_browser_evidence'
+
+
+def test_preserves_browser_screenshot_separately_from_model_claim(tmp_path):
+    client, _ = fake_client([
+        NS(type='agent.session.turn.item.done', item=NS(type='computer_use_call',
+            output=NS(type='computer_screenshot', image_url='data:image/png;base64,cGl4ZWxz'))),
+        NS(type='agent.session.turn.completed', turn=NS(subagent_id=None)),
+    ])
+    screenshot = tmp_path / 'public.png'
+    result = module.probe(client, 'https://www.coop.ch/de/p/3032108',
+        tmp_path / 'state.json', screenshot_path=screenshot)
+    assert result['status'] == 'turn_completed'
+    assert result['screenshots'] == 1
+    assert screenshot.read_bytes() == b'pixels'
+
+
+def test_uncertain_submission_not_retried_and_error_is_redacted(tmp_path):
+    client, sessions = fake_client([])
+    sessions.events.create.side_effect = RuntimeError('secret-request-material')
+    result = module.probe(client, 'https://www.coop.ch/de/p/3032108', tmp_path / 'state.json')
+    assert result['status'] == 'failed'
+    assert result['error_type'] == 'RuntimeError'
+    assert 'secret-request-material' not in str(result)
+    sessions.events.create.assert_called_once()
+    sessions.delete.assert_called_once()
+
+
+def test_cleanup_failure_keeps_session_id_for_operator(tmp_path):
+    client, sessions = fake_client([])
+    sessions.delete.side_effect = RuntimeError('secret')
+    state = tmp_path / 'state.json'
+    result = module.probe(client, 'https://www.coop.ch/de/p/3032108', state)
+    assert result['cleanup'] == 'pending'
+    assert 'synthetic-session' in state.read_text()
+    assert 'secret' not in state.read_text()

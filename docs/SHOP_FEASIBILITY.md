@@ -84,3 +84,15 @@ Nachweis noch offen. Vorgesehen ist ein separater Agentenlauf ueber die OpenAI A
 Offizielle technische Grundlage (02.11.2026): https://developers.openai.com/api/docs/guides/agents-api/tools/computer-use und https://developers.openai.com/api/docs/guides/agents/orchestration . Als Ersttest oeffentliche Produktseite lesen; anschliessend interaktive Shop-Anmeldung und genau drei vorgegebene Artikel einschliesslich Menge 2 im angemeldeten Warenkorb nachweisen. Vorhandene Inhalte respektieren, Wiederholungen nicht verdoppeln, Sitzungsabbruch fortsetzbar machen und Warenkorb auf dem persoenlichen Geraet verifizieren. Keine Bestellabgabe im Prototyp. Anmelde-/Websitefreigaben muessen an die Person durchgereicht werden; keine stillen Cookie-/Passwortuebernahmen.
 
 Die Haushaltswerkzeuge der ersten Chat-Stufe besitzen bewusst keinen Browserzugang. Die Browserfunktion wird erst nach Konto-/Sitzungs-/Freigabetest als gesondertes Werkzeug fuer JayJay angeschlossen.
+
+## Aktualisierung 02.11.2026: echter Agents-Browserzugang
+
+Mit dem bereits vorhandenen API-Schluessel wurde eine OpenAI-gehostete
+Browsersitzung samt echtem Modelllauf erfolgreich eingerichtet. Der bisherige
+Zugangsblocker gilt damit fuer diese Entwicklungsumgebung nicht mehr.
+Coop blockiert dort die oeffentliche Produktseite mit einer sichtbaren
+Sperrmeldung. Galaxus-Leseablaeufe lieferten Browseraktivitaet und
+uebereinstimmende Produktberichte, jedoch keine Screenshot-Bilddaten.
+Kein angemeldeter Warenkorb und keine Uebergabe auf ein persoenliches Geraet
+wurden nachgewiesen. Keine Bestellung oder Warenkorbaenderung ausgefuehrt.
+Details, reproduzierbare Probe und Grenzen: [BROWSER_PILOT.md](BROWSER_PILOT.md).
