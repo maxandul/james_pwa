@@ -21,7 +21,8 @@ if (copyButton) copyButton.addEventListener('click', async () => {
 
 let edited = false;
 let submitting = false;
-document.addEventListener('input', () => { edited = true; });
+document.addEventListener('input', event => { if (!event.target.closest('.jayjay')) edited = true; });
+window.JamesPage = {canRefresh: () => !edited && !submitting && !document.querySelector('main details[open]')};
 function onlineState() {
   const offline = !navigator.onLine;
   document.querySelector('#offline-banner').hidden = !offline;
@@ -32,7 +33,9 @@ function onlineState() {
 window.addEventListener('online', onlineState);
 window.addEventListener('offline', onlineState);
 onlineState();
-document.querySelectorAll('form[method="post"]').forEach(form => {
+function bindForms() { document.querySelectorAll('form[method="post"]').forEach(form => {
+  if (form._jamesBound || form.closest?.('.jayjay')) return;
+  form._jamesBound = true;
   form.addEventListener('submit', event => {
     if (!navigator.onLine || submitting) { event.preventDefault(); return; }
     submitting = true;
@@ -48,7 +51,9 @@ document.querySelectorAll('form[method="post"]').forEach(form => {
     }
     form.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = true; });
   });
-});
+}); }
+bindForms();
+window.addEventListener('james:content-updated', () => { bindForms(); onlineState(); });
 
 const barcodeTarget = document.querySelector('#barcode-target');
 if (barcodeTarget) {
@@ -68,7 +73,7 @@ window.addEventListener('pageshow', event => {
 // Never reload an invitation, a form, or a page with an unfinished quantity edit.
 if (['/', '/shopping'].includes(window.location.pathname)) {
   const refresh = () => {
-    if (document.visibilityState === 'visible' && navigator.onLine && !edited && !submitting && !document.querySelector('details[open]')) {
+    if (document.visibilityState === 'visible' && navigator.onLine && !edited && !submitting && !document.querySelector('details[open]') && !document.querySelector('#jayjay-dialog[open]') && !window.JamesChat?.hasPendingInput()) {
       window.location.reload();
     }
   };
