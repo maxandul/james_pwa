@@ -6,6 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_ENV=production
 
 WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
     && groupadd --gid 10001 james \
@@ -14,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
 COPY --chown=james:james james ./james
 COPY --chown=james:james migrations ./migrations
 COPY --chown=james:james wsgi.py ./
+COPY --chown=james:james scripts/check_receipt_tools.py ./scripts/check_receipt_tools.py
 RUN mkdir -p /app/instance && chown james:james /app/instance
 
 USER james

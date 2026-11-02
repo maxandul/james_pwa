@@ -166,3 +166,32 @@ def test_simultaneous_shop_preferences_leave_one_choice(app):
     with app.app_context():
         offers = db.session.scalars(select(ShopOffer).where(ShopOffer.source_id == coop)).all()
         assert len(offers) == 2 and sum(offer.preferred for offer in offers) == 1
+
+
+def test_simultaneous_receipt_confirmation_books_only_once(app):
+    from james.models import Activity, ReceiptImport
+    from james.receipts import confirm_receipt, create_draft, serializer
+    with app.app_context():
+        if db.engine.dialect.name != 'postgresql':
+            pytest.skip('Concurrent receipt confirmation requires Postgres.')
+        member = db.session.scalar(select(Membership).where(Membership.role == 'owner'))
+        home, user_id = member.household_id, member.user_id
+        item = create_item(home, {'name': 'Milch'})
+        receipt = create_draft(home, 'Milch 1.80', 'f' * 64)
+        db.session.commit()
+        receipt_id, item_id = receipt.id, item.id
+        token = serializer().dumps({'receipt': receipt_id, 'household': home,
+            'versions': {str(item_id): item.version}})
+    barrier = Barrier(2)
+    def confirm(_):
+        with app.app_context():
+            barrier.wait(timeout=10)
+            confirm_receipt(home, user_id, receipt_id, {'review_token': token,
+                'target_0': str(item_id), 'quantity_0': '2'})
+            db.session.commit()
+            db.session.remove()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        list(executor.map(confirm, range(2)))
+    with app.app_context():
+        assert len(db.session.scalars(select(Activity).where(Activity.action == 'receipt')).all()) == 1
+        assert db.session.get(ReceiptImport, receipt_id).state == 'confirmed'

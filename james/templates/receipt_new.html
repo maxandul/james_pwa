@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">GANZEN EINKAUF ERFASSEN</p><h1>Beleg einlesen.</h1><p class="muted">Foto, Screenshot oder Digitalbeleg aus eurer Einkaufs-App. Danach pruefst du die Zuordnungen und Mengen.</p></div><a class="button button--quiet" href="{{ url_for('main.shopping') }}">Zur Einkaufsliste</a></section>
+{% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+<section class="panel form-panel"><form method="post" enctype="multipart/form-data" class="form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label>Belegdatei<input type="file" name="receipt" accept="image/jpeg,image/png,application/pdf"><small>JPEG, PNG oder PDF, maximal 10 MB und drei PDF-Seiten. Am Handy kannst du ein Foto aufnehmen oder eine Datei waehlen.</small></label>
+<details><summary>Oder Belegtext einfuegen</summary><label>Eine Position pro Zeile<textarea name="text" rows="8" maxlength="24000" placeholder="Milch 1.80&#10;2 x Kaffee 9.00"></textarea></label></details>
+<p class="small muted">Die Datei wird auf dem James-Server gelesen und danach entfernt. Der erkannte Text bleibt im Haushalt als Belegentwurf. Die Erkennung kann Zeilen auslassen oder falsch lesen; pruefe den ganzen Beleg.</p>
+<button class="button button--primary" type="submit">Beleg pruefen</button>
+</form></section>
+{% if recent %}<section class="panel"><h2>Letzte Belege</h2>{% for receipt in recent %}<p><a href="{{ url_for('receipts.review', receipt_id=receipt.id) }}">Beleg {{ receipt.id }}</a> · {{ {'draft':'Entwurf', 'confirmed':'Verbucht', 'reversed':'Rueckgaengig gemacht'}[receipt.state] }}</p>{% endfor %}</section>{% endif %}
+{% endblock %}

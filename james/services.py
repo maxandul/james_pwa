@@ -189,6 +189,10 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
             raise Conflict("Die Einkaufsmenge ist groesser als der offene Bedarf. Bitte die Liste neu laden.")
         need.quantity -= amount
         item.stock_status = "available"
+    elif action == "receipt":
+        amount = positive_int(quantity)
+        need.quantity = max(0, need.quantity - amount)
+        item.stock_status = "available"
     elif action == "remove":
         need.quantity = 0
     elif action == "status":

@@ -2,6 +2,7 @@
 {% from '_forms.html' import action_fields with context %}
 {% block content %}
 <section class="page-heading"><div><p class="eyebrow">ZUSAMMEN EINKAUFEN</p><h1>Eure Einkaufsliste.</h1><p class="muted">{{ rows|length }} Artikel{% if selected_source %} · {{ selected_source }}{% endif %}. Gekauft? Direkt abhaken.</p></div><a class="button button--outline" href="{{ url_for('main.home') }}">+ Aus euren Artikeln</a></section>
+<p><a class="button button--outline" href="{{ url_for('receipts.new') }}">Einkauf per Beleg erfassen</a></p>
 <nav class="filters" aria-label="Bezugsquelle"><a class="filter {{ 'filter--active' if not selected_source }}" href="{{ url_for('main.shopping') }}">Alle</a>{% for source in sources %}<a class="filter {{ 'filter--active' if selected_source == source }}" href="{{ url_for('main.shopping', source=source) }}">{{ source }}</a>{% endfor %}</nav>
 {% if rows %}
 {% for group in rows|groupby('0.category') %}<section class="shopping-group"><h2>{{ group.grouper }}</h2><div class="shopping-list">
