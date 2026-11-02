@@ -163,7 +163,8 @@ def responses_request(messages, deadline):
     if remaining <= 0:
         raise ValueError('Die Antwort hat zu lange gedauert.')
     payload = json.dumps({'model': current_app.config['OPENAI_MODEL'], 'instructions': INSTRUCTIONS,
-        'input': messages, 'tools': TOOLS, 'parallel_tool_calls': False,
+        'input': messages, 'tools': TOOLS, 'parallel_tool_calls': True,
+        'reasoning': {'effort': 'none'},
         'max_output_tokens': 1200, 'store': False}).encode()
     req = Request('https://api.openai.com/v1/responses', data=payload,
         headers={'Authorization': 'Bearer ' + current_app.config['OPENAI_API_KEY'], 'Content-Type': 'application/json'})
@@ -222,7 +223,7 @@ def run_turn(turn_id, user_id, household_id):
         messages.extend([{'role': 'user', 'content': prior.prompt}, {'role': 'assistant', 'content': prior.reply[:2000]}])
     messages.append({'role': 'user', 'content': turn.prompt})
     db.session.rollback()
-    reads, deadline, reply, state = {}, time.monotonic() + 20, '', 'done'
+    reads, deadline, reply, state = {}, time.monotonic() + 25, '', 'done'
     try:
         for _ in range(4):
             authorize(user_id, household_id, turn_id)

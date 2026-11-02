@@ -77,6 +77,50 @@ def test_same_resource_duplicate_tool_calls_do_not_add_extra_twice(app):
         assert db.session.scalar(select(func.count(Activity.id))) == 1
 
 
+def test_multiple_articles_can_finish_within_four_model_rounds(app, monkeypatch):
+    import json
+    from james.models import ShoppingNeed
+    from james.services import create_item
+    coffee, home, user = seed_item(app)
+    with app.app_context():
+        milk = create_item(home, {'name': 'Milch', 'quantity': '1'}).id
+        db.session.commit()
+    turn_id, _ = new_turn(app, user, home, 'Kaffee und Milch nachkaufen')
+    def call(call_id, name, args):
+        return {'type': 'function_call', 'call_id': call_id, 'name': name, 'arguments': json.dumps(args)}
+    replies = iter([
+        {'status': 'completed', 'output': [call('read-coffee', 'list_items', {'query':'Kaffee','view':'active'}),
+            call('read-milk', 'list_items', {'query':'Milch','view':'active'})]},
+        {'status': 'completed', 'output': [call('write-coffee', 'change_item', change_args(coffee)),
+            call('write-milk', 'change_item', change_args(milk))]},
+        {'status': 'completed', 'output': [{'type':'message','content':[{'type':'output_text','text':'Beide vorgemerkt.'}]}]},
+    ])
+    monkeypatch.setattr('james.jayjay.responses_request', lambda *args: next(replies))
+    with app.app_context():
+        result = run_turn(turn_id, user, home)
+        assert result.state == 'done' and len(result.actions) == 2
+        assert db.session.get(ShoppingNeed, coffee).quantity == 2
+        assert db.session.get(ShoppingNeed, milk).quantity == 1
+
+
+def test_provider_request_uses_fast_mode_and_allows_batched_tools(app, monkeypatch):
+    import io
+    import json
+    import time
+    from james.jayjay import responses_request
+    def respond(request, timeout):
+        payload = json.loads(request.data)
+        assert payload['reasoning'] == {'effort': 'none'}
+        assert payload['parallel_tool_calls'] is True
+        assert payload['store'] is False and payload['max_output_tokens'] == 1200
+        assert 0 < timeout <= 20
+        return io.BytesIO(b'{"status":"completed","output":[]}')
+    monkeypatch.setattr('james.jayjay.urlopen', respond)
+    enable(app)
+    with app.app_context():
+        responses_request([{'role':'user','content':'Hallo'}], time.monotonic() + 20)
+
+
 def test_model_failure_preserves_recorded_writes_and_marks_turn_failed(app, monkeypatch):
     item_id, home, user = seed_item(app)
     turn_id, _ = new_turn(app, user, home)
