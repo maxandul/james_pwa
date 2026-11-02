@@ -45,6 +45,15 @@ def create_app(test_config=None):
         if origin.scheme != "https" or not database_url.startswith("postgresql+psycopg://"):
             raise RuntimeError("Produktion braucht HTTPS PUBLIC_BASE_URL und Postgres DATABASE_URL.")
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    @app.before_request
+    def receipt_request_limits():
+        # Registered before CSRF accesses multipart form data.
+        if request.path.startswith("/receipts/"):
+            request.max_content_length = 11 * 1024 * 1024 if request.path == "/receipts/new" else 96 * 1024
+            # Multipart decoder needs room for a read chunk plus its buffered remainder.
+            request.max_form_memory_size = 256 * 1024
+            request.max_form_parts = 300
+
     db.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -70,11 +79,13 @@ def create_app(test_config=None):
     from .scan import scan
     from .pwa import pwa
     from .products import products
+    from .receipts import receipts
     app.register_blueprint(auth)
     app.register_blueprint(main)
     app.register_blueprint(scan)
     app.register_blueprint(pwa)
     app.register_blueprint(products)
+    app.register_blueprint(receipts)
     register_cli(app)
 
     @app.after_request

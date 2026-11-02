@@ -161,3 +161,16 @@ Neue Revision: 4b4e6934c1ee nach b8cf5f8bfc8c. Additive Tabellen, Product.versio
 Der laufende Railway-Service folgt feat/household-shopping. Neue Arbeiten werden deshalb auf feat/product-sources isoliert und per PR gegen diesen Branch geprueft. Vor dem Zusammenfuehren native Sicherung des bestehenden Postgres-Volumes im Railway-Dashboard erstellen; Wiederherstellungsweg dokumentieren. Kein Merge/Deploy vor Sicherung. Aktuelle Connector-Werkzeuge bieten keine Backup-Erstellung; Dashboard war im Agent-Browser nicht angemeldet. Es wurde keine Sicherung behauptet oder Live-Migration ausgefuehrt.
 
 Nach Zusammenfuehren Pre-Deploy upgrade/current/check im expliziten staging-Service beobachten; current muss 4b4e6934c1ee zeigen, /health muss ok liefern. Danach vorhandene Artikel, Einkaufsbedarf und Barcodes kontrollieren, zweite Person/alte Formulare pruefen und Milch mit zwei Einkaufsorten testen. Downgrade wuerde neue Produkt-Shop-Daten entfernen und ist kein regulaerer Rueckgaengig-Weg.
+
+
+## Belegimport (02.11.2026)
+
+Revision 9172cfe4fad4 nach 4b4e6934c1ee fuegt ausschliesslich receipt_import hinzu. Keine Aenderung bestehender Artikel. Nach Auslieferung db upgrade/current/check und /health pruefen. Die Produkt-/Shop-Migration wurde am 02.11.2026 nach ausdruecklicher Nutzerfreigabe ohne Backup erfolgreich ausgeliefert (keine echten Daten). Generelle Backup-/Restore-Aufgabe bleibt vor echtem Betrieb bestehen.
+
+Einstieg: Einkaufsliste → Einkauf per Beleg erfassen. JPEG/PNG/PDF bis 10 MB, PDF bis drei Seiten oder Text bis 24'000 Zeichen. Maximal 60 Vorschlagszeilen. Native Werkzeuge poppler-utils und Tesseract (deu/eng) sind im Image installiert; Windows-Vorschau ohne diese Werkzeuge bietet weiterhin Texteingabe. Keine externe KI/OCR-Uebertragung. Originaldateien nur temporaer, erkannter Text/Entwurf im Haushalt gespeichert. Private Belegseiten werden nicht offline gecacht.
+
+Erkennung ist ein Vorschlag: Kopf-/Fusszeilen koennen als Kandidaten erscheinen, Gewichts-/Mehrfachpackmengen und Rabatte sind nicht automatisch zuverlaessig zugeordnet. Alle Mengen explizit in ganzen Artikeleinheiten pruefen. Neue Artikel haben Einheit Packung. Unsichere Zeilen ueberspringen. Keine Preisbuchhaltung, automatische Produkt-/Shop-Zuordnung oder direkte Synchronisation mit Haendler-Apps.
+
+Bestaetigung sperrt zuerst den Haushalt und prueft signierte Artikelversionen. Alle Buchungen gemeinsam oder keine. Dieselbe Datei/derselbe normalisierte Text wird nur einmal pro Haushalt angelegt; identische legitime Belege ohne Datum muessen unterscheidbaren Belegtext besitzen. Quittungen verbleiben nach Ruecknahme gesperrt gegen erneutes Verbuchen. Gesammelte Ruecknahme nur ohne zwischenzeitliche Artikelaenderungen; neu angelegte Artikel bleiben erhalten.
+
+Pruefung: python -m pytest -q; node --test tests/scanner.test.cjs tests/pwa.test.cjs; python scripts/check_receipt_tools.py fuer echte synthetische PDF/JPEG/PNG-Erkennung. CI prueft das native OCR auch im Produktionsimage. Reale Coop-/Migros-Bons und Fold/Tablet weiter praktisch abnehmen.

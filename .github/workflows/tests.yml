@@ -47,6 +47,8 @@ jobs:
           DATABASE_URL: postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
       - name: Build production image
         run: docker build --tag james-ci .
+      - name: Check PDF and image recognition in production image
+        run: docker run --rm --entrypoint python james-ci scripts/check_receipt_tools.py
       - name: Start production image against isolated Postgres
         run: >-
           docker run --detach --name james-smoke --network host

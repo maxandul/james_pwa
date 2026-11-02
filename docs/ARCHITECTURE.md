@@ -125,3 +125,8 @@ Die Offline-Kopie ist lesbar fuer Personen mit Zugriff auf dieses Browserprofil/
 assortment.py verwaltet haushaltseigene Warengruppen, Einkaufsorte, konkrete Produktvarianten und Shop-Zuordnungen. products.py stellt die zugehoerigen Formulare bereit. Routes besitzen Commit/Rollback; die Services buchen bei Metadatenpflege weder Bestand noch Einkaufsbedarf. Schreibende Artikel-/Katalog-/Angebotsaktionen sperren zuerst Household, danach HouseholdItem, damit konkurrierende Vorzugsprodukte und Umbenennungen konsistent bleiben.
 
 Ein HouseholdItem ist der gemeinsame Bedarf (Milch). Product beschreibt eine konkrete Variante, ShopOffer deren Bezug bei einem Einkaufsort. ItemSource erlaubt mehrere Einkaufsorte auch ohne hinterlegte Produkte. Die Einkaufsliste filtert denselben Bedarf nach allen moeglichen Orten; sie erstellt keine Kopien. Shoplinks werden nur angezeigt, nicht serverseitig abgerufen. Keine Warenkorb-, Preis-, Verfuegbarkeits- oder Bestellintegration in diesem Paket.
+
+
+## Belegimport
+
+receipt_text.py fuehrt native PDF-/OCR-Werkzeuge mit Laufzeit-/Ressourcenlimits in temporaeren Verzeichnissen aus. receipts.py erstellt haushaltsbezogene Entwuerfe und verwendet dieselben change_item-/Activity-Regeln fuer atomare Kauf-/Ruecknahmebuchungen. ReceiptImport speichert Fingerabdruck, Text, erkannte Zeilen, bestaetigte Zuordnungen/Mengen, Status und Activity-Referenzen. Vorhandene Bedarfe werden bis null reduziert, Bestandsstatus auf vorhanden gesetzt; kein numerischer Lagerbestand wird behauptet. Wiederholte Bestaetigung ist idempotent.

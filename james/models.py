@@ -191,3 +191,21 @@ class ShopOffer(db.Model):
         db.UniqueConstraint("product_id", "source_id", name="offer_product_source"),
         db.CheckConstraint("units_per_pack > 0 AND units_per_pack <= 999999", name="offer_pack_units"),
     )
+
+
+class ReceiptImport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(64), nullable=False)
+    text_digest = db.Column(db.String(64), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    rows = db.Column(db.JSON, nullable=False)
+    state = db.Column(db.String(12), nullable=False, default="draft")
+    activity_ids = db.Column(db.JSON, nullable=False, default=list)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    confirmed_at = db.Column(db.DateTime)
+    __table_args__ = (
+        db.UniqueConstraint("household_id", "fingerprint", name="receipt_household_fingerprint"),
+        db.UniqueConstraint("household_id", "text_digest", name="receipt_household_text"),
+        db.CheckConstraint("state IN ('draft','confirmed','reversed')", name="receipt_state"),
+    )
