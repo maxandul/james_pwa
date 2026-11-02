@@ -132,3 +132,27 @@ def test_busy_session_is_inspected_without_resending_or_deleting(tmp_path):
     sessions.events.create.assert_not_called()
     sessions.create.assert_not_called()
     sessions.delete.assert_not_called()
+
+
+def test_explicit_single_test_authorization_never_retains_uncapped_session(tmp_path):
+    client, sessions = fake_client([])
+    sessions.create.return_value = NS(id='synthetic-session', spend_control=None)
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'authorized.json',
+        instructions='test', task='single test', seconds=360, authorized_uncapped_test=True)
+    assert result['cost_control'] == 'explicit_uncapped_single_test'
+    assert result['cleanup'] == 'deleted'
+    assert 'spend_control' not in sessions.create.call_args.kwargs
+    sessions.events.create.assert_called_once()
+    sessions.delete.assert_called_once_with('synthetic-session')
+
+
+@pytest.mark.parametrize('options', [
+    {'keep_session': True}, {'session_id': 'existing'}, {'seconds': 361},
+])
+def test_uncapped_authorization_cannot_expand_into_persistent_or_longer_run(tmp_path, options):
+    client, sessions = fake_client([])
+    with pytest.raises(ValueError):
+        module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'invalid.json',
+            instructions='test', task='never send', authorized_uncapped_test=True, **options)
+    sessions.create.assert_not_called()
+    sessions.events.create.assert_not_called()

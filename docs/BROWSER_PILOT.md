@@ -5,6 +5,32 @@ PR #8 ist gemergt und das schwebende Chatfenster vom Nutzer bestaetigt.
 Der bestehende API-Schluessel wird wiederverwendet. Layout bleibt ausserhalb
 dieses Arbeitsschritts.
 
+## Vorbereiteter Einzeltest: Freigabe noch ausstehend
+
+Die Nutzer-Screenshots bestaetigen fuer das einzige API-Projekt (Default
+project) ausdruecklich "Ausgabenlimit nicht verfuegbar". ChatGPT-Projekte
+sind keine API-Projekte. Die bisherige Anleitung zum Projekt-Kostenlimit
+passte nicht zur tatsaechlichen Kontooberflaeche.
+
+Als gesonderte Option ist jetzt ein einmaliger Test vorbereitet, der **nur
+nach ausdruecklicher Freigabe des fehlenden harten Geldlimits** verwendet
+werden darf. Der normale Modus verlangt weiterhin das serverseitige Limit.
+Die Option `--authorize-single-test-without-hard-cost-cap` gilt ausschliesslich
+fuer eine neue prepare-Sitzung. Keine Wiederholung, keine Anmeldung, kein
+Checkout, keine Bestellung und keine Sitzungsaufbewahrung. Nach maximal
+360 Sekunden Beobachtung wird eine Cancellation ueber
+`agent.session.input.cancel` angefordert; danach wird die Sitzung geloescht.
+Auch bei fruehem Abschluss wird sie geloescht. Netzwerkfehler koennen
+Abbruch/Bereinigung verzoegern oder verhindern; ein fester Geldbetrag wird
+dadurch **nicht** garantiert. Offene Bereinigung muss gemeldet werden.
+
+Diese Option wurde nur mit Mocks getestet. Kein kostenpflichtiger Lauf
+ausgefuehrt; Nutzerfreigabe steht aus. Eine spaetere Freigabe darf nicht als
+dauerhafte Erlaubnis fuer weitere Tests oder unbegrenzte Ausgaben interpretiert
+werden. Die vorherige automatische Ablehnung wird damit nicht umgangen:
+Eine Ausfuehrung benoetigt neue, konkrete Nutzerautorisierung und die
+erneute Werkzeugpruefung.
+
 ## Aktueller Stand: Gastwarenkorb praktisch bestaetigt
 
 Der Nutzer hat die Produktauswahl fuer den Proof of Concept ausdruecklich

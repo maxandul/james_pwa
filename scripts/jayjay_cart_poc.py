@@ -60,7 +60,11 @@ def main():
     parser.add_argument('--previous', type=Path, help='Prior state in the SAME browser session.')
     parser.add_argument('--state', type=Path, help='New private result file, outside git.')
     parser.add_argument('--screenshot', type=Path)
+    parser.add_argument('--authorize-single-test-without-hard-cost-cap', action='store_true',
+        help='Requires explicit owner approval: one new test, 360s observation/cancel, delete afterwards; no guaranteed monetary cap.')
     args = parser.parse_args()
+    if args.authorize_single_test_without_hard_cost_cap and (args.stage != 'prepare' or args.previous):
+        parser.error('Die Sonderfreigabe gilt nur fuer einen neuen prepare-Einzeltest.')
     if args.stage != 'prepare' and not args.previous:
         parser.error('Diese Phase braucht --previous; keine neue Sitzung starten.')
     if args.stage != 'close' and not args.state:
@@ -85,7 +89,9 @@ def main():
         result = run_task(client, ORIGIN, args.state, instructions=INSTRUCTIONS,
             task={'prepare': PREPARE, 'recheck': RECHECK, 'verify': VERIFY}[args.stage],
             seconds=360, screenshot_path=args.screenshot,
-            session_id=previous['session_id'] if previous else None, keep_session=True)
+            session_id=previous['session_id'] if previous else None,
+            keep_session=not args.authorize_single_test_without_hard_cost_cap,
+            authorized_uncapped_test=args.authorize_single_test_without_hard_cost_cap)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result['status'] == 'turn_completed' else 1
 

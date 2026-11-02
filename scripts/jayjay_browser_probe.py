@@ -45,13 +45,17 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
 
 
 def run_task(client, url, state_path, *, instructions, task, seconds=120,
-             screenshot_path=None, session_id=None, keep_session=False):
+             screenshot_path=None, session_id=None, keep_session=False,
+             authorized_uncapped_test=False):
     """One task, no retries. Keep its ID before sending any browser input."""
     origin = origin_for(url)
+    if authorized_uncapped_test and (keep_session or session_id or not 0 < seconds <= 360):
+        raise ValueError('Freigegebener Einzeltest: nur neue Sitzung, maximal 360 Sekunden, keine Aufbewahrung.')
     # Exclusive creation prevents accidentally overwriting an unresolved session.
     fd = os.open(state_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     result = {'status': 'starting', 'browser_calls': 0, 'screenshots': 0,
               'model_report': '', 'cleanup': 'not_created'}
+    result['cost_control'] = 'explicit_uncapped_single_test' if authorized_uncapped_test else 'server_limit_required'
     created_here = budget_verified = False
 
     def save():
@@ -66,17 +70,19 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
             if session.status != 'idle' or session.required_actions:
                 raise ValueError('Sitzung ist nicht bereit; bestehenden Auftrag zuerst pruefen.')
         else:
+            cost_options = {} if authorized_uncapped_test else {'spend_control': {'limit': 300}}
             session = client.beta.agents.sessions.create(
                 agent={'model': 'gpt-6-astra', 'instructions': instructions,
                        'tools': [{'type': 'computer_use', 'include_screenshots': True}]},
-                spend_control={'limit': 300},
+                **cost_options,
                 environment={'type': 'openai_hosted', 'desktop': {'enabled': True},
                              'network': {'access': 'enabled'}})
             session_id = session.id
             created_here = True
         save()
         spending = getattr(session, 'spend_control', None)
-        if not spending or type(spending.limit) is not int or not 0 < spending.limit <= 300:
+        if not authorized_uncapped_test and (
+                not spending or type(spending.limit) is not int or not 0 < spending.limit <= 300):
             raise ValueError('Kein bestaetigtes API-Ausgabenlimit; kein Browserauftrag gesendet.')
         budget_verified = True
         result.update(status='running', cleanup='pending')
@@ -87,7 +93,14 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
             def expire():
                 nonlocal timed_out
                 timed_out = True
-                events.close()
+                try:
+                    client.beta.agents.sessions.events.create(session_id,
+                        events=[{'type': 'agent.session.input.cancel'}])
+                    result['timeout_cancel'] = 'requested'
+                except Exception as exc:
+                    result.update(timeout_cancel='pending', cancel_error_type=type(exc).__name__)
+                finally:
+                    events.close()
 
             timer = Timer(seconds, expire)
             timer.daemon = True
