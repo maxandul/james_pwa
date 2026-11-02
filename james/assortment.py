@@ -213,8 +213,6 @@ def safe_url(value):
 def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expected_unit=None):
     lock_household(household_id)
     item = get_item(household_id, item_id)
-    if expected_unit is not None and expected_unit != item.unit:
-        raise Conflict("Die Artikeleinheit wurde geaendert. Bitte neu laden und den Packungsinhalt erneut pruefen.")
     product = db.session.scalar(select(Product).where(Product.id == product_id,
         Product.household_id == household_id, Product.item_id == item_id))
     if not product:
@@ -227,6 +225,8 @@ def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expect
         PurchaseSource.id == source_id, PurchaseSource.household_id == household_id))
     if not source:
         raise ValueError("Bitte einen Einkaufsort aus eurem Haushalt waehlen.")
+    if expected_unit is not None and expected_unit != item.unit:
+        raise Conflict("Die Artikeleinheit wurde geaendert. Bitte neu laden und den Packungsinhalt erneut pruefen.")
     offer = db.session.get(ShopOffer, offer_id) if offer_id else None
     if offer_id:
         if not offer or offer.household_id != household_id or offer.product_id != product_id:
