@@ -50,7 +50,8 @@ def create_app(test_config=None):
         # Registered before CSRF accesses multipart form data.
         if request.path.startswith("/receipts/"):
             request.max_content_length = 11 * 1024 * 1024 if request.path == "/receipts/new" else 96 * 1024
-            request.max_form_memory_size = 64 * 1024
+            # Multipart decoder needs room for a read chunk plus its buffered remainder.
+            request.max_form_memory_size = 256 * 1024
             request.max_form_parts = 300
 
     db.init_app(app)

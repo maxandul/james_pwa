@@ -173,3 +173,19 @@ def test_receipt_same_fingerprint_is_scoped_to_household(app):
         b = create_draft(other, 'Milch 1.80', digest)
         db.session.commit()
         assert a.id != b.id
+
+
+def test_larger_binary_receipt_passes_real_multipart_csrf_parsing(app, client, monkeypatch):
+    seed_item(app)
+    login(client)
+    # Includes CR/LF around decoder chunk boundaries, as compressed photos can do.
+    data = b'\xff\xd8\xff' + (b'X' * 65500 + b'\r\n') * 4
+    seen = []
+    def recognize(payload):
+        seen.append(payload)
+        return 'Kaffee 4.50'
+    monkeypatch.setattr('james.receipts.extract_text', recognize)
+    response = client.post('/receipts/new', data={'csrf_token': csrf(client, '/receipts/new'),
+        'receipt': (BytesIO(data), 'large-receipt.jpg')})
+    assert response.status_code == 302
+    assert seen == [data]
