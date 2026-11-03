@@ -16,7 +16,7 @@ def bound_account(app):
     with app.app_context():
         owner = db.session.scalar(select(User).where(User.email == 'owner@example.test'))
         member = db.session.scalar(select(Membership).where(Membership.user_id == owner.id))
-        app.config.update(GALAXUS_HOUSEHOLD_ID=str(member.household_id),
+        app.config.update(SHOP_CART_PILOT_ENABLED=True, GALAXUS_HOUSEHOLD_ID=str(member.household_id),
             GALAXUS_EMAIL='synthetic-account@example.test', GALAXUS_PASSWORD='synthetic-account-password')
 
 
@@ -654,3 +654,143 @@ def test_identity_lookalikes_cannot_receive_credentials(app, client, prepared, o
     with app.app_context():
         assert credential_response(schema, app.config, set()) is None
     assert not [call for call in calls if call[0] == 'POST']
+
+
+def test_cart_mode_requires_separate_consent_and_cannot_repurpose_request(app, client):
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
+    login(client)
+    data = {'csrf_token': csrf(client, '/shop-login'), 'start_request_id': str(uuid4()),
+        'cost_consent': 'yes', 'task_kind': 'cart'}
+    assert client.post('/shop-login', data=data).status_code == 400
+    with app.app_context():
+        assert db.session.scalar(select(ShopLogin)) is None
+    data['cart_consent'] = 'yes'
+    response = client.post('/shop-login', data=data)
+    assert response.status_code == 302
+    assert client.post('/shop-login', data=data).location == response.location
+    assert client.post('/shop-login', data={**data, 'task_kind': 'login'}).status_code == 409
+    with app.app_context():
+        row = db.session.scalar(select(ShopLogin))
+        assert row.task_kind == 'cart' and row.cost_authorized_at
+
+
+def test_one_cart_attempt_per_household_day_does_not_change_login_limit(app, client):
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
+    login(client)
+    # Two existing completed login attempts must not consume the one separately consented cart proof.
+    with app.app_context():
+        user = db.session.scalar(select(User).where(User.email == 'owner@example.test'))
+        home = app.config['GALAXUS_HOUSEHOLD_ID']
+        for _ in range(2):
+            db.session.add(ShopLogin(user_id=user.id, household_id=int(home), auth_version=user.auth_version,
+                task_kind='login', state='closed', active_user_id=None, active_household_id=None,
+                expires_at=utcnow()))
+            db.session.flush()
+            row = db.session.scalar(select(ShopLogin).order_by(ShopLogin.id.desc()))
+            row.active_user_id, row.active_household_id = None, None
+        db.session.commit()
+    data = {'csrf_token': csrf(client, '/shop-login'), 'start_request_id': str(uuid4()),
+        'cost_consent': 'yes', 'task_kind': 'cart', 'cart_consent': 'yes'}
+    assert client.post('/shop-login', data=data).status_code == 302
+    with app.app_context():
+        row = db.session.scalar(select(ShopLogin).where(ShopLogin.task_kind == 'cart'))
+        row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+        db.session.commit()
+    assert client.post('/shop-login', data={**data, 'start_request_id': str(uuid4())}).status_code == 409
+
+
+def test_cart_executor_uses_fixed_target_plan_and_keeps_unverified_report(app, prepared, monkeypatch):
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import execute_run
+    identifier, _, _ = prepared
+    monkeypatch.setattr('openai.OpenAI', MagicMock())
+    def fake_run(client, url, path, **options):
+        options['session_handler']('synthetic-cart-session')
+        assert options['authentication_handler'] is not None
+        assert '14684120' in options['instructions'] and '14730798' in options['instructions'] and '37264242' in options['instructions']
+        assert options['authorized_uncapped_test'] is True
+        assert options['additional_allowed_origins'] == ('https://id.digitecgalaxus.ch',)
+        assert 'screenshot_path' not in options
+        with app.app_context():
+            row = db.session.get(ShopLogin, identifier)
+            row.auth_progress = 'credentials_submitted'
+            db.session.commit()
+        return {'status': 'turn_completed', 'browser_calls': 30, 'cleanup': 'deleted', 'login_report': 'cart_ready'}
+    monkeypatch.setattr('scripts.jayjay_browser_probe.run_task', fake_run)
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.session_id, row.state, row.task_kind, row.cost_authorized_at = None, 'creating', 'cart', utcnow()
+        db.session.commit()
+        execute_run(app, identifier)
+        db.session.expire_all()
+        row = db.session.get(ShopLogin, identifier)
+        assert row.state == 'closed' and row.agent_report == 'cart_ready'
+        assert row.device_verified_at is None
+
+
+def test_cart_ready_claim_without_auth_is_not_accepted(app, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.task_kind = 'cart'
+        db.session.commit()
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5, 'login_report': 'cart_ready'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.agent_report == 'account_not_verified' and row.device_verified_at is None
+        assert row.outcome == 'no_authentication'
+
+
+def test_device_verification_is_private_explicit_idempotent_and_does_not_call_api(app, client, prepared, monkeypatch):
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.task_kind, row.state, row.active_user_id, row.active_household_id = 'cart', 'closed', None, None
+        db.session.commit()
+    monkeypatch.setattr('james.shop_login.api', lambda *a: pytest.fail('Device confirmation must not call API'))
+    path = f'/shop-login/{identifier}'
+    payload = {'csrf_token': csrf(client, path), 'action': 'verify_cart'}
+    assert client.post(path, data=payload).status_code == 400
+    payload['cart_verified'] = 'yes'
+    assert client.post(path, data=payload).status_code == 302
+    with app.app_context():
+        first = db.session.get(ShopLogin, identifier).device_verified_at
+        assert first is not None
+    assert client.post(path, data=payload).status_code == 302
+    with app.app_context():
+        assert db.session.get(ShopLogin, identifier).device_verified_at == first
+    assert 'Von dir auf deinem Geraet bestaetigt' in client.get(path).text
+    member = app.test_client()
+    login(member, 'member@example.test')
+    assert member.post(path, data={'csrf_token': csrf(member, '/'), 'action': 'verify_cart', 'cart_verified': 'yes'}).status_code == 404
+
+
+def test_device_confirmation_rejects_login_mode_and_unfinished_cart(app, client, prepared):
+    identifier, _, _ = prepared
+    path = f'/shop-login/{identifier}'
+    payload = {'csrf_token': csrf(client, path), 'action': 'verify_cart', 'cart_verified': 'yes'}
+    assert client.post(path, data=payload).status_code == 409
+    with app.app_context():
+        db.session.get(ShopLogin, identifier).task_kind = 'cart'
+        db.session.commit()
+    assert client.post(path, data=payload).status_code == 409
+
+
+def test_disabled_cart_mode_cannot_be_queued_or_executed(app, client, prepared, monkeypatch):
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import execute_run
+    identifier, _, _ = prepared
+    app.config['SHOP_CART_PILOT_ENABLED'] = False
+    assert 'value="cart"' not in client.get('/shop-login').text
+    assert client.post('/shop-login', data={'csrf_token': csrf(client, '/shop-login'),
+        'start_request_id': str(uuid4()), 'task_kind': 'cart', 'cost_consent': 'yes',
+        'cart_consent': 'yes'}).status_code == 404
+    constructor = MagicMock()
+    monkeypatch.setattr('openai.OpenAI', constructor)
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.task_kind, row.state, row.session_id, row.cost_authorized_at = 'cart', 'creating', None, utcnow()
+        db.session.commit()
+        execute_run(app, identifier)
+        assert db.session.get(ShopLogin, identifier).outcome == 'disabled'
+    constructor.assert_not_called()

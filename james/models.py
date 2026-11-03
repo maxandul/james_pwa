@@ -273,7 +273,11 @@ class ShopLogin(db.Model):
     http_status = db.Column(db.Integer)
     browser_calls = db.Column(db.Integer)
     auth_progress = db.Column(db.String(24))
-    __table_args__ = (db.UniqueConstraint('user_id', 'start_request_id', name='shop_login_user_start'),
+    task_kind = db.Column(db.String(16), nullable=False, default='login', server_default='login')
+    agent_report = db.Column(db.String(32))
+    device_verified_at = db.Column(db.DateTime)
+    __table_args__ = (db.CheckConstraint("task_kind IN ('login','cart')", name='shop_login_task_kind'),
+        db.UniqueConstraint('user_id', 'start_request_id', name='shop_login_user_start'),
         db.CheckConstraint(
         "state IN ('queued','creating','running','pending','submitting','accepted','cancelled','unknown','closed','cleanup_pending')",
         name='shop_login_state'),)

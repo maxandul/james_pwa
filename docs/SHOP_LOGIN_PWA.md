@@ -13,12 +13,15 @@ koennen einen Test starten; der zugehoerige Auftrag und manuelle Anmeldeschritte
 bleiben nur fuer die startende Person sichtbar. Pro Haushalt darf genau ein
 Auftrag offen sein, auch bei unklarer Bereinigung. Die Datenbank erzwingt dies
 mit einem eindeutigen aktiven Haushaltsslot. Hoechstens zwei Tests pro UTC-Tag
-und Haushalt. Ein vorheriger Slot wird erst bei abgeschlossener Bereinigung frei.
+und Haushalt fuer reine Anmeldungen sowie ein separater Warenkorbtest pro
+UTC-Tag und Haushalt. Ein vorheriger Slot wird erst bei abgeschlossener Bereinigung frei.
 
-Dieser Pilot testet **nur die Anmeldung**. Er erstellt keine Konten, aendert
-keine Einstellungen oder Warenkoerbe und bestellt nicht. Angemeldeter Warenkorb
-und Sichtbarkeit auf dem persoenlichen Geraet sind die anschliessende Abnahme,
-kein bereits implementierter Nachweis. Die temporaere Browsersitzung wird nach
+Der Standardtest prueft **nur die Anmeldung**. Zusaetzlich gibt es den separat
+freizugebenden Warenkorbtest mit genau drei festen Positionen; siehe
+[SHOP_CART_PILOT.md](SHOP_CART_PILOT.md). Kein Test beauftragt eine Bestellung,
+Kontoerstellung oder Aenderung von Kontoeinstellungen. Der angemeldete Warenkorb
+und die Sichtbarkeit auf dem persoenlichen Geraet brauchen weiterhin eine reale
+Abnahme, sie sind noch kein nachgewiesener Erfolg. Die temporaere Browsersitzung wird nach
 dem Test geloescht; dauerhafte Cookies werden nicht gespeichert.
 
 ## Konfiguration auf Railway

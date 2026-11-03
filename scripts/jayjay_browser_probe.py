@@ -52,6 +52,11 @@ LOGIN_REPORTS = {
     'SIGNED_IN': 'signed_in',
     'NOT_SIGNED_IN': 'not_signed_in',
     'UNKNOWN': 'unknown',
+    'CART_READY': 'cart_ready',
+    'CART_PARTIAL': 'cart_partial',
+    'CART_CONFLICT': 'cart_conflict',
+    'PRODUCT_UNAVAILABLE': 'product_unavailable',
+    'ACCOUNT_NOT_VERIFIED': 'account_not_verified',
 }
 
 

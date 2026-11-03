@@ -27,5 +27,12 @@
   "worker_only_sealed_variables_to_enter_manually": [
     "GALAXUS_EMAIL",
     "GALAXUS_PASSWORD"
+  ],
+  "cart_activation_order": [
+    "Keep SHOP_CART_PILOT_ENABLED=0 by default on web and worker.",
+    "Deploy code/schema on web; verify successful migration and both service versions.",
+    "Set SHOP_CART_PILOT_ENABLED=1 on the worker first and verify SUCCESS.",
+    "Then set SHOP_CART_PILOT_ENABLED=1 on the web service to expose the separately consented fixed three-product test.",
+    "No paid run starts without explicit PWA cost and cart consent."
   ]
 }
