@@ -14,7 +14,19 @@ This section supersedes the earlier layout/refresh/version descriptions below.
 - Session-only row anchors restore position after visiting article editing. No credentials or HTML snapshots are stored by this feature.
 - Public offline shell v6 precaches the CSS imports as well as app.css; authenticated pages and writes are still excluded.
 
-Validation: Python regression tests plus DOM-based JavaScript lifecycle tests (`npm ci --prefix tests --ignore-scripts && node --test tests/*.test.cjs`). Rendered fixture pages are checked in Chromium at narrow, Fold-like and tablet widths. The preview runtime cannot execute Python, so browser checks use isolated rendered fixtures; actual POST behavior and concurrency are tested separately. Real iOS/Android keyboards, installation and folding mid-input still need device acceptance. Large-catalog database filtering/pagination remains a separate follow-up; this change prepares the compact presentation without claiming database-scale optimization.
+Validation: Python regression tests plus DOM-based JavaScript lifecycle tests (`npm ci --prefix tests --ignore-scripts && node --test tests/*.test.cjs`). Rendered fixture pages are checked in Chromium at narrow, Fold-like and tablet widths. The preview runtime cannot execute Python, so browser checks use isolated rendered fixtures; actual POST behavior and concurrency are tested separately. Real iOS/Android keyboards, installation and folding mid-input still need device acceptance. Server-side catalogue filtering and bounded pages are covered by the catalogue-browsing section below.
+
+## Artikelsuche und grosse Listen · 03.11.2026
+
+- Suche, Warengruppe, Einkaufsort und Bestand werden gemeinsam in der Datenbank gefiltert. Trefferzahl und Haushaltszähler werden separat aggregiert; höchstens 48 Artikelobjekte werden je Katalogseite geladen. Favoriten stehen weiterhin zuerst, danach Name und ID als stabile Sortierung. Keine Datenbankmigration.
+- Die Suche bleibt eine wörtliche Teilstringsuche: `%` und `_` sind keine Platzhalter. SQLite nutzt für lokale Unicode-Suche eine verbindungslokale Funktion; Postgres nutzt Kleinschreibung mit deutscher ss-Normalisierung.
+- Einkaufsort umfasst bevorzugten Ort, zusätzliche Ortszuordnungen und aktive Produktangebote. Filterauswahl und Metadaten bleiben haushaltsbezogen. Die Optionen stammen aus dem gesamten aktiven bzw. archivierten Katalog und verschwinden nicht durch andere gesetzte Filter.
+- Filter liegen in einem aufklappbaren Bereich. Aktive Kriterien, Trefferzahl und Bereich (z.B. 49–96 von 252) sind sichtbar. Neue Suche, geänderte Filter und Wechsel der Artikelansicht starten auf Seite 1; Liste/Karten behalten die aktuelle Seite. Zurücksetzen entfernt Suchbegriff und Kriterien, behält aber Ansicht und Darstellung.
+- Seitennavigation, Bearbeiten, Listenaktionen und Rückgängig erhalten den Kontext. Entfernt eine Aktion den letzten Treffer der letzten Seite, wird auf die letzte gültige Seite gewechselt. Die Aktualisierung übernimmt diese kanonische Adresse; ungespeicherte Formulare bleiben geschützt.
+- Kontextfelder heissen `filter_category`, `filter_source`, `filter_stock` und `page`. Sie überschreiben keine eigentlichen Artikelfelder wie `source`, `category` oder `stock_status`.
+- Scrollanker verwenden die kanonische Listenadresse, damit leere GET-Parameter beim Zurückkehren keine andere Position ergeben. Geöffnete, unveränderte Filter dürfen im Hintergrund aktualisiert werden; Änderungen im Filterformular verhindern dies weiterhin.
+- Die Einkaufsliste bleibt zusammenhängend. Einkaufsorte und aktive Angebote werden in drei gebündelten Abfragen geladen statt je Artikel separat; Produkt- und Ortsbezeichnungen werden vorgeladen.
+- Assets: CSS v12, App-JS v11, öffentliche Offline-Hülle v7. Alle sechs CSS-Importe bleiben im Offline-Precache.
 
 ## Gestaltung
 

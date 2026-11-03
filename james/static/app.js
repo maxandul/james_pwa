@@ -63,7 +63,7 @@ if (copyButton) copyButton.addEventListener('click', async () => {
     window.scrollTo({top: match ? window.scrollY + match.row.getBoundingClientRect().top - match.candidate.top : saved.y, behavior: 'instant'});
   }
   function positionKey() {
-    const url = new URL(window.location.href);
+    const url = new URL(listPage()?.dataset.listUrl || window.location.href, window.location.href);
     url.searchParams.delete('undo');
     url.searchParams.sort();
     return `james-position:${owner}:${url.pathname}${url.search}`;
@@ -138,6 +138,7 @@ if (copyButton) copyButton.addEventListener('click', async () => {
       next.querySelector('.undo')?.remove();
       next.querySelectorAll('.notice:not(#offline-banner)').forEach(node => node.remove());
     }
+    if (next.dataset.listUrl) current.dataset.listUrl = next.dataset.listUrl;
     current.replaceChildren(...next.childNodes);
     for (const id of opened) {
       const detail = document.getElementById(id);
@@ -161,17 +162,22 @@ if (copyButton) copyButton.addEventListener('click', async () => {
 
   const canRefresh = () => !!listPage() && !edited && !submitting && dirtyForms.size === 0 &&
     !(document.activeElement?.closest('main') && document.activeElement.matches('input,select,textarea')) &&
-    !document.querySelector('main details[open]');
+    !document.querySelector('main details[open]:not(.browse-filter-options)');
   async function refresh() {
     if (!canRefresh() || refreshing || !navigator.onLine) return false;
     refreshing = true;
     const ticket = generation;
     try {
       const response = await fetch(window.location.href, {cache: 'no-store', credentials: 'same-origin'});
-      if (!response.ok || response.redirected || ticket !== generation || !canRefresh()) return false;
+      if (!response.ok || (response.redirected && new URL(response.url).pathname !== window.location.pathname) || ticket !== generation || !canRefresh()) return false;
       const page = new DOMParser().parseFromString(await response.text(), 'text/html');
       if (ticket !== generation || !canRefresh()) return false;
-      return applyPage(page);
+      const applied = applyPage(page);
+      if (applied && response.redirected) {
+        const url = new URL(response.url);
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+      return applied;
     } catch { return false; }
     finally { refreshing = false; }
   }

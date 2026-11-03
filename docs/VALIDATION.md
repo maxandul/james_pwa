@@ -112,3 +112,14 @@ Base: `feat/household-shopping` at `2fef974` (including the current household ca
 - Chromium inspection of **12 isolated rendered views × 6 frame widths** (344, 390, 700, 820, 1024, 1280 px): no document horizontal overflow. Fixtures include 63 articles, long names, cards/list, filtered shopping, article/product forms, catalogue, plans, receipt import, scanner and household settings. Scrollbars reduce the content viewport slightly relative to the frame width.
 - The managed preview does not contain Python. Browser checks therefore validate rendered real templates/CSS; server writes are exercised separately by the backend suite and DOM tests. This is not a physical Fold/iPhone/tablet acceptance test. Folding during input, iOS/Android keyboard behavior and installed-PWA safe areas remain to be checked on the actual devices.
 - Large-catalog server-side filtering and pagination are deferred; the compact presentation is available now.
+
+
+## Artikelfilter und Seitennavigation — 03.11.2026
+
+Base: responsive foundation `301b813`. No schema changes or live shop actions.
+
+- Full local SQLite suite: 292 passed, 10 Postgres-only skips; the subsequently added context/field-collision test also passed in the focused browsing suite (9/9).
+- JavaScript lifecycle suite: 37 passed, including canonical scroll keys, a last-page clamp during background refresh, and protection of edited filters.
+- Tests cover 220-article hydration limits, combined filters before pagination, stable duplicate-name ordering, literal Unicode/wildcard search, additional/offer-based sources, household separation, archive/favorite counts, last-page removal/undo and distinct return-context versus editable article fields.
+- The source/offer retrieval test proves exactly three queries for both 3 and 100 shopping rows. Existing product/offer and offline tests remain green.
+- Chromium: 12 rendered fixture views with 252 articles at six frame widths, plus expanded filter panels: 108 checks, no horizontal document overflow. Page 1/2 show 48 rows, page 6 shows 12; a filtered empty state shows zero. The fixtures validate real templates/CSS; server behavior is covered separately by backend/DOM tests. Physical device acceptance remains a separate check.

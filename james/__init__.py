@@ -67,6 +67,8 @@ def create_app(test_config=None):
             request.max_form_parts = 2500
 
     db.init_app(app)
+    from .browsing import configure_search
+    configure_search(app)
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"

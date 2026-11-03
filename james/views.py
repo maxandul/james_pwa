@@ -39,16 +39,31 @@ def list_filters(destination, values):
     view = values.get("view", "all")
     result = {"view": view if view in {"all", "favorites", "archived"} else "all",
         "layout": "cards" if values.get("layout") == "cards" else "compact"}
-    query = values.get("q", "").strip()[:100]
+    query = (values.get("q") or "").strip()[:100]
     if query:
         result["q"] = query
+    for field in ('filter_category', 'filter_source'):
+        value = (values.get(field) or '').strip()[:60]
+        if value:
+            result[field] = value
+    if values.get('filter_stock') in STOCK_LABELS:
+        result['filter_stock'] = values['filter_stock']
+    try:
+        page = max(1, min(int(values.get('page', 1)), 1_000_000))
+    except (ValueError, TypeError):
+        page = 1
+    if page > 1:
+        result['page'] = page
     return result
 
 
 @main.app_context_processor
 def list_context():
     values = request.form if request.method == "POST" else request.args
-    return {"home_context": list_filters("main.home", values)}
+    context = list_filters("main.home", values)
+    def home_url(**changes):
+        return url_for('main.home', **list_filters('main.home', {**context, **changes}))
+    return {"home_context": context, "home_url": home_url}
 
 
 @main.get("/health")
@@ -65,18 +80,15 @@ def health():
 @main.get("/")
 @household_required
 def home():
-    rows = db.session.execute(select(HouseholdItem, ShoppingNeed).join(ShoppingNeed).where(
-        HouseholdItem.household_id == g.household.id).order_by(HouseholdItem.is_favorite.desc(), HouseholdItem.name)).all()
-    pending = sum(1 for item, need in rows if need.quantity and not item.archived)
-    active_count = sum(1 for item, need in rows if not item.archived)
-    context = list_filters("main.home", request.args)
-    view, query, layout = context["view"], context.get("q", ""), context["layout"]
-    rows = [(item, need) for item, need in rows if item.archived == (view == "archived")
-        and (view != "favorites" or item.is_favorite)]
-    if query:
-        rows = [(item, need) for item, need in rows if query.casefold() in item.name.casefold()]
-    return render_template("home.html", rows=rows, pending=pending, active_count=active_count,
-        view=view, query=query, layout=layout)
+    from .browsing import browse
+    context = list_filters('main.home', request.args)
+    result = browse(g.household.id, context)
+    if result['page'] != context.get('page', 1):
+        context['page'] = result['page']
+        return redirect(url_for('main.home', **list_filters('main.home', context),
+            undo=request.args.get('undo', type=int)))
+    return render_template('home.html', **result, view=context['view'],
+        query=context.get('q', ''), layout=context['layout'])
 
 
 @main.route("/items/new", methods=["GET", "POST"])

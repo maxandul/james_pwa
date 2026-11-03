@@ -1,8 +1,8 @@
 /* Cascade order is explicit; extend the owning component instead of appending overrides. */
 @layer tokens, base, layout, components, pages, jayjay;
-@import url("css/tokens.css?v=11") layer(tokens);
-@import url("css/base.css?v=11") layer(base);
-@import url("css/layout.css?v=11") layer(layout);
-@import url("css/components.css?v=11") layer(components);
-@import url("css/pages.css?v=11") layer(pages);
-@import url("css/jayjay.css?v=11") layer(jayjay);
+@import url("css/tokens.css?v=12") layer(tokens);
+@import url("css/base.css?v=12") layer(base);
+@import url("css/layout.css?v=12") layer(layout);
+@import url("css/components.css?v=12") layer(components);
+@import url("css/pages.css?v=12") layer(pages);
+@import url("css/jayjay.css?v=12") layer(jayjay);

@@ -1,12 +1,36 @@
 {% extends 'base.html' %}
 {% from '_forms.html' import action_fields with context %}
 {% block content %}
+{% set has_facets = home_context.get('filter_category') or home_context.get('filter_source') or home_context.get('filter_stock') %}
+{% set has_filters = query or has_facets %}
 <section class="page-heading"><div><p class="eyebrow">{{ g.household.name }}</p><h1>Was braucht ihr?</h1><p class="muted">Wird etwas knapp? Ein Tippen, und es steht auf eurer Liste.</p></div><a class="button button--primary" href="{{ url_for('main.item_new') }}">+ Artikel erfassen</a></section>
 <a class="summary" href="{{ url_for('main.shopping') }}"><div><span class="summary__label">EUER NAECHSTER EINKAUF</span><h2>{% if pending %}{{ pending }} Artikel auf der Liste{% else %}Gerade nichts offen.{% endif %}</h2><p>{% if pending %}Gemeinsam erfasst. Bereit für den nächsten Einkauf.{% else %}Fehlt etwas? Fügt es unten mit einem Tippen hinzu.{% endif %}</p></div><span class="summary__arrow" aria-hidden="true">↗</span></a>
 <a class="button button--outline scan-entry" href="{{ url_for('scan.index', flow='replenish') }}">Nachkaufen per Barcode</a>
-<nav class="filters" aria-label="Artikelansicht">{% for mode, label in [('all', 'Alle Artikel'), ('favorites', 'Favoriten'), ('archived', 'Archiv')] %}<a class="filter {{ 'filter--active' if view == mode }}" {% if view == mode %}aria-current="page"{% endif %} href="{{ url_for('main.home', view=mode, q=query, layout=layout) }}">{{ label }}</a>{% endfor %}</nav>
-<div class="article-toolbar" data-preserve="article-toolbar"><form method="get" class="item-search"><input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="layout" value="{{ layout }}"><label class="sr-only" for="item-search">Artikel suchen</label><input id="item-search" name="q" type="search" placeholder="Artikel suchen" maxlength="100" value="{{ query }}"><button class="button button--outline" type="submit">Suchen</button>{% if query %}<a class="button button--quiet" href="{{ url_for('main.home', view=view, layout=layout) }}">Zurücksetzen</a>{% endif %}</form><nav class="view-switch" aria-label="Artikeldarstellung"><a class="filter {{ 'filter--active' if layout == 'compact' }}" {% if layout == 'compact' %}aria-current="true"{% endif %} href="{{ url_for('main.home', view=view, q=query, layout='compact') }}">Liste</a><a class="filter {{ 'filter--active' if layout == 'cards' }}" {% if layout == 'cards' %}aria-current="true"{% endif %} href="{{ url_for('main.home', view=view, q=query, layout='cards') }}">Karten</a></nav></div>
-<div class="section-heading"><h2>{{ 'Archivierte Artikel' if view == 'archived' else 'Eure Favoriten' if view == 'favorites' else 'Eure Artikel' }} <span class="count">{{ rows|length }}</span></h2><span class="muted small">{{ pending }} zum Nachkaufen</span></div>
+<nav class="filters" aria-label="Artikelansicht">{% for mode, label in [('all', 'Alle Artikel'), ('favorites', 'Favoriten'), ('archived', 'Archiv')] %}<a class="filter {{ 'filter--active' if view == mode }}" {% if view == mode %}aria-current="page"{% endif %} href="{{ home_url(view=mode, page=1) }}">{{ label }}</a>{% endfor %}</nav>
+<div class="article-toolbar">
+  <form method="get" class="article-filters" data-preserve="article-filters">
+    <input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="layout" value="{{ layout }}">
+    <div class="item-search"><label class="sr-only" for="item-search">Artikel suchen</label><input id="item-search" name="q" type="search" placeholder="Artikel suchen" maxlength="100" value="{{ query }}"><button class="button button--outline" type="submit">Suchen</button></div>
+    <details class="browse-filter-options" id="browse-filter-options">
+      <summary>Filter{% if has_facets %} · aktiv{% endif %}</summary>
+      <div class="browse-filter-grid">
+        <label>Warengruppe<select name="filter_category"><option value="">Alle Warengruppen</option>{% for name in browse_categories %}<option {% if name == home_context.get('filter_category') %}selected{% endif %}>{{ name }}</option>{% endfor %}{% if home_context.get('filter_category') and home_context.filter_category not in browse_categories %}<option selected>{{ home_context.filter_category }}</option>{% endif %}</select></label>
+        <label>Einkaufsort<select name="filter_source"><option value="">Alle Einkaufsorte</option>{% for name in browse_sources %}<option {% if name == home_context.get('filter_source') %}selected{% endif %}>{{ name }}</option>{% endfor %}{% if home_context.get('filter_source') and home_context.filter_source not in browse_sources %}<option selected>{{ home_context.filter_source }}</option>{% endif %}</select></label>
+        <label>Bestand<select name="filter_stock"><option value="">Alle Bestände</option>{% for key, label in stock_labels.items() %}<option value="{{ key }}" {% if key == home_context.get('filter_stock') %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <button class="button button--outline" type="submit">Filter anwenden</button>
+      </div>
+    </details>
+  </form>
+  <nav class="view-switch" aria-label="Artikeldarstellung"><a class="filter {{ 'filter--active' if layout == 'compact' }}" {% if layout == 'compact' %}aria-current="true"{% endif %} href="{{ home_url(layout='compact') }}">Liste</a><a class="filter {{ 'filter--active' if layout == 'cards' }}" {% if layout == 'cards' %}aria-current="true"{% endif %} href="{{ home_url(layout='cards') }}">Karten</a></nav>
+</div>
+{% if has_filters %}
+<div class="active-filters" aria-label="Aktive Filter">
+  {% if query %}<span>Suche: {{ query }}</span>{% endif %}
+  {% for field, label in [('filter_category', 'Warengruppe'), ('filter_source', 'Einkaufsort'), ('filter_stock', 'Bestand')] %}{% if home_context.get(field) %}<span>{{ label }}: {{ stock_labels[home_context[field]] if field == 'filter_stock' else home_context[field] }}</span>{% endif %}{% endfor %}
+  <a class="button button--quiet" href="{{ home_url(q=None, filter_category=None, filter_source=None, filter_stock=None, page=1) }}">Filter zurücksetzen</a>
+</div>
+{% endif %}
+<div class="section-heading"><div><h2>{{ 'Archivierte Artikel' if view == 'archived' else 'Eure Favoriten' if view == 'favorites' else 'Eure Artikel' }} <span class="count">{{ total }}</span></h2>{% if total %}<p class="small muted">{{ first }}–{{ last }} von {{ total }} Artikeln</p>{% endif %}</div><span class="muted small">{{ pending }} zum Nachkaufen</span></div>
 {% if rows %}<div class="item-grid" data-layout="{{ layout }}">
 {% for item, need in rows %}<article class="item-card" data-item-id="{{ item.id }}" id="item-{{ item.id }}">
   <div class="item-card__top"><span class="item-icon" aria-hidden="true">{{ item.name[:1]|upper }}</span><span class="pill pill--{{ item.stock_status }}">{{ 'Archiviert' if item.archived else stock_labels[item.stock_status] }}</span>
@@ -21,6 +45,13 @@
     <a class="button button--quiet item-edit-link" href="{{ url_for('main.item_edit', item_id=item.id, **home_context) }}">Artikel bearbeiten</a></details>
   {% endif %}
 </article>{% endfor %}</div>
-{% else %}<section class="empty"><div class="empty__symbol" aria-hidden="true">{{ '☆' if view == 'favorites' else '+' }}</div><h2>{% if query %}Kein passender Artikel.{% elif view == 'favorites' %}Eure Favoriten sind schnell zur Hand.{% elif view == 'archived' %}Noch nichts archiviert.{% else %}Euer Haushalt beginnt hier.{% endif %}</h2><p>{% if view == 'favorites' %}Markiert häufig benötigte Artikel mit dem Stern.{% elif view == 'archived' %}Archivierte Artikel könnt ihr hier wieder aktivieren.{% elif query %}Versucht einen anderen Suchbegriff.{% else %}Kaffee, Pasta oder Waschmittel: Erfasst zuerst die Dinge, die ihr regelmässig nachkauft.{% endif %}</p>{% if not query and view == 'all' %}<a class="button button--primary" href="{{ url_for('main.item_new') }}">Ersten Artikel erfassen</a>{% endif %}</section>{% endif %}
+{% else %}<section class="empty"><div class="empty__symbol" aria-hidden="true">{{ '☆' if view == 'favorites' else '+' }}</div><h2>{% if has_filters %}Kein passender Artikel.{% elif view == 'favorites' %}Eure Favoriten sind schnell zur Hand.{% elif view == 'archived' %}Noch nichts archiviert.{% else %}Euer Haushalt beginnt hier.{% endif %}</h2><p>{% if has_filters %}Passt eure Suche oder die Filter an.{% elif view == 'favorites' %}Markiert häufig benötigte Artikel mit dem Stern.{% elif view == 'archived' %}Archivierte Artikel könnt ihr hier wieder aktivieren.{% else %}Kaffee, Pasta oder Waschmittel: Erfasst zuerst die Dinge, die ihr regelmässig nachkauft.{% endif %}</p>{% if not has_filters and view == 'all' %}<a class="button button--primary" href="{{ url_for('main.item_new') }}">Ersten Artikel erfassen</a>{% endif %}</section>{% endif %}
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Artikelseiten">
+  {% if page > 1 %}<a class="button button--outline" rel="prev" href="{{ home_url(page=page-1) }}">← Vorherige</a>{% endif %}
+  <span class="small muted" aria-current="page">Seite {{ page }} von {{ pages }}</span>
+  {% if page < pages %}<a class="button button--outline" rel="next" href="{{ home_url(page=page+1) }}">Weitere Artikel →</a>{% endif %}
+</nav>
+{% endif %}
 <p class="form-actions"><a class="button button--quiet" href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte verwalten</a></p>
 {% endblock %}
