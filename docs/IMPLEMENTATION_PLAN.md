@@ -1,18 +1,18 @@
 # Umsetzungsplan
 
-Stand: 01.11.2026. Alle Implementierungspakete sind offen. Die Reihenfolge ist ein Vorschlag; keine App-Implementierung ist mit diesem Dokument abgeschlossen.
+Stand: 02.11.2026. Konzept zusammengefuehrt; ein erster durchgaengiger Ablauf ist implementiert. Die Paketabnahme bleibt differenziert: Teilschritte sind keine vollstaendigen Pakete.
 
 ## Paketfolge
 
 | Paket | Ergebnis | Abnahme | Stand |
 | --- | --- | --- | --- |
-| K0 Konzept | Gemeinsame Dokumentationsgrundlage | Umfang, Datenmodell, Ablaeufe, Architektur und Testgrenzen beschrieben | Entwurf erstellt, Review offen |
-| P1 Technische Basis | Flask-Vorschlag konkretisieren, Postgres, Migrationen, Entwicklungs-/Testsetup | App startet; isolierte Testdatenbank; Basis-Checks dokumentiert | Offen |
-| P2 Gemeinsamer Haushalt | Login, Mitgliedschaften und Tablet-Zugang | Zwei Personen sehen denselben Haushalt; fremde Haushaltsdaten gesperrt; Tablet-Rechte eingeschraenkt | Offen |
-| P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Offen |
-| P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Offen |
-| P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Offen |
-| P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Offen |
+| K0 Konzept | Gemeinsame Dokumentationsgrundlage | Umfang, Datenmodell, Ablaeufe, Architektur und Testgrenzen beschrieben | Zusammengefuehrt (PR #1) |
+| P1 Technische Basis | Flask-Vorschlag konkretisieren, Postgres, Migrationen, Entwicklungs-/Testsetup | App startet; isolierte Testdatenbank; Basis-Checks dokumentiert | Technische Basis und Postgres-CI geprueft; Docker-/Railway-Konfiguration und getrennte staging-Ressourcen eingerichtet; Betriebsabnahme offen |
+| P2 Gemeinsamer Haushalt | Login, Mitgliedschaften und Tablet-Zugang | Zwei Personen sehen denselben Haushalt; fremde Haushaltsdaten gesperrt; Tablet-Rechte eingeschraenkt | Persoenliche Zugaenge/Einladungen fertig; Geraetezugang offen |
+| P3 Artikel und Bestand | Text, Favoriten, zwei Bestandsmodi und Barcode-Zuordnung | Bekannter Scan findet Produkt; unbekannter Scan manuell erfassbar; unbekannter Bestand bleibt moeglich | Text, Favoriten, Artikelpflege und einfacher Status fertig; Barcode-Zuordnung und Kameraablauf implementiert; Hardwareabnahme/Mengenbestand offen |
+| P4 Einkaufsliste | Nachkaufen, Zusatzmenge, Filter, Ladeneinkauf und Ruecknahme | Gleichzeitiges Nachkaufen erzeugt einen Bedarf; Einkauf/Ruecknahme verbucht Bestand und Bedarf konsistent | Nachkauf, Zusatz-/Teilkauf, Entfernen und Ruecknahme implementiert; visuelle Abnahme offen |
+| P5 Alltag und PWA | Tablet-/Handybedienung, Aktualisierung, Offline-Lesen, Railway-Testbetrieb | Reale Geraete geprueft; gespeicherte Liste offline sichtbar; Offline-Schreiben klar blockiert; Backup/Restore geprueft | Railway online, Ersteinrichtung bestaetigt; Installation und Offline-Lesen implementiert. PWA-/Offline-Test vom Nutzer bestaetigt; Kamera-/Fold-Abnahme, Backup/Restore und eingeschraenkter Geraetezugang offen |
+| P6 Einkaufsvorhaben | Produkt-/Shop-Zuordnung, Entwuerfe, Bestellstatus und Wareneingang | Bedarf nicht doppelt eingeplant; bestellt ist nicht geliefert; Teillieferung und doppelte Bestaetigung korrekt | Produkt-/Shop-Grundlage auf staging ausgeliefert; Belegimport ausgeliefert; manuelle Einkaufsvorhaben ausgeliefert; JayJay-Textgrundlage in Umsetzung |
 | P7 Shop-Uebergabe | Pro Shop nachgewiesener Warenkorbweg | Angemeldeter Test, mehrere Mengen, Wiederholungen und Sitzungsablauf geprueft | Offen |
 | P8 Wochenroutine | Serverseitiger Vorschlag und Benachrichtigung | Ein Vorschlag je Haushalt und Termin; keine Abhaengigkeit von geoeffneter PWA; manueller Start bleibt moeglich | Offen |
 | P9 ChatGPT und Kochen | MCP, Rezepte und Menuevorschlaege | Gleiche Haushaltsrechte und Fachregeln; unsichere Bestaende sichtbar; Zutaten erst nach Bestaetigung erfasst | Offen |
@@ -23,8 +23,8 @@ P6 bis P9 sind getrennte Ausbauschritte. Der automatische verbindliche Bestellab
 
 ## Vor den jeweiligen Paketen festlegen
 
-- Vor P1: Flask und minimale technische Abhaengigkeiten bestaetigen, Deployment-Konfiguration waehlen.
-- Vor P2: Login, Einladungsweg und Einrichtung des Tablet-Zugangs entscheiden.
+- P1: Flask umgesetzt und Pakete gepinnt; Zielumgebung/Deployment noch einrichten.
+- P2: E-Mail/Passwort und Einladungen bestaetigt und umgesetzt; Tablet-Zugang noch entscheiden.
 - Vor P3/P5: Geraet/Betriebssystem und Kameraposition praktisch pruefen; keinen Tablet-Kauf allein auf Annahmen stuetzen.
 - Vor P6/P7: Beispielprodukte, Bestellberechtigte und Ersatzregeln festlegen; angemeldete Testsitzung einrichten.
 - Vor P7: Standort des Browsers und Uebergabe in den persoenlichen Shop-Warenkorb nachweisen.
@@ -43,10 +43,17 @@ P6 bis P9 sind getrennte Ausbauschritte. Der automatische verbindliche Bestellab
 
 Browser-Tests belegen die konkrete Oberflaeche zum Testzeitpunkt. Sie ersetzen keine automatisierten Pruefungen der eigenen Fachlogik oder einen Test aus der Zielumgebung.
 
-## Naechster Arbeitsschritt nach Konzeptreview
+## Aktueller Ausbau nach Nutzerfeedback
 
-P1 und die Entscheidungen fuer P2 vorbereiten. Parallel im normalen Arbeitsablauf die offenen Shop-Tests durchfuehren, sobald eine passende angemeldete Sitzung vorhanden ist. Das sind getrennte Aufgaben; ein fehlender Shop-Zugang blockiert die grundlegende Einkaufsliste nicht.
+Akzeptierte Reihenfolge: (1) Produkt-/Shop-Grundlage und eigene Kataloge, (2) Kassabon-/Digitalbelegimport mit Pruefansicht fuer mehrere Artikel, (3) nachgewiesene Warenkorbuebergabe, (4) integrierter James-Chat mit denselben Haushaltsregeln. Direkter verbindlicher Bestellabschluss bleibt ein gesonderter Funktions-/Freigabeschritt.
 
-## Bewusste Grenzen dieses Auftrags
+| Paket | Stand |
+| --- | --- |
+| Eigene Warengruppen/Einkaufsorte, mehrere Varianten/Laeden, Vorzug und Packungsmengen | Ausgeliefert auf staging, Migration und Healthcheck bestaetigt; neue Masken auf Zielgeraeten noch pruefen |
+| Foto/PDF-Belege fuer alle Positionen | Implementiert: lokale PDF-/Foto-Texterkennung, manuelle Textalternative, Pruefansicht, atomare Buchung und Ruecknahme; auf staging ausgeliefert, 130 Postgres-Tests erfolgreich |
+| Coop/Migros/Galaxus-Warenkoerbe | Manuelle Einkaufsvorbereitung implementiert; native automatische Uebergabe und angemeldeter Nachweis weiterhin offen |
+| James-Chat mit Lesen/Aendern/Loeschen und Einkaufsvorbereitung | Textchat und begrenzte Haushaltswerkzeuge vorbereitet; ohne OpenAI-Zugang deaktiviert. Live-Test, Browseragent und Sprache offen |
 
-Dieser Stand enthaelt nur Dokumentation. Keine Railway-Ressourcen, Secrets, Datenbanken, Shop-Konten, Hintergrundauftraege oder kostenpflichtigen Bestellungen wurden eingerichtet.
+Nutzer bestaetigt laufende Online-App und PWA-/Offline-Test. Kamera bei schlechtem Licht noch ohne Erfolg; reale Scan-/Fold-/Tablet-Abnahme und Backup/Restore bleiben offen. Eingeschraenkter Tablet-Zugang und Mengenbestand sind weiter offen.
+
+Produkt-/Shop-Update am 02.11.2026 gemaess ausdruecklicher Nutzerfreigabe ohne Backup ausgeliefert: noch keine echten Daten. Backup/Restore bleibt vor echtem Alltagsbetrieb offen. Vision fuer JayJay siehe JAYJAY_VISION.md; sie veraendert die laufende Reihenfolge nicht.

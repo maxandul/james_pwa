@@ -1,6 +1,6 @@
 # Bedienablaeufe
 
-Stand: 01.11.2026. Soll-Verhalten, noch nicht implementiert.
+Stand: 01.11.2026. Soll-Ablaeufe mit erstem implementierten Ausschnitt. Text-Erfassung, persoenliche Einladungen, Nachkaufen, Zusatz-/Teilkauf und Ruecknahme sind umgesetzt. Mengenbestand, Shop-Bestellung, Lieferung, Offline-Lesen, Geraetezugang und Menueplanung sind noch offen.
 
 ## Oberflaechen
 
@@ -11,7 +11,7 @@ Stand: 01.11.2026. Soll-Verhalten, noch nicht implementiert.
 | Haushalt | Artikel, Produkte, Bestandsmodus und Nachkaufregeln |
 | Kochen | Spaeter Rezepte, Vorschlaege und Menueplan |
 
-Grosse Touch-Flaechen und kurze Wege am Tablet; gut lesbare Checkboxen auf dem Handy. Alltagsmeldungen brauchen keinen Verwaltungsdialog.
+Tablet und Handy sind die primaeren Geraete. Grosse Touch-Flaechen und kurze Wege am Tablet; gut lesbare Checkboxen auf dem Handy. Beim Fold-Handy Aussen-/Innendisplay, Orientierung und Groessenwechsel im laufenden Ablauf pruefen. Alltagsmeldungen brauchen keinen Verwaltungsdialog.
 
 ## 1. Letzte Reserve angebrochen
 
@@ -90,3 +90,40 @@ Der Geraetezugang darf keine Mitglieder, Shop-Zugaenge oder Bestellberechtigunge
 "Plane drei Abendessen fuer zwei Personen und verwende zuerst frische Lebensmittel."
 
 James liefert dazu beobachteten Bestand mit Zeitpunkt und Unsicherheit. Vorschlaege benennen zu pruefende Zutaten. Fehlende Zutaten werden nach Bestaetigung als Bedarf erfasst. Ein geplanter oder gekochter Menuevorschlag zieht im ersten Ausbau keine unbestaetigten Mengen automatisch ab.
+
+## Artikelpflege (implementiert)
+
+Auf der Karte den Stern antippen, um einen gemeinsamen Favoriten zu setzen; unter Favoriten erscheinen nur aktive markierte Artikel. Name per Suchfeld finden. Bestandsstatus ueber "Bestand und Artikeldetails" korrigieren; dies veraendert die Einkaufsliste nicht.
+
+"Artikel bearbeiten" oeffnet das Formular fuer Name, Warengruppe, Quelle, gewohnte Nachkaufmenge, Einheit und Bestand. Die Einheit ist bei offenem Einkaufsbedarf gesperrt. Neue Standardmengen wirken erst auf kuenftigen Bedarf. Bei einer zwischenzeitlichen Aenderung verlangt James ein Neuladen, statt alte Felder ueber neuere Werte zu schreiben.
+
+Ein Artikel ohne offenen Einkaufsbedarf kann im Bearbeitungsformular archiviert werden. Er bleibt im Archiv erhalten und kann dort wieder aktiviert werden. Noch offener Bedarf muss zuerst gekauft oder mit "Von der Liste entfernen" geloescht werden. Letzteres setzt keinen Bestand auf vorhanden und gilt nicht als Kauf.
+
+Alle Pflegeaktionen ausser der erstmaligen Erfassung sind ueber den direkten Aktionshinweis rueckgaengig machbar, solange die Artikelversion noch aktuell ist. Keine permanente Rueckgaengig-Box.
+
+## Implementierter Barcode-Ablauf
+
+1. In Neuer Artikel die Hilfe Mit Barcode erfassen, im Haushalt Nachkaufen per Barcode oder in Artikel bearbeiten die Barcode-Zuordnung oeffnen. Code eintippen oder Kamera bewusst starten. EAN-8/13, UPC-A und GTIN-14 werden mit Pruefziffer validiert.
+2. Bekannter Code zeigt die gespeicherte Produktvariante und den Haushaltsartikel. Erst Nachkaufen bzw. Leer und nachkaufen bucht Bedarf. Archivierte Artikel zuerst wieder aktivieren.
+3. Unbekannten Code manuell erfassen: Produktname, optional Marke/Packungsangabe, bestehender Haushaltsartikel oder neuer Artikel. Speichern allein aendert weder Bestand noch Liste.
+4. Optional Produktvorschlag anfordern: Nur der Barcode geht an Open Food Facts. Vorschlag pruefen; vorhandene Eingaben werden nicht ueberschrieben. Ausfall oder fehlender Treffer laesst manuelle Erfassung offen.
+5. Erneutes Scannen erzeugt keine doppelten Artikel. Falsche Zuordnung unter Artikel bearbeiten entfernen und neu erfassen; Artikel und Einkaufsbedarf bleiben erhalten.
+
+Kamera endet bei erkanntem Code, Stoppen, Navigation und Hintergrundwechsel. Keine Bilder gespeichert oder hochgeladen. Reale Geraeteabnahme unter HTTPS bleibt offen.
+
+Die Scan-Hilfe ist kein eigener Tab. Nach Artikelanlage oder Zuordnung wird die Artikelpflege geoeffnet; nach bestaetigtem Nachkaufen der Haushalt. Abbrechen kehrt zur Ausgangsseite zurueck. Bereits bekannte Produkte werden beim Erfassen angeboten, ohne neue Artikel anzulegen. Ein Barcode, der schon zu einem anderen Artikel gehoert, wird beim Zuordnen als Konflikt gezeigt und niemals automatisch umgehaengt. Beim Abhaken eines Einkaufs bleibt Antippen der normale Weg.
+
+## Implementiert: Installation und Offline-Lesen
+
+Online und angemeldet wird die gesamte offene Einkaufsliste auf diesem Geraet gespeichert. Die Ansicht zeigt den Speicherzeitpunkt. Ueber den Hilfebereich oder bei Verbindungsverlust beim Oeffnen von Haushalt/Einkauf erscheint die gespeicherte Liste ohne Schreibaktionen. Bei erneutem Online-Oeffnen wird sie aktualisiert. Beim Abmelden/Kontowechsel wird die alte Kopie entfernt. Installation erfolgt ueber Browsermenue oder den angebotenen Installieren-Button. Echte Kamera- und Installationsabnahme auf Zielgeraeten bleiben offen.
+
+
+## Milch bei mehreren Laeden
+
+1. Artikel Milch einmalig erfassen, Einheit beispielsweise Liter. Bevorzugten Einkaufsort und weitere moegliche Orte waehlen. Eigene Warengruppen/Orte lassen sich hinzufuegen und umbenennen.
+2. In der Artikelpflege Produkte und Einkaufsorte oeffnen. Konkrete Milchvarianten anlegen oder vorhandene Barcode-Produkte bearbeiten.
+3. Variante mit Coop/Migros oder mehreren Einkaufsorten verknuepfen. Ausdruecklich angeben, wie viele Artikeleinheiten eine Shop-Packung enthaelt; Link/Artikelnummer optional. Je Laden ein Vorzugsprodukt setzen.
+4. Nachkaufen erzeugt weiterhin einen gemeinsamen Bedarf. Im Filter Coop oder Migros erscheint derselbe Artikel mit der dort passenden Variante. Ohne eindeutige Auswahl fordert James zur Variantenpflege auf.
+5. Beispiel: 3 Liter Bedarf, 2 Liter je Shop-Packung ergibt 2 Packungen und 1 Liter Mehrmenge. Dies ist eine Vorbereitung, keine Bestellung. Kauf weiter in Litern bestaetigen; vorhandene Kauf-/Ruecknahmeregeln gelten.
+
+Automatische Warenkoerbe/Bestellungen, Belegimport und James-Chat sind weitere Pakete. Bestehende Coop-/Migros-App-Konten werden dadurch noch nicht angebunden.

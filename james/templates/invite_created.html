@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel form-panel"><p class="eyebrow">ZUSAMMEN NUTZEN</p><h1>Die Einladung ist bereit.</h1><p>Fuer <strong>{{ invitation.email }}</strong>. Der Link gilt sieben Tage und kann einmal verwendet werden.</p><label class="form">Einladungslink<input id="invite-link" value="{{ invite_url }}" readonly></label><button class="button button--primary" type="button" id="copy-invite">Link kopieren</button><p id="copy-feedback" class="small" role="status"></p><p class="small muted">Gib den Link persoenlich weiter. Er wird nur hier angezeigt. Ein neuer Link macht die bisherige Einladung fuer diese Adresse ungueltig.</p><a class="button button--quiet" href="{{ url_for('main.household') }}">Zurueck zum Haushalt</a></section>
+{% endblock %}

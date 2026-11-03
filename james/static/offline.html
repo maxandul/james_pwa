@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de-CH"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#214b3d"><title>James - Gespeicherte Einkaufsliste</title>
+<link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/static/app.css?v=10">
+<script src="/static/offline-store.js?v=1" defer></script><script src="/static/pwa.js?v=3" defer></script>
+</head><body data-offline-page="true">
+<header class="header"><a class="brand" href="/">james</a></header>
+<main class="main"><section class="page-heading"><div><p class="eyebrow">GESPEICHERTE EINKAUFSLISTE</p><h1 id="offline-heading">Einkaufsliste offline</h1></div></section>
+<div class="notice"><p>Dieser Stand ist nur zum Lesen. Zum Abhaken, Nachkaufen oder Bearbeiten brauchst du eine Verbindung.</p><p id="offline-time" class="small"></p></div>
+<section id="offline-empty" class="empty"><h2>Noch keine Liste auf diesem Geraet gespeichert.</h2><p>Oeffne James einmal online und angemeldet. Danach kannst du deine Einkaufsliste hier ohne Verbindung ansehen.</p></section>
+<ul id="offline-items" class="shopping-list"></ul>
+<div class="form-actions pwa-actions"><a class="button button--primary" href="/shopping">Online-Einkaufsliste oeffnen</a><button class="button button--outline" id="offline-clear" type="button" hidden>Gespeicherte Liste entfernen</button></div>
+<noscript>Zum Anzeigen der gespeicherten Liste bitte JavaScript aktivieren.</noscript>
+</main></body></html>

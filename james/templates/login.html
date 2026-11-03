@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-layout">
+  <div class="auth-intro"><p class="eyebrow">DEIN HAUSHALT. EIN GUTER UEBERBLICK.</p><h1>Alles da.<br>Und wenn nicht,<br>steht es hier.</h1><p>Vorrat im Blick. Einkaeufe zusammen erledigen.<br>Damit im Alltag ein Gedanke weniger bleibt.</p><div class="illustration" aria-hidden="true"><span>Milch</span><span>Kaffee</span><span>Alles auf einer Liste.</span></div></div>
+  <section class="panel auth-panel"><p class="eyebrow">WILLKOMMEN ZUHAUSE</p><h2>Anmelden</h2><p class="muted">Mit deinem persoenlichen Zugang.</p>
+    {% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" class="form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>E-Mail-Adresse<input type="email" name="email" autocomplete="username" required maxlength="254" value="{{ request.form.get('email', '') }}"></label>
+      <label>Passwort<input type="password" name="password" autocomplete="current-password" required maxlength="128"></label>
+      <button class="button button--primary button--full" type="submit">Anmelden <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="small muted">Neu dabei? Du bekommst deinen Zugang ueber eine Einladung aus deinem Haushalt.</p>
+  </section>
+</section>
+{% endblock %}

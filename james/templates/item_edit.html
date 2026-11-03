@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% from '_forms.html' import action_fields with context %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">ARTIKEL PFLEGEN</p><h1>{{ item.name }}</h1><p class="muted">{% if item.archived %}Dieser Artikel ist archiviert. Aktiviere ihn wieder, um ihn zu bearbeiten.{% else %}Name, Nachkaufmenge und Bestand für euren Haushalt anpassen.{% endif %}</p></div></div>
+<section class="panel form-panel">
+{% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if item.archived %}
+<form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'restore') }}<button class="button button--primary" type="submit">Wieder aktivieren</button></form>
+{% else %}
+<form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_id" value="{{ request_id() }}"><input type="hidden" name="version" value="{{ request.form.get('version', item.version) }}">
+  {% set values = request.form if request.method == 'POST' else {'name': item.name, 'category': item.category, 'source': item.source, 'quantity': item.default_quantity, 'unit': item.unit, 'stock_status': item.stock_status, 'favorite': '1' if item.is_favorite else '0'} %}
+  {% include '_item_fields.html' %}
+  <div class="form-actions">{% if conflict %}<a class="button button--primary" href="{{ url_for('main.item_edit', item_id=item.id) }}">Aktuellen Artikel neu laden</a>{% else %}<button class="button button--primary" type="submit">Änderungen speichern</button>{% endif %}<a class="button button--quiet" href="{{ url_for('main.home') }}">Abbrechen</a></div>
+</form>
+<section class="archive-section"><h2>Artikel archivieren</h2><p class="small muted">Nicht mehr benötigt? Archivierte Artikel bleiben erhalten und können später wieder aktiviert werden.</p>
+{% if need.quantity %}<p class="small">Dieser Artikel steht noch auf der Einkaufsliste. Bitte zuerst erledigen oder entfernen.</p><a class="button button--outline" href="{{ url_for('main.shopping') }}">Zur Einkaufsliste</a>
+{% else %}<form method="post" action="{{ url_for('main.item_action', item_id=item.id) }}">{{ action_fields(item, 'archive') }}<button class="button button--outline" type="submit">Artikel archivieren</button></form>{% endif %}
+</section>
+{% endif %}
+<section class="barcode-mappings"><h2>Produkte und Einkaufsorte</h2><p class="small muted">Verschiedene Produkte und Packungsgroessen fuer denselben Haushaltsbedarf.</p><a class="button button--outline" href="{{ url_for('products.manage', item_id=item.id) }}">Produkte und Shops verwalten</a></section>
+<section class="barcode-mappings"><h2>Gespeicherte Barcodes</h2>{% if barcodes %}<ul class="member-list">{% for barcode in barcodes %}<li><span><strong>{{ barcode.product.name }}</strong><small>{{ barcode.code }}{% if barcode.product.brand %} · {{ barcode.product.brand }}{% endif %}{% if barcode.product.package_text %} · {{ barcode.product.package_text }}{% endif %}</small></span><form method="post" action="{{ url_for('scan.remove', barcode_id=barcode.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="{{ item.version }}"><button class="button button--outline" type="submit">Zuordnung entfernen</button></form></li>{% endfor %}</ul>{% else %}<p class="small muted">Noch kein Barcode zugeordnet.</p>{% endif %}<a class="button button--quiet" href="{{ url_for('scan.index', flow='assign', context_item_id=item.id) }}">Barcode zu diesem Artikel hinzufuegen</a><p class="small muted">Eine entfernte Zuordnung kannst du durch erneutes Scannen wieder erfassen. Artikel und Einkaufsliste bleiben erhalten.</p></section>
+</section>
+{% endblock %}

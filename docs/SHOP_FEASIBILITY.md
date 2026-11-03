@@ -64,3 +64,72 @@ Noch nicht zugesagt werden koennen: stabiler API-Zugriff, angemeldeter Coop-Ware
 Angemeldete Tests benoetigen eine von der Person eingerichtete Sitzung. Passwoerter, Cookies und sonstige Zugangsdaten werden nicht im Chat oder Repository hinterlegt. Checkout wird erst in einem gesondert autorisierten Test behandelt.
 
 Pro weiterem Test Datum, Umgebung, konkrete Produkte, beobachtetes Ergebnis, Aufraeumen und Grenzen ergaenzen.
+
+
+## Aktualisierung 02.11.2026: manuelle Vorbereitung
+
+Offizielle Anbieterbeschreibungen bestaetigen geteilte Listen/Warenkoerbe, liefern aber in unserer Recherche keinen nachgewiesenen externen James-Import. Das ist keine Aussage, dass eine Integration unmoeglich ist. Angemeldeter Native-Warenkorbtest bleibt offen.
+
+- Migros: https://support.migros.ch/hc/de/articles/32901177026194-Kann-ich-die-Produkte-auf-der-Einkaufsliste-auch-einfach-online-bestellen
+- Migros geteilte Warenkoerbe: https://support.migros.ch/hc/de/articles/32900760025106-Ich-will-etwas-bestimmtes-auf-die-Einkaufsliste-setzen-und-finde-es-nicht
+- Coop: https://www.coop.ch/de/ihr-online-supermarkt/einkaufsliste.html
+
+James erhaelt deshalb zuerst speicherbare Einkaufsvorhaben mit geprueften Produkt-/Packungsvorschlaegen, vorhandenen Shoplinks und kopier-/teilbarer Textliste. Diese Funktion befuellt keinen nativen Shop-Warenkorb. Nach externem Checkout kann der Haushalt die Bestellung manuell markieren; Liefer-/Kaufbuchung erfolgt separat ueber Einkaufsliste oder Beleg. Keine Zugangsdaten, Shop-API oder Browserautomation hinzugefuegt.
+
+
+## Browser-Einkaufsagent: Pruefplan
+
+Nachweis noch offen. Vorgesehen ist ein separater Agentenlauf ueber die OpenAI Agents API mit gehostetem Browser, nicht eine Fernsteuerung des persoenlichen ChatGPT-Chats. Ohne API-Zugang kein echter Prototyp-Lauf oder Konto-/Warenkorbtest. Keine Shop-Sitzung eingerichtet.
+
+Offizielle technische Grundlage (02.11.2026): https://developers.openai.com/api/docs/guides/agents-api/tools/computer-use und https://developers.openai.com/api/docs/guides/agents/orchestration . Als Ersttest oeffentliche Produktseite lesen; anschliessend interaktive Shop-Anmeldung und genau drei vorgegebene Artikel einschliesslich Menge 2 im angemeldeten Warenkorb nachweisen. Vorhandene Inhalte respektieren, Wiederholungen nicht verdoppeln, Sitzungsabbruch fortsetzbar machen und Warenkorb auf dem persoenlichen Geraet verifizieren. Keine Bestellabgabe im Prototyp. Anmelde-/Websitefreigaben muessen an die Person durchgereicht werden; keine stillen Cookie-/Passwortuebernahmen.
+
+Die Haushaltswerkzeuge der ersten Chat-Stufe besitzen bewusst keinen Browserzugang. Die Browserfunktion wird erst nach Konto-/Sitzungs-/Freigabetest als gesondertes Werkzeug fuer JayJay angeschlossen.
+
+## Aktualisierung 02.11.2026: echter Agents-Browserzugang
+
+Mit dem bereits vorhandenen API-Schluessel wurde eine OpenAI-gehostete
+Browsersitzung samt echtem Modelllauf erfolgreich eingerichtet. Der bisherige
+Zugangsblocker gilt damit fuer diese Entwicklungsumgebung nicht mehr.
+Coop blockiert dort die oeffentliche Produktseite mit einer sichtbaren
+Sperrmeldung. Galaxus-Leseablaeufe lieferten Browseraktivitaet und
+uebereinstimmende Produktberichte, jedoch keine Screenshot-Bilddaten.
+Kein angemeldeter Warenkorb und keine Uebergabe auf ein persoenliches Geraet
+wurden nachgewiesen. Keine Bestellung oder Warenkorbaenderung ausgefuehrt.
+Details, reproduzierbare Probe und Grenzen: [BROWSER_PILOT.md](BROWSER_PILOT.md).
+
+## Aktualisierung 02.11.2026: Drei-Produkt-Gastwarenkorb
+
+Mit der verfuegbaren CUA-Browserschnittstelle wurde ein zuvor leerer
+Galaxus-Gastwarenkorb mit genau drei Testprodukten befuellt: bluu 14684120
+(60 Waschgaenge, Menge 2), Barilla Spaghetti 14730798 (500 g, Menge 1) und
+Cirio Pizza Sauce 37264242 (400 g, Menge 1). Warenkorbzeilen, Mengen und
+Persistenz nach Neuladen wurden gelesen und per Screenshot belegt. Keine
+Anmeldung, kein Checkout, keine Bestellung. Produktauswahl vom Nutzer fuer
+den POC delegiert; keine abgeleiteten Haushaltspraeferenzen.
+
+Dieser Nachweis stammt nicht aus James, Railway oder einem Agents-API-Lauf.
+Der API-Cart-Pilot ist blockiert: Der Endpunkt lehnt das dokumentierte
+`spend_control`-Feld ab; eine Ausfuehrung ohne Kostenlimit wurde automatisch
+abgelehnt. Die Implementierung verlangt jetzt ein bestaetigtes Limit.
+Persoenliches Konto, sichere Anmeldung, Geraeteuebergabe und automatischer
+Wiederholungs-/Parallelitaetstest bleiben offen. Details und Bildbeleg:
+[BROWSER_PILOT.md](BROWSER_PILOT.md).
+
+## Aktualisierung 02.11.2026: einmalig freigegebener Agents-API-Cart-Pilot
+
+Nach ausdruecklicher Freigabe eines einmaligen Tests ohne hartes Geldlimit
+hat der API-Agent selbst eine neue OpenAI-gehostete Galaxus-Gastsitzung
+verwendet und genau drei Positionen vorbereitet: bluu 14684120 (60
+Waschgaenge) x2, Barilla Spaghetti 14730798 (500 g) x1, Cirio Pizza Sauce
+37264242 (400 g) x1. Ein abgeschlossener Hauptturn, 25 Browseraufrufe und
+vier Screenshots wurden empfangen. Der letzte Screenshot wurde unabhaengig
+vom Modellbericht auf alle drei Produktnamen, Packungen und Mengen geprueft.
+Die Produktkennungen stehen im Agentenbericht, nicht im Screenshot.
+
+Keine Anmeldung, kein Checkout, keine Bestellung. Die API bestaetigte die
+anschliessende Loeschung der Sitzung. Kein dauerhaft oder persoenlich
+uebergebener Warenkorb; kein Railway-Nachweis. Keine weitere Ausfuehrung
+von dieser Einzelgenehmigung gedeckt. Die Kostenlimit-Funktion bleibt am
+vorhandenen Endpunkt nicht verfuegbar; der Erfolg hebt diese Grenze nicht auf.
+Der Einzeltest ist ein Funktionsnachweis, keine Zuverlaessigkeitsmessung.
+Bild und Details: [BROWSER_PILOT.md](BROWSER_PILOT.md).

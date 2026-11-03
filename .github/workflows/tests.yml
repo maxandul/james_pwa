@@ -1,0 +1,68 @@
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: james_test
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: james_test_suite
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U james_test -d james_test_suite"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Scanner lifecycle and named form actions
+        run: node --test tests/scanner.test.cjs tests/pwa.test.cjs tests/jayjay.test.cjs
+      - name: SQLite suite and migration roundtrip
+        run: python -m pytest -q
+      - name: Postgres suite including simultaneous writes
+        run: python -m pytest -q
+        env:
+          JAMES_TEST_DATABASE_URL: postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
+      - name: Postgres migration and schema comparison
+        run: |
+          flask --app james db upgrade
+          flask --app james db check
+        env:
+          APP_ENV: development
+          SECRET_KEY: ci-only-secret-key-not-for-real-deployment
+          DATABASE_URL: postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
+      - name: Build production image
+        run: docker build --tag james-ci .
+      - name: Check PDF and image recognition in production image
+        run: docker run --rm --entrypoint python james-ci scripts/check_receipt_tools.py
+      - name: Start production image against isolated Postgres
+        run: >-
+          docker run --detach --name james-smoke --network host
+          --env APP_ENV=production
+          --env PORT=8765
+          --env SECRET_KEY=ci-only-secret-key-not-for-real-deployment
+          --env PUBLIC_BASE_URL=https://james-ci.example.test
+          --env OPENFOODFACTS_ENVIRONMENT=staging
+          --env DATABASE_URL=postgresql+psycopg://james_test:ci-only-password@127.0.0.1:5432/james_test_suite
+          james-ci
+      - name: Check real Gunicorn process and production headers
+        run: python scripts/check_deployment.py http://127.0.0.1:8765
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs james-smoke 2>/dev/null || true
+          docker rm --force james-smoke 2>/dev/null || true

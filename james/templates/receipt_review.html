@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">BELEG {{ receipt.id }}</p><h1>{{ 'Einkauf pruefen.' if receipt.state == 'draft' else 'Einkauf verbucht.' if receipt.state == 'confirmed' else 'Buchung rueckgaengig.' }}</h1></div><a class="button button--quiet" href="{{ url_for('main.shopping') }}">Zur Einkaufsliste</a></section>
+{% if error %}<div class="notice notice--error" role="alert">{{ error }} Die Ansicht ist aktualisiert; bitte alle Zeilen nochmals pruefen.</div>{% endif %}
+{% if receipt.state == 'draft' %}
+<div class="notice"><strong>Noch nichts verbucht.</strong> Ordne jede gewuenschte Zeile einem Artikel zu. Mengen sind in der angezeigten Artikeleinheit, nicht automatisch in Packungen. Neue Artikel verwenden die Einheit Packung. Gewichts- und Dezimalmengen bitte vorher in ganze Artikeleinheiten uebertragen oder ueberspringen.</div>
+<form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="review_token" value="{{ review_token }}">
+{% for row in receipt.rows %}{% set index = loop.index0 %}<section class="panel receipt-row">
+<h2>{{ row.label }}</h2><p class="small muted">Erkannt: {{ row.raw }}</p>
+<label>Zuordnung<select name="target_{{ index }}"><option value="">Nicht uebernehmen</option><option value="new">Neuen Artikel anlegen (Packung)</option>{% for item in items %}<option value="{{ item.id }}" {% if suggestions[index] == item.id|string %}selected{% endif %}>{{ item.name }} · {{ item.unit }}</option>{% endfor %}</select></label>
+<div class="form-grid"><label>Gekaufte Menge in Artikeleinheiten<input name="quantity_{{ index }}" type="number" inputmode="numeric" min="1" max="999" step="1" value="{{ row.quantity }}" required></label><label>Name bei neuem Artikel<input name="name_{{ index }}" maxlength="100" value="{{ row.label }}"></label></div>
+</section>{% endfor %}
+<p class="small muted">Die gekaufte Menge reduziert den aktuellen offenen Bedarf bis auf null und setzt den Bestand auf vorhanden. Zusaetzliche Kaeufe werden ebenfalls erfasst. Mehrere Zeilen zum selben Artikel werden zusammengezaehlt.</p>
+<div class="form-actions"><button class="button button--primary" type="submit">Geprueften Einkauf verbuchen</button><a class="button button--quiet" href="{{ url_for('receipts.new') }}">Zurueck zu den Belegen</a></div>
+</form>
+{% elif receipt.state == 'confirmed' %}
+<section class="panel"><p>Dieser Beleg wurde bereits verbucht. Erneutes Einlesen derselben Datei oder desselben Texts legt keinen weiteren Einkauf an.</p><form method="post" action="{{ url_for('receipts.undo', receipt_id=receipt.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--outline" type="submit">Belegbuchungen rueckgaengig machen</button></form><p class="small muted">Nur solange die betroffenen Artikel seither nicht veraendert wurden. Neu angelegte Artikel bleiben erhalten.</p></section>
+{% else %}<section class="panel"><p>Die Buchungen dieses Belegs wurden rueckgaengig gemacht.</p></section>{% endif %}
+{% if receipt.state != 'draft' %}<section class="panel"><h2>Erfasste Positionen</h2>{% for row in receipt.rows if row.booking %}<p>{{ row.booking.name }} · {{ row.booking.quantity }} {{ row.booking.unit }}</p>{% endfor %}</section>{% endif %}
+<details class="panel"><summary>Erkannten Originaltext vergleichen</summary><pre class="receipt-text">{{ receipt.text }}</pre></details>
+{% endblock %}

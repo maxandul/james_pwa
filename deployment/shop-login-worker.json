@@ -1,0 +1,38 @@
+{
+  "description": "Reviewable deployment reference only; not applied automatically.",
+  "service_name": "james-shop-login-worker",
+  "repository": "maxandul/james_pwa",
+  "branch_after_merge": "feat/household-shopping",
+  "dockerfile": "Dockerfile",
+  "start_command": "flask --app james shop-login-worker --watch",
+  "replicas": 1,
+  "restart_on_failure": true,
+  "public_domain": false,
+  "variables": {
+    "APP_ENV": "production",
+    "DATABASE_URL": "${{james-web.DATABASE_URL}}",
+    "SECRET_KEY": "${{james-web.SECRET_KEY}}",
+    "OPENAI_API_KEY": "${{james-web.OPENAI_API_KEY}}",
+    "PUBLIC_BASE_URL": "${{james-web.PUBLIC_BASE_URL}}",
+    "SHOP_LOGIN_PILOT_ENABLED": "${{james-web.SHOP_LOGIN_PILOT_ENABLED}}",
+    "GALAXUS_HOUSEHOLD_ID": "${{james-web.GALAXUS_HOUSEHOLD_ID}}"
+  },
+  "activation_order": [
+    "Review and pass CI; merge only after deployment approval.",
+    "Deploy web schema/code with SHOP_LOGIN_PILOT_ENABLED=0.",
+    "Provision and verify this supervised worker while the pilot is still disabled.",
+    "Verify empty queue, restart recovery and cleanup status without creating an API session.",
+    "Enable the pilot for the controlled trial; a paid session starts only after an explicit user POST with cost consent."
+  ],
+  "worker_only_sealed_variables_to_enter_manually": [
+    "GALAXUS_EMAIL",
+    "GALAXUS_PASSWORD"
+  ],
+  "cart_activation_order": [
+    "Keep SHOP_CART_PILOT_ENABLED=0 by default on web and worker.",
+    "Deploy code/schema on web; verify successful migration and both service versions.",
+    "Set SHOP_CART_PILOT_ENABLED=1 on the worker first and verify SUCCESS.",
+    "Then set SHOP_CART_PILOT_ENABLED=1 on the web service to expose the separately consented fixed three-product test.",
+    "No paid run starts without explicit PWA cost and cart consent."
+  ]
+}

@@ -1,0 +1,15 @@
+<label>Artikelname<input name="name" required maxlength="100" placeholder="Zum Beispiel Kaffee" value="{{ values.get('name', '') }}"></label>
+<div class="form-grid">
+<label>Warengruppe<select name="category" required>{% for name in category_names %}<option value="{{ name }}" {% if catalogue_label('category', values.get('category', 'Vorrat')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+<label>Bevorzugter Einkaufsort<select name="source" required>{% for name in source_names %}<option value="{{ name }}" {% if catalogue_label('source', values.get('source', 'Laden')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+</div>
+{% include '_source_options.html' %}
+<a class="small" href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte verwalten</a>
+
+<div class="form-grid">
+  <label>Gewohnte Nachkaufmenge<input type="number" inputmode="numeric" min="1" max="999" step="1" name="quantity" required value="{{ values.get('quantity', '1') }}"></label>
+  <label>Einheit<input name="unit" required maxlength="20" list="units" value="{{ values.get('unit', 'Packung') }}" {% if need is defined and need.quantity %}readonly aria-describedby="unit-hint"{% endif %}><datalist id="units"><option>Packung</option><option>Stueck</option><option>Flasche</option><option>Dose</option></datalist></label>
+</div>
+{% if need is defined and need.quantity %}<p id="unit-hint" class="small muted">Die Einheit bleibt bei offenem Einkaufsbedarf gleich. Zum Ändern zuerst die Position von der Liste entfernen.</p>{% endif %}
+<label>Aktueller Bestand<select name="stock_status" required>{% for status, label in stock_labels.items() %}<option value="{{ status }}" {% if values.get('stock_status', 'unknown') == status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small>Eine Bestandskorrektur verändert eure Einkaufsliste nicht.</small></label>
+<label class="check-field"><input type="checkbox" name="favorite" value="1" {% if values.get('favorite') == '1' %}checked{% endif %}><span>Als Favorit für euren Haushalt markieren<small>Für die Dinge, die ihr häufig nachkauft.</small></span></label>
