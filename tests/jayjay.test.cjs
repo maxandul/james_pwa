@@ -16,11 +16,11 @@ function ui(fetch, canRefresh = true, pageOwner = 'alice') {
   const document = {body:{dataset:{offlineOwner:'alice'}},querySelector:name=>nodes.get(name),querySelectorAll:()=>[nodes.get('logout')]};
   const storage = new Map(), listeners = {};
   const window = {location:{pathname:'/shopping',href:'https://james.test/shopping',reload(){}},
-    JamesPage:{canRefresh:()=>canRefresh},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(){},confirm:()=>false};
+    JamesPage:{canRefresh:()=>canRefresh,refresh:async()=>{window.refreshCalls=(window.refreshCalls||0)+1; const accepted=pageOwner==='alice'; if(accepted)nodes.get('main').replaceChildren(); return accepted;}},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(){},confirm:()=>false};
   vm.runInNewContext(fs.readFileSync('james/static/jayjay.js','utf8'),{document,window,navigator:{onLine:true},fetch,
     sessionStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},AbortController,Event,FormData:class {},
     DOMParser:class {parseFromString(){return {body:{dataset:{offlineOwner:pageOwner}},querySelector:()=>({childNodes:[]})};}}});
-  return {nodes,listeners,storage,open:()=>nodes.get('#jayjay-launcher').listeners.click({preventDefault(){}}),
+  return {nodes,listeners,storage,window,open:()=>nodes.get('#jayjay-launcher').listeners.click({preventDefault(){}}),
     submit:()=>nodes.get('#jayjay-content').listeners.submit({target:{matches:()=>true,querySelector:()=>({disabled:false})},preventDefault(){}})};
 }
 const response = (changed=false,owner='alice') => ({ok:true,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({owner,html:'private transcript',changed})});
@@ -59,10 +59,10 @@ test('saved actions do not overwrite an unfinished edit in the app',async()=>{
 test('saved actions refresh the current list when there are no unfinished edits',async()=>{
   let calls=0;const p=ui(async()=>{calls++;return calls===3 ? {ok:true,redirected:false,text:async()=>'<main>updated</main>'} : response(calls===2);});
   p.open();await tick();p.submit();await tick();
-  assert.equal(calls,3);assert.equal(p.nodes.get('main').cleared,true);
+  assert.equal(calls,2);assert.equal(p.window.refreshCalls,1);assert.equal(p.nodes.get('main').cleared,true);
 });
 test('a list response belonging to another signed-in person is discarded',async()=>{
   let calls=0;const p=ui(async()=>{calls++;return calls===3 ? {ok:true,redirected:false,text:async()=>'<main>private</main>'} : response(calls===2);},true,'bob');
   p.open();await tick();p.submit();await tick();
-  assert.equal(calls,3);assert.notEqual(p.nodes.get('main').cleared,true);
+  assert.equal(calls,2);assert.equal(p.window.refreshCalls,1);assert.equal(p.nodes.get('#jayjay-refresh').hidden,false);assert.notEqual(p.nodes.get('main').cleared,true);
 });

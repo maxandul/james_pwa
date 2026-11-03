@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from '_offer_form.html' import offer_form with context %}
 {% block content %}
-<section class="page-heading"><div><p class="eyebrow">PRODUKTE UND EINKAUFSORTE</p><h1>{{ item.name }}</h1><p class="muted">Ein Haushaltsartikel, mehrere passende Produkte. Pro Einkaufsort koennt ihr eine Variante bevorzugen.</p></div><a class="button button--quiet" href="{{ url_for('main.item_edit', item_id=item.id) }}">Zum Artikel</a></section>
+<section class="page-heading"><div><p class="eyebrow">PRODUKTE UND EINKAUFSORTE</p><h1>{{ item.name }}</h1><p class="muted">Ein Haushaltsartikel, mehrere passende Produkte. Pro Einkaufsort koennt ihr eine Variante bevorzugen.</p></div><a class="button button--quiet" href="{{ url_for('main.item_edit', item_id=item.id, **home_context) }}">Zum Artikel</a></section>
 {% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if item.archived %}<section class="panel"><p>Dieser Artikel ist archiviert. Zum Bearbeiten zuerst wieder aktivieren.</p></section>{% else %}
 <section class="panel form-panel"><h2>{{ 'Produkt bearbeiten' if editing else 'Produkt hinzufuegen' }}</h2>

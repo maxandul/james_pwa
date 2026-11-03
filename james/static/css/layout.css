@@ -1,0 +1,356 @@
+/* James UI · layout. Extend the owning component and its responsive block here. */
+
+.header {
+  max-width: var(--content-width);
+  margin: auto;
+  padding: 24px var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--green);
+  color: #fff8ed;
+  font-family: Georgia,serif;
+  font-size: 2.3rem;
+  font-weight: 400;
+  padding-bottom: 8px;
+}
+
+.brand__tag {
+  display: block;
+  font-size: .69rem;
+  font-weight: 400;
+  letter-spacing: .1px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: .9rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.identity small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.main {
+  max-width: var(--content-width);
+  margin: auto;
+  padding: 32px var(--gutter) 48px;
+  min-height: 70vh;
+  width: 100%;
+  min-width: 0;
+}
+
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.page-heading p:last-child {
+  margin-top: 14px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.two-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr));
+  gap: var(--space-5);
+}
+
+.footer {
+  max-width: var(--content-width);
+  margin: auto;
+  padding: 24px var(--gutter);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--muted);
+  font-size: .75rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.page-heading>div {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.page-heading h1 {
+  overflow-wrap: anywhere;
+}
+
+.pwa-help {
+  max-width: var(--content-width);
+  margin: auto;
+  padding: 0 var(--gutter) 24px;
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.pwa-help details {
+  max-width: 680px;
+}
+
+.pwa-help summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: .85rem;
+}
+
+.pwa-help details p {
+  margin: 12px 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 12px;
+  background: var(--surface);
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.identity>span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-shell {
+  --page-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 100px);
+  padding-bottom: var(--page-bottom);
+}
+
+.nav {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: var(--z-nav);
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 4px;
+  min-height: var(--nav-height);
+  padding: 6px max(12px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 -4px 24px #18332608;
+}
+
+.nav>a,.nav-more>summary {
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: .8rem;
+  color: var(--muted);
+  line-height: 1.3;
+  list-style: none;
+}
+
+.nav>a>span,.nav-more>summary>span {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.nav a[aria-current],.nav-more[data-current]>summary,.nav-more[open]>summary {
+  background: var(--green-light);
+  color: var(--green);
+  font-weight: 700;
+}
+
+.nav-more {
+  position: relative;
+  min-width: 0;
+}
+
+.nav-more>summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-more__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 16px);
+  width: min(300px,calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 36px #18332622;
+}
+
+.nav-more__menu a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: .9rem;
+}
+
+.nav-more__menu a:hover {
+  background: var(--green-light);
+}
+
+.page-heading>.button {
+  flex: 0 1 auto;
+}
+
+.two-columns>* ,.form-grid>* ,.form>* {
+  min-width: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,230px),1fr));
+  gap: 20px;
+}
+
+@media(max-width:640px) {
+  .identity {
+    gap: 5px;
+  }
+
+  .identity>span {
+    display: none;
+  }
+
+  .brand {
+    font-size: 1.5rem;
+  }
+
+  .brand__mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .page-heading>.button {
+    width: 100%;
+  }
+
+  .section-heading {
+    gap: 10px;
+  }
+
+  .section-heading h2 {
+    font-size: 1.1rem;
+  }
+
+  .section-heading>span {
+    font-size: .75rem;
+  }
+
+  .header {
+    padding: 16px var(--gutter);
+  }
+
+  .main {
+    padding: 24px var(--gutter) 36px;
+  }
+
+  .identity .button {
+    padding: 10px;
+    font-size: .8rem;
+  }
+
+  .page-heading>div {
+    flex-basis: auto;
+  }
+}
+
+@media(min-width:1100px) {
+  .app-shell {
+    padding-left: var(--sidebar-width);
+    --page-bottom: 110px;
+  }
+
+  .app-shell .nav {
+    inset: 0 auto 0 0;
+    width: var(--sidebar-width);
+    grid-template-columns: minmax(0,1fr);
+    align-content: start;
+    gap: var(--space-2);
+    padding: 32px 12px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    box-shadow: none;
+  }
+
+  .nav>a,.nav-more>summary {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    font-size: .9rem;
+    padding: 12px;
+  }
+
+  .nav-more__menu {
+    left: calc(100% + 20px);
+    right: auto;
+    top: 0;
+    bottom: auto;
+  }
+}

@@ -25,17 +25,8 @@
       refresh.hidden = false;
       return;
     }
-    try {
-      const response = await fetch(window.location.href, {cache: 'no-store', credentials: 'same-origin'});
-      if (!response.ok || response.redirected) throw new Error('page');
-      const page = new DOMParser().parseFromString(await response.text(), 'text/html');
-      if (blocked || page.body.dataset.offlineOwner !== owner) return;
-      // An edit may have started while the updated view was in flight.
-      if (!window.JamesPage.canRefresh()) { refresh.hidden = false; return; }
-      document.querySelector('main').replaceChildren(...page.querySelector('main').childNodes);
-      window.dispatchEvent(new Event('james:content-updated'));
-      refresh.hidden = true;
-    } catch { refresh.hidden = false; }
+    const updated = await window.JamesPage.refresh();
+    refresh.hidden = updated;
   }
 
   async function request(form) {
@@ -93,7 +84,7 @@
   });
   reload.addEventListener('click', () => request());
   refresh.addEventListener('click', () => {
-    if (window.JamesPage?.canRefresh()) { window.location.reload(); return; }
+    if (window.JamesPage?.canRefresh()) { refreshPage(); return; }
     if (window.confirm('Die App-Ansicht neu laden? Ungespeicherte Eingaben auf dieser Seite gehen dabei verloren.')) window.location.reload();
   });
   // Leave action links in the app, rather than loading a page inside the panel.

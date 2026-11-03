@@ -10,3 +10,7 @@ instance
 tests
 docs
 .github
+
+node_modules
+.qa*
+.openai

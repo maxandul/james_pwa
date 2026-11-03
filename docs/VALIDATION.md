@@ -101,3 +101,14 @@ Lokal: bisherige gesamte Suite 104 bestanden, sechs Postgres-spezifische Tests u
 Geprueft: echte Auswahlfelder, eigene Namen/Umbenennen/Aliase und alte Ruecknahme, mehrere Einkaufsorte bei einmaligem Bedarf, Haushaltsgrenzen einschliesslich manipulierter Zweitquelle, Produkt+Barcode ohne Bestandsbuchung, ein Produkt in zwei Shops, Vorzug pro Shop, Packungsrundung/Mehrmenge, unklare Auswahl, Eingabe-/Linkvalidierung, doppelte/veraltete Formulare, Einheitenwechsel einschliesslich Ruecknahme bei aktiven Zuordnungen. Migration mit bestehenden individuellen Namen, Bedarf und Barcode: Upgrade/check, Downgrade und erneutes Upgrade/check erfolgreich.
 
 Postgres-CI prueft zusaetzlich zwei gleichzeitige Vorzugsprodukte unter Haushaltssperre. Vollstaendige SQLite-/Postgres-18-/Containerpruefung im neuen PR gegen feat/household-shopping. Endergebnis in den PR-Checks; keine Live-Migration vor Datenbanksicherung. Keine visuelle Abnahme der neuen Masken auf Fold oder Tablet behauptet.
+
+
+## Responsive UX foundation — 03.11.2026
+
+Base: `feat/household-shopping` at `2fef974` (including the current household cart pilot). No schema changes or shop tests are introduced by the UI work.
+
+- Full local SQLite regression suite: **284 passed, 10 skipped** (Postgres-specific tests require the isolated CI Postgres service).
+- JavaScript suite: **34 passed**, including asynchronous list writes, undo outside the main content, viewport anchor preservation when a row disappears, simultaneous drafts, stale-read rejection, foreign owner rejection, ambiguous-write behavior and scanner submitter retention.
+- Chromium inspection of **12 isolated rendered views × 6 frame widths** (344, 390, 700, 820, 1024, 1280 px): no document horizontal overflow. Fixtures include 63 articles, long names, cards/list, filtered shopping, article/product forms, catalogue, plans, receipt import, scanner and household settings. Scrollbars reduce the content viewport slightly relative to the frame width.
+- The managed preview does not contain Python. Browser checks therefore validate rendered real templates/CSS; server writes are exercised separately by the backend suite and DOM tests. This is not a physical Fold/iPhone/tablet acceptance test. Folding during input, iOS/Android keyboard behavior and installed-PWA safe areas remain to be checked on the actual devices.
+- Large-catalog server-side filtering and pagination are deferred; the compact presentation is available now.

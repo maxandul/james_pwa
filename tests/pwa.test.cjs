@@ -58,7 +58,7 @@ function worker() {
       saved.push(...paths.map(request => new URL(request.url).pathname + new URL(request.url).search));
     } }),
       match: async path => { matched.push(path); return 'cached shell'; },
-      keys: async () => ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'other-app'],
+      keys: async () => ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'other-app'],
       delete: async key => deleted.push(key) },
   });
   vm.runInContext(fs.readFileSync('james/static/sw.js', 'utf8'), context);
@@ -88,7 +88,7 @@ test('offline list navigation falls back only to the anonymous shell', async () 
 test('worker upgrades clean only obsolete James shell caches', async () => {
   const w = worker(); let done;
   w.listeners.activate({ waitUntil: promise => { done = promise; } }); await done;
-  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4']);
+  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5']);
 });
 
 function page(storage, offline, fetch, serviceWorker) {

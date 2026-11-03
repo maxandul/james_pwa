@@ -1,9 +1,14 @@
+{% macro return_fields() %}
+<input type="hidden" name="view" value="{{ home_context.view }}">
+<input type="hidden" name="q" value="{{ home_context.get('q', '') }}">
+<input type="hidden" name="layout" value="{{ home_context.layout }}">
+{% if request.endpoint == 'main.shopping' %}<input type="hidden" name="source" value="{{ request.args.get('source', '')[:60] }}">{% endif %}
+{% endmacro %}
 {% macro action_fields(item, action, destination='home') %}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <input type="hidden" name="request_id" value="{{ request_id() }}">
 <input type="hidden" name="version" value="{{ item.version }}">
 <input type="hidden" name="action" value="{{ action }}">
 <input type="hidden" name="return_to" value="{{ destination }}">
-<input type="hidden" name="view" value="{{ request.args.get('view', 'all') }}">
-<input type="hidden" name="q" value="{{ request.args.get('q', '')[:100] }}">
+{{ return_fields() }}
 {% endmacro %}
