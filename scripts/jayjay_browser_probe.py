@@ -57,6 +57,10 @@ LOGIN_REPORTS = {
     'CART_CONFLICT': 'cart_conflict',
     'PRODUCT_UNAVAILABLE': 'product_unavailable',
     'ACCOUNT_NOT_VERIFIED': 'account_not_verified',
+    'LOGIN_REJECTED': 'login_rejected',
+    'VERIFICATION_REQUIRED': 'verification_required',
+    'LOGIN_INCOMPLETE': 'login_incomplete',
+    'REDIRECT_PENDING': 'redirect_pending',
 }
 
 

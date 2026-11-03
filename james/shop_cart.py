@@ -5,9 +5,13 @@ PRODUCTS = (
     {'id': '37264242', 'name': 'Cirio Pizza Sauce', 'package': '400 g', 'quantity': 1},
 )
 
-CART_PREPARATION = '''After registered sign-in, inspect the actual browser state.
-Proceed only if a signed-in existing-account view is visibly established.
-If not, stop and report ACCOUNT_NOT_VERIFIED. Do not use a guest cart as proof.
+CART_PREPARATION = '''Complete all normal sign-in stages described above BEFORE checking the cart gate.
+Never treat accepted field input or an intermediate login page as the end of login.
+Proceed to cart changes only after a signed-in existing-account view is visibly
+established. If the completed login still leaves account identity uncertain,
+stop and report ACCOUNT_NOT_VERIFIED. If login itself fails, use its specific
+failure report (LOGIN_REJECTED, VERIFICATION_REQUIRED, LOGIN_INCOMPLETE or
+REDIRECT_PENDING) instead. Do not use a guest cart as proof.
 You may inspect products and change ONLY the three explicitly consented test
 cart lines. Never create accounts, change account settings, save payment data,
 begin checkout, place an order, subscribe, or pay. Never contact anyone.
@@ -36,6 +40,10 @@ JAMES_LOGIN_REPORT=CART_PARTIAL
 JAMES_LOGIN_REPORT=CART_CONFLICT
 JAMES_LOGIN_REPORT=PRODUCT_UNAVAILABLE
 JAMES_LOGIN_REPORT=ACCOUNT_NOT_VERIFIED
+JAMES_LOGIN_REPORT=LOGIN_REJECTED
+JAMES_LOGIN_REPORT=VERIFICATION_REQUIRED
+JAMES_LOGIN_REPORT=LOGIN_INCOMPLETE
+JAMES_LOGIN_REPORT=REDIRECT_PENDING
 JAMES_LOGIN_REPORT=ACCESS_BLOCKED
 JAMES_LOGIN_REPORT=AUTH_UNAVAILABLE
 JAMES_LOGIN_REPORT=UNSUPPORTED_METHOD
