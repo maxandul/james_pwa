@@ -14,6 +14,7 @@ from .extensions import db
 from .models import ShopLogin, User, utcnow
 from .services import membership_for
 from .views import household_required
+from .shop_cart import PRODUCTS
 
 shop_login = Blueprint('shop_login', __name__)
 SHOP_ORIGIN = 'https://www.galaxus.ch'
@@ -21,6 +22,11 @@ SHOP_IDENTITY_ORIGIN = 'https://id.digitecgalaxus.ch'
 SHOP_LOGIN_ORIGINS = frozenset((SHOP_ORIGIN, SHOP_IDENTITY_ORIGIN))
 SHOP_LOGIN_URL = SHOP_ORIGIN + '/auth/v1/login'
 ACTIVE = ('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')
+
+
+@shop_login.context_processor
+def shop_constants():
+    return {'shop_products': PRODUCTS}
 
 
 def account_bound(household_id):
@@ -137,6 +143,13 @@ def index():
     if request.method == 'POST':
         if request.form.get('cost_consent') != 'yes':
             abort(400)
+        kind = request.form.get('task_kind', 'login')
+        if kind not in ('login', 'cart'):
+            abort(400)
+        if kind == 'cart' and not current_app.config['SHOP_CART_PILOT_ENABLED']:
+            abort(404)
+        if kind == 'cart' and request.form.get('cart_consent') != 'yes':
+            return render_template('error.html', message='Bitte die Vorbereitung der drei Warenkorbpositionen ausdruecklich freigeben.'), 400
         try:
             start_id = str(UUID(request.form.get('start_request_id', '')))
         except ValueError:
@@ -144,19 +157,19 @@ def index():
         old = db.session.scalar(select(ShopLogin).where(ShopLogin.user_id == current_user.id,
             ShopLogin.start_request_id == start_id))
         if old:
-            if old.household_id != g.household.id or old.auth_version != current_user.auth_version:
+            if old.household_id != g.household.id or old.auth_version != current_user.auth_version or old.task_kind != kind:
                 abort(409)
             return redirect(url_for('shop_login.login', run_id=old.id))
         if db.session.scalar(select(ShopLogin.id).where(ShopLogin.active_household_id == g.household.id)):
             abort(409)
         today = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         count = db.session.scalar(select(func.count(ShopLogin.id)).where(
-            ShopLogin.household_id == g.household.id, ShopLogin.created_at >= today))
-        if count >= 2:
-            return render_template('error.html', message='Heute sind bereits zwei Anmeldetests fuer euren Haushalt gestartet worden.'), 409
+            ShopLogin.household_id == g.household.id, ShopLogin.task_kind == kind, ShopLogin.created_at >= today))
+        if count >= (1 if kind == 'cart' else 2):
+            return render_template('error.html', message='Das Tageslimit fuer diese Testart ist erreicht (ein Warenkorbtest oder zwei Anmeldetests pro UTC-Tag).'), 409
         run = ShopLogin(user_id=current_user.id, active_user_id=current_user.id,
             household_id=g.household.id, auth_version=current_user.auth_version,
-            start_request_id=start_id, state='queued', cost_authorized_at=utcnow(),
+            start_request_id=start_id, task_kind=kind, state='queued', cost_authorized_at=utcnow(),
             expires_at=utcnow() + timedelta(seconds=360))
         db.session.add(run)
         db.session.commit()
@@ -164,13 +177,24 @@ def index():
     runs = db.session.scalars(select(ShopLogin).where(ShopLogin.user_id == current_user.id,
         ShopLogin.household_id == g.household.id, ShopLogin.auth_version == current_user.auth_version)
         .order_by(ShopLogin.id.desc()).limit(5)).all()
-    return render_template('shop_login_index.html', runs=runs, start_request_id=str(uuid4()))
+    return render_template('shop_login_index.html', runs=runs, start_request_id=str(uuid4()), products=PRODUCTS)
 
 
 @shop_login.route('/shop-login/<int:run_id>', methods=['GET', 'POST'])
 @household_required
 def login(run_id):
     run = owned(run_id)
+    if request.method == 'POST' and request.form.get('action') == 'verify_cart':
+        if run.task_kind != 'cart' or run.state != 'closed':
+            abort(409)
+        if (request.form.get('cart_verified') != 'yes' or request.args
+                or set(request.form) - {'csrf_token', 'action', 'cart_verified'}
+                or any(len(request.form.getlist(k)) != 1 for k in request.form)):
+            abort(400)
+        if not run.device_verified_at:
+            run.device_verified_at = utcnow()
+            db.session.commit()
+        return redirect(url_for('shop_login.login', run_id=run_id))
     if request.method == 'POST' and request.form.get('action') == 'cancel':
         if run.state in ACTIVE:
             run.state = 'cancelled'
