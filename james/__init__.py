@@ -44,12 +44,12 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
     if not app.config["SECRET_KEY"] or len(app.config["SECRET_KEY"]) < 32:
-        raise RuntimeError("SECRET_KEY muss mindestens 32 zufaellige Zeichen enthalten.")
+        raise RuntimeError("SECRET_KEY muss mindestens 32 zufällige Zeichen enthalten.")
     if app.config["OPENFOODFACTS_ENVIRONMENT"] not in {"staging", "production"}:
         raise RuntimeError("OPENFOODFACTS_ENVIRONMENT muss staging oder production sein.")
     origin = urlsplit(app.config["PUBLIC_BASE_URL"])
     if origin.scheme not in {"http", "https"} or not origin.netloc or origin.path not in {"", "/"} or origin.query or origin.fragment or origin.username:
-        raise RuntimeError("PUBLIC_BASE_URL muss ein gueltiger HTTP(S)-Origin sein.")
+        raise RuntimeError("PUBLIC_BASE_URL muss ein gültiger HTTP(S)-Origin sein.")
     if not app.testing and environment != "development":
         if origin.scheme != "https" or not database_url.startswith("postgresql+psycopg://"):
             raise RuntimeError("Produktion braucht HTTPS PUBLIC_BASE_URL und Postgres DATABASE_URL.")
@@ -133,22 +133,22 @@ def create_app(test_config=None):
 
     @app.errorhandler(CSRFError)
     def csrf_error(error):
-        return render_template("error.html", message="Die Sitzung ist abgelaufen oder die Anfrage ist ungueltig. Bitte die Seite neu laden."), 400
+        return render_template("error.html", message="Die Sitzung ist abgelaufen oder die Anfrage ist ungültig. Bitte die Seite neu laden."), 400
 
     @app.errorhandler(IntegrityError)
     @app.errorhandler(StaleDataError)
     def conflict_error(error):
         db.session.rollback()
-        return render_template("error.html", message="Die Daten wurden inzwischen geaendert. Bitte neu laden und erneut pruefen."), 409
+        return render_template("error.html", message="Die Daten wurden inzwischen geändert. Bitte neu laden und erneut prüfen."), 409
 
     @app.errorhandler(403)
     @app.errorhandler(404)
     def not_found(error):
-        return render_template("error.html", message="Diese Seite ist nicht verfuegbar."), error.code
+        return render_template("error.html", message="Diese Seite ist nicht verfügbar."), error.code
 
     @app.errorhandler(500)
     def server_error(error):
         db.session.rollback()
-        return render_template("error.html", message="Das hat gerade nicht geklappt. Bitte versuche es spaeter erneut."), 500
+        return render_template("error.html", message="Das hat gerade nicht geklappt. Bitte versuche es später erneut."), 500
 
     return app

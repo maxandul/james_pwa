@@ -26,7 +26,7 @@ def clean_text(value, label, maximum):
 def clean_email(value):
     value = (value or "").strip().lower()
     if len(value) > 254 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
-        raise ValueError("Bitte eine gueltige E-Mail-Adresse eingeben.")
+        raise ValueError("Bitte eine gültige E-Mail-Adresse eingeben.")
     return value
 
 
@@ -57,7 +57,7 @@ def make_invitation(membership, email):
     db.session.scalar(select(Household).where(
         Household.id == membership.household_id).with_for_update())
     if db.session.scalar(select(User.id).where(User.email == email)):
-        raise ValueError("Fuer diese Adresse besteht bereits ein Zugang.")
+        raise ValueError("Für diese Adresse besteht bereits ein Zugang.")
     now = utcnow()
     invitations = db.session.scalars(select(Invitation).where(
         Invitation.household_id == membership.household_id,
@@ -75,22 +75,22 @@ def make_invitation(membership, email):
 
 def accept_invitation(token, email, name, password):
     if not isinstance(token, str) or not 32 <= len(token) <= 100:
-        raise ValueError("Diese Einladung ist ungueltig oder abgelaufen.")
+        raise ValueError("Diese Einladung ist ungültig oder abgelaufen.")
     invitation = db.session.scalar(select(Invitation).where(
         Invitation.token_hash == sha256(token.encode()).hexdigest()).with_for_update())
     now = utcnow()
     if not invitation or invitation.consumed_at or invitation.revoked_at or invitation.expires_at <= now:
-        raise ValueError("Diese Einladung ist ungueltig oder abgelaufen.")
+        raise ValueError("Diese Einladung ist ungültig oder abgelaufen.")
     issuer = membership_for(invitation.created_by)
     if not issuer or issuer.role != "owner" or issuer.household_id != invitation.household_id:
-        raise ValueError("Diese Einladung ist nicht mehr gueltig.")
+        raise ValueError("Diese Einladung ist nicht mehr gültig.")
     email = clean_email(email)
     if email != invitation.email:
         raise ValueError("Die E-Mail-Adresse passt nicht zu dieser Einladung.")
     name = clean_text(name, "Name", 80)
     validate_password(password)
     if db.session.scalar(select(User.id).where(User.email == email)):
-        raise ValueError("Fuer diese Adresse besteht bereits ein Zugang. Bitte anmelden.")
+        raise ValueError("Für diese Adresse besteht bereits ein Zugang. Bitte anmelden.")
     user = User(email=email, name=name)
     user.set_password(password)
     db.session.add(user)
@@ -110,7 +110,7 @@ def item_values(data):
 
 def valid_status(value):
     if value not in {"unknown", "available", "low", "empty"}:
-        raise ValueError("Bitte einen gueltigen Bestandsstatus waehlen.")
+        raise ValueError("Bitte einen gültigen Bestandsstatus wählen.")
     return value
 
 
@@ -150,7 +150,7 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
     try:
         request_id = str(UUID(str(request_id)))
     except (ValueError, TypeError, AttributeError):
-        raise ValueError("Ungueltige Anfrage. Bitte die Seite neu laden.") from None
+        raise ValueError("Ungültige Anfrage. Bitte die Seite neu laden.") from None
     lock_household(household_id)
     item = db.session.scalar(select(HouseholdItem).where(
         HouseholdItem.id == item_id, HouseholdItem.household_id == household_id).with_for_update())
@@ -160,14 +160,14 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         Activity.household_id == household_id, Activity.request_id == request_id))
     if existing:
         if existing.item_id != item_id or existing.action != action:
-            raise Conflict("Diese Anfrage wurde bereits fuer eine andere Aktion verwendet.")
+            raise Conflict("Diese Anfrage wurde bereits für eine andere Aktion verwendet.")
         return existing
     try:
         valid_version = int(expected_version) == item.version
     except (TypeError, ValueError):
         valid_version = False
     if not valid_version:
-        raise Conflict("Der Artikel wurde inzwischen geaendert. Bitte neu laden und erneut pruefen.")
+        raise Conflict("Der Artikel wurde inzwischen geändert. Bitte neu laden und erneut prüfen.")
     need = db.session.scalar(select(ShoppingNeed).where(ShoppingNeed.item_id == item.id))
     if item.archived and action not in {"restore", "undo"}:
         raise Conflict("Dieser Artikel ist archiviert. Bitte zuerst wieder aktivieren.")
@@ -181,12 +181,12 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
     elif action == "extra":
         amount = positive_int(quantity)
         if need.quantity + amount > 999:
-            raise ValueError("Die offene Menge darf hoechstens 999 betragen.")
+            raise ValueError("Die offene Menge darf höchstens 999 betragen.")
         need.quantity += amount
     elif action == "purchase":
         amount = positive_int(quantity)
         if amount > need.quantity:
-            raise Conflict("Die Einkaufsmenge ist groesser als der offene Bedarf. Bitte die Liste neu laden.")
+            raise Conflict("Die Einkaufsmenge ist grösser als der offene Bedarf. Bitte die Liste neu laden.")
         need.quantity -= amount
         item.stock_status = "available"
     elif action == "receipt":
@@ -199,17 +199,17 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         item.stock_status = valid_status(data.get("stock_status"))
     elif action == "favorite":
         if data.get("favorite") not in {"0", "1"}:
-            raise ValueError("Bitte einen gueltigen Favoritenstatus waehlen.")
+            raise ValueError("Bitte einen gültigen Favoritenstatus wählen.")
         item.is_favorite = data["favorite"] == "1"
     elif action == "edit":
         values = item_values(data)
         values["category"], values["source"] = canonical_labels(household_id, values["category"], values["source"])
         if need.quantity and values["unit"] != item.unit:
-            raise Conflict("Die Einheit kann bei offenem Einkaufsbedarf nicht geaendert werden. Bitte zuerst die Position von der Liste entfernen.")
+            raise Conflict("Die Einheit kann bei offenem Einkaufsbedarf nicht geändert werden. Bitte zuerst die Position von der Liste entfernen.")
         if values["unit"] != item.unit:
             from .assortment import offer_source_ids
             if offer_source_ids(item):
-                raise Conflict("Aktive Produktzuordnungen verwenden diese Einheit. Bitte zuerst die Shop-Zuordnungen deaktivieren und danach die Packungsmengen neu pruefen.")
+                raise Conflict("Aktive Produktzuordnungen verwenden diese Einheit. Bitte zuerst die Shop-Zuordnungen deaktivieren und danach die Packungsmengen neu prüfen.")
         for field, value in values.items():
             setattr(item, field, value)
         item.stock_status = valid_status(data.get("stock_status"))
@@ -226,7 +226,7 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
             Activity.id == activity_id, Activity.household_id == household_id,
             Activity.item_id == item.id).with_for_update())
         if not undo_target or undo_target.action == "undo" or undo_target.reversed_by_id or undo_target.version_after != item.version:
-            raise Conflict("Rueckgaengig ist nach einer weiteren Aenderung nicht mehr moeglich.")
+            raise Conflict("Rückgängig ist nach einer weiteren Änderung nicht mehr möglich.")
         if undo_target.before_state.get("unit", item.unit) != item.unit:
             from .assortment import offer_source_ids
             if offer_source_ids(item):

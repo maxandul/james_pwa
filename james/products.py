@@ -91,7 +91,7 @@ def manage(item_id, product_id=None):
         try:
             save_product(g.household.id, item_id, request.form, product_id)
             db.session.commit()
-            flash("Produkt gespeichert. Bestand und Einkaufsliste bleiben unveraendert.", "success")
+            flash("Produkt gespeichert. Bestand und Einkaufsliste bleiben unverändert.", "success")
             return redirect(url_for("products.manage", item_id=item_id))
         except ValueError as exc:
             db.session.rollback()

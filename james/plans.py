@@ -34,7 +34,7 @@ def index():
                 if review['household'] != g.household.id or review['source'] != source.id:
                     raise BadSignature('scope')
             except (BadSignature, KeyError, TypeError):
-                raise Conflict('Die Vorbereitung ist abgelaufen. Bitte neu pruefen.') from None
+                raise Conflict('Die Vorbereitung ist abgelaufen. Bitte neu prüfen.') from None
             plan = create_plan(g.household.id, source.id, review, request.form)
             db.session.commit()
             return redirect(url_for('plans.show', plan_id=plan.id))
@@ -70,7 +70,7 @@ def show(plan_id):
         try:
             action = request.form.get('action')
             if action == 'ordered' and request.form.get('confirm_ordered') != '1':
-                raise ValueError('Bitte bestaetigen, dass du die Bestellung im Shop abgeschlossen hast.')
+                raise ValueError('Bitte bestätigen, dass du die Bestellung im Shop abgeschlossen hast.')
             change_plan(g.household.id, plan.id, request.form.get('version'), action, request.form.get('reference', ''))
             db.session.commit()
             flash('Vorhaben aktualisiert. Noch kein Wareneingang verbucht.', 'success')
@@ -78,7 +78,7 @@ def show(plan_id):
         except ValueError as exc:
             db.session.rollback()
             error, status = str(exc), 409 if isinstance(exc, Conflict) else 400
-    copy_text = '\n'.join([f'Einkauf bei {plan.source.name}', 'Zum manuellen Uebertragen in den Shop:', *[
+    copy_text = '\n'.join([f'Einkauf bei {plan.source.name}', 'Zum manuellen Übertragen in den Shop:', *[
         line_description(line) + ('\n' + line['url'] if line['url'] else '')
         for line in plan.lines if line['reserved']]])
     return render_template('plan.html', plan=plan, describe=line_description,

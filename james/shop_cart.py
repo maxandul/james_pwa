@@ -1,6 +1,6 @@
 """Fixed household-cart proof: no arbitrary products or checkout instructions."""
 PRODUCTS = (
-    {'id': '14684120', 'name': 'bluu Universal Waschstreifen', 'package': '60 Waschgaenge', 'quantity': 2},
+    {'id': '14684120', 'name': 'bluu Universal Waschstreifen', 'package': '60 Waschgänge', 'quantity': 2},
     {'id': '14730798', 'name': 'Barilla Spaghetti n.5', 'package': '500 g', 'quantity': 1},
     {'id': '37264242', 'name': 'Cirio Pizza Sauce', 'package': '400 g', 'quantity': 1},
 )

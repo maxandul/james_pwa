@@ -11,14 +11,14 @@ from .services import Conflict, clean_text, create_item
 
 def normalize_barcode(value):
     if not isinstance(value, str) or len(value) > 64:
-        raise ValueError("Bitte einen gueltigen EAN-/GTIN-Code eingeben.")
+        raise ValueError("Bitte einen gültigen EAN-/GTIN-Code eingeben.")
     code = value.strip().replace(" ", "")
     if len(code) not in {8, 12, 13, 14} or not re.fullmatch(r"[0-9]+", code) or not int(code):
         raise ValueError("Der Barcode braucht 8, 12, 13 oder 14 Ziffern.")
     checksum = (-sum(int(digit) * (3 if index % 2 == 0 else 1)
         for index, digit in enumerate(reversed(code[:-1])))) % 10
     if checksum != int(code[-1]):
-        raise ValueError("Die Pruefziffer stimmt nicht. Bitte den Barcode nochmals pruefen.")
+        raise ValueError("Die Prüfziffer stimmt nicht. Bitte den Barcode nochmals prüfen.")
     return code, code.zfill(14)
 
 
@@ -54,7 +54,7 @@ def register_barcode(household_id, data):
         try:
             target_id = int(target)
         except (TypeError, ValueError):
-            raise ValueError("Bitte einen Artikel aus eurem Haushalt waehlen.") from None
+            raise ValueError("Bitte einen Artikel aus eurem Haushalt wählen.") from None
         item = db.session.scalar(select(HouseholdItem).where(
             HouseholdItem.id == target_id, HouseholdItem.household_id == household_id).with_for_update())
         if not item:
@@ -88,7 +88,7 @@ def remove_barcode(household_id, barcode_id, expected_version):
     except (TypeError, ValueError):
         matches = False
     if not matches:
-        raise Conflict("Der Artikel wurde inzwischen geaendert. Bitte neu laden.")
+        raise Conflict("Der Artikel wurde inzwischen geändert. Bitte neu laden.")
     # Mapping is independent of inventory; keep the product and article intact.
     db.session.delete(barcode)
     return item.id

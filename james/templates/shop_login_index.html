@@ -2,22 +2,22 @@
 {% block title %}Shop-Test · James{% endblock %}
 {% block content %}
 <h1>Galaxus-Test</h1>
-<p>Gemeinsames Galaxus-Konto eures Haushalts. E-Mail und Passwort werden aus der geschuetzten Serverkonfiguration verwendet. Zusaetzliche Bestaetigungen gibst du hier ein.</p>
+<p>Gemeinsames Galaxus-Konto eures Haushalts. E-Mail und Passwort werden aus der geschützten Serverkonfiguration verwendet. Zusätzliche Bestätigungen gibst du hier ein.</p>
 <form method="post">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <input type="hidden" name="start_request_id" value="{{ start_request_id }}">
-<fieldset><legend>Test auswaehlen</legend>
-<label><input type="radio" name="task_kind" value="login" checked> Nur Anmeldung pruefen</label>
+<fieldset><legend>Test auswählen</legend>
+<label><input type="radio" name="task_kind" value="login" checked> Nur Anmeldung prüfen</label>
 {% if config.SHOP_CART_PILOT_ENABLED %}<label><input type="radio" name="task_kind" value="cart"> Anmelden und drei Warenkorbpositionen vorbereiten</label>{% endif %}
 </fieldset>
-{% if config.SHOP_CART_PILOT_ENABLED %}<p>Die folgenden Mengen sind Gesamtziele, keine zusaetzlich zu addierenden Mengen. Andere Warenkorbpositionen sollen erhalten bleiben. Bitte den Warenkorb waehrend des Tests nicht parallel bearbeiten. Bei bereits hoeheren Mengen oder nicht verfuegbaren Artikeln soll der Agent stoppen. Bei einem Abbruch koennen einzelne Testpositionen bereits vorbereitet sein.</p>
+{% if config.SHOP_CART_PILOT_ENABLED %}<p>Die folgenden Mengen sind Gesamtziele, keine zusätzlich zu addierenden Mengen. Andere Warenkorbpositionen sollen erhalten bleiben. Bitte den Warenkorb während des Tests nicht parallel bearbeiten. Bei bereits höheren Mengen oder nicht verfügbaren Artikeln soll der Agent stoppen. Bei einem Abbruch können einzelne Testpositionen bereits vorbereitet sein.</p>
 <ul>{% for product in products %}<li>{{ product.quantity }} × {{ product.name }}, {{ product.package }} (Artikel {{ product.id }})</li>{% endfor %}</ul>
-<label><input type="checkbox" name="cart_consent" value="yes"> Fuer den Warenkorbtest erlaube ich ausdruecklich die Vorbereitung dieser drei Positionen im gemeinsamen Konto. Kein Bestellabschluss.</label>
-<p>Im Auftrag ist Checkout ausdruecklich untersagt. Eine technische Sperre vor dem Bestellbutton bietet dieser gehostete Browserpilot noch nicht.</p>{% endif %}
-<p>Ein Test verwendet einen kostenpflichtigen OpenAI-Browser. Es gibt kein garantiertes Geldlimit. Nach sechs Minuten werden Abbruch und Bereinigung angefordert; bei technischen Fehlern kann sich die Beendigung verzoegern. Pro Haushalt und UTC-Tag hoechstens zwei reine Anmeldetests und {{ cart_daily_limit }} Warenkorbtest(s); gleichzeitig nur ein Test.{% if cart_daily_limit == 2 %} Fuer heute ist ein zusaetzlicher Warenkorbversuch freigegeben. Jeder neue Versuch braucht erneut beide Freigaben.{% endif %}</p>
-<label><input type="checkbox" name="cost_consent" value="yes" required> Ich erlaube den ausgewaehlten einmaligen kostenpflichtigen Test ohne hartes Geldlimit und die Verwendung der hinterlegten Haushalts-Zugangsdaten im OpenAI-gehosteten Galaxus-Browser. Keine Bestellung.</label>
+<label><input type="checkbox" name="cart_consent" value="yes"> Für den Warenkorbtest erlaube ich ausdrücklich die Vorbereitung dieser drei Positionen im gemeinsamen Konto. Kein Bestellabschluss.</label>
+<p>Im Auftrag ist Checkout ausdrücklich untersagt. Eine technische Sperre vor dem Bestellbutton bietet dieser gehostete Browserpilot noch nicht.</p>{% endif %}
+<p>Ein Test verwendet einen kostenpflichtigen OpenAI-Browser. Es gibt kein garantiertes Geldlimit. Nach sechs Minuten werden Abbruch und Bereinigung angefordert; bei technischen Fehlern kann sich die Beendigung verzögern. Pro Haushalt und UTC-Tag höchstens zwei reine Anmeldetests und {{ cart_daily_limit }} Warenkorbtest(s); gleichzeitig nur ein Test.{% if cart_daily_limit == 2 %} Für heute ist ein zusätzlicher Warenkorbversuch freigegeben. Jeder neue Versuch braucht erneut beide Freigaben.{% endif %}</p>
+<label><input type="checkbox" name="cost_consent" value="yes" required> Ich erlaube den ausgewählten einmaligen kostenpflichtigen Test ohne hartes Geldlimit und die Verwendung der hinterlegten Haushalts-Zugangsdaten im OpenAI-gehosteten Galaxus-Browser. Keine Bestellung.</label>
 <button class="button" type="submit">Test starten</button>
 </form>
 {% for run in runs %}<p><a href="{{ url_for('shop_login.login', run_id=run.id) }}">{{ 'Warenkorbtest' if run.task_kind == 'cart' else 'Anmeldetest' }} {{ run.id }} ansehen</a></p>
-{% else %}<p>Aktuell ist kein Test fuer dich vorbereitet.</p>{% endfor %}
+{% else %}<p>Aktuell ist kein Test für dich vorbereitet.</p>{% endfor %}
 {% endblock %}

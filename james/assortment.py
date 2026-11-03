@@ -11,7 +11,7 @@ from .extensions import db
 from .models import Category, Household, HouseholdItem, ItemSource, Product, ProductBarcode, PurchaseSource, ShopOffer
 from .services import Conflict, clean_text
 
-CATEGORIES = ("Vorrat", "Frisches", "Getraenke", "Haushalt", "Pflege", "Tierbedarf")
+CATEGORIES = ("Vorrat", "Frisches", "Getränke", "Haushalt", "Pflege", "Tierbedarf")
 SOURCES = ("Laden", "Coop", "Migros", "Galaxus")
 KINDS = {"category": Category, "source": PurchaseSource}
 
@@ -83,7 +83,7 @@ def version_matches(entry, value):
     except (TypeError, ValueError):
         valid = False
     if not valid:
-        raise Conflict("Die Daten wurden inzwischen geaendert. Bitte neu laden.")
+        raise Conflict("Die Daten wurden inzwischen geändert. Bitte neu laden.")
 
 
 def save_entry(household_id, kind, name, entry_id=None, version=None):
@@ -144,11 +144,11 @@ def sync_sources(item, data=None, restore_ids=None):
         try:
             selected = {int(value) for value in values}
         except (TypeError, ValueError):
-            raise ValueError("Bitte gueltige Einkaufsorte waehlen.") from None
+            raise ValueError("Bitte gültige Einkaufsorte wählen.") from None
     selected |= {preferred.id} | offer_source_ids(item)
     valid = {entry.id for entry in entries(item.household_id, "source", include_inactive=restore_ids is not None)}
     if not selected.issubset(valid):
-        raise ValueError("Bitte nur Einkaufsorte aus eurem Haushalt waehlen.")
+        raise ValueError("Bitte nur Einkaufsorte aus eurem Haushalt wählen.")
     links = db.session.scalars(select(ItemSource).where(ItemSource.item_id == item.id)).all()
     existing = {link.source_id for link in links}
     for link in links:
@@ -202,7 +202,7 @@ def save_product(household_id, item_id, data, product_id=None):
         code, gtin = normalize_barcode(code)
         known = find_barcode(household_id, code)
         if known and known.product_id != product.id:
-            raise Conflict("Dieser Barcode gehoert bereits zu einem anderen Produkt.")
+            raise Conflict("Dieser Barcode gehört bereits zu einem anderen Produkt.")
         if not known:
             db.session.add(ProductBarcode(household_id=household_id, product_id=product.id, code=code, gtin=gtin))
     return product
@@ -214,7 +214,7 @@ def pack_units(value):
         if not number.is_finite() or not 0 < number <= 999999 or number != number.quantize(Decimal("0.001")):
             raise ValueError()
     except (InvalidOperation, ValueError, TypeError):
-        raise ValueError("Packungsinhalt: positive Menge mit hoechstens drei Nachkommastellen eingeben.") from None
+        raise ValueError("Packungsinhalt: positive Menge mit höchstens drei Nachkommastellen eingeben.") from None
     return number
 
 
@@ -242,13 +242,13 @@ def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expect
     try:
         source_id = int(data.get("source_id"))
     except (TypeError, ValueError):
-        raise ValueError("Bitte einen Einkaufsort waehlen.") from None
+        raise ValueError("Bitte einen Einkaufsort wählen.") from None
     source = db.session.scalar(select(PurchaseSource).where(
         PurchaseSource.id == source_id, PurchaseSource.household_id == household_id))
     if not source or not source.active:
-        raise ValueError("Bitte einen aktiven Einkaufsort aus eurem Haushalt waehlen.")
+        raise ValueError("Bitte einen aktiven Einkaufsort aus eurem Haushalt wählen.")
     if expected_unit is not None and expected_unit != item.unit:
-        raise Conflict("Die Artikeleinheit wurde geaendert. Bitte neu laden und den Packungsinhalt erneut pruefen.")
+        raise Conflict("Die Artikeleinheit wurde geändert. Bitte neu laden und den Packungsinhalt erneut prüfen.")
     offer = db.session.get(ShopOffer, offer_id) if offer_id else None
     if offer_id:
         if not offer or offer.household_id != household_id or offer.product_id != product_id:

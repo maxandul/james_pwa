@@ -78,3 +78,41 @@ def test_assortment_migration_backfills_sources_and_preserves_barcodes(tmp_path)
         assert connection.execute("SELECT code FROM product_barcode").fetchone() == ('4006381333931',)
     migrate('upgrade')
     migrate('check')
+
+
+def test_umlaut_migration_preserves_category_ids_views_and_removed_defaults(tmp_path):
+    import json
+    path = tmp_path / 'umlauts.sqlite'
+    env = os.environ.copy()
+    env.update(APP_ENV='development', SECRET_KEY=secrets.token_hex(32), DATABASE_URL='sqlite:///' + path.as_posix())
+    def migrate(*args):
+        result = subprocess.run(['python', '-m', 'flask', '--app', 'james', 'db', *args],
+            env=env, capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0, result.stderr
+    migrate('upgrade', '5d9a21f067ce')
+    with sqlite3.connect(path) as c:
+        for identifier, settings in [(1,{}),(2,{}),(3,{'catalogue_deleted':['category:getraenke']}),(4,{})]:
+            c.execute('INSERT INTO household(id,name,settings) VALUES (?,?,?)',(identifier,'Test',json.dumps(settings)))
+        for identifier,home,name,folded,aliases in [(1,1,'Getraenke','getraenke',[]),
+                (2,2,'Getraenke','getraenke',[]),(3,2,'Getränke','getränke',[]),
+                (4,4,'Bar','bar',['getraenke'])]:
+            c.execute('INSERT INTO category(id,household_id,name,name_key,aliases,version,active) VALUES (?,?,?,?,?,1,1)',
+                (identifier,home,name,folded,json.dumps(aliases)))
+        c.execute("INSERT INTO household_item(id,household_id,name,category,source,unit,default_quantity,stock_status,version) VALUES (1,1,'Wasser','Getraenke','Laden','Flasche',1,'unknown',1)")
+        c.execute("INSERT INTO shopping_view(id,household_id,name,category_ids,category_order) VALUES (1,1,'Laufweg','[1]','[1]')")
+    migrate('upgrade')
+    migrate('check')
+    with sqlite3.connect(path) as c:
+        assert c.execute('SELECT name,version FROM category WHERE id=1').fetchone()==('Getränke',2)
+        assert 'getraenke' in json.loads(c.execute('SELECT aliases FROM category WHERE id=1').fetchone()[0])
+        assert c.execute('SELECT category,version FROM household_item WHERE id=1').fetchone()==('Getränke',2)
+        assert c.execute('SELECT category_ids,category_order FROM shopping_view WHERE id=1').fetchone()==('[1]','[1]')
+        assert c.execute('SELECT name FROM category WHERE id=2').fetchone()==('Getränke (bisher 1)',)
+        assert c.execute('SELECT name FROM category WHERE id=3').fetchone()==('Getränke',)
+        assert 'category:getränke' in json.loads(c.execute('SELECT settings FROM household WHERE id=3').fetchone()[0])['catalogue_deleted']
+        assert 'getränke' in json.loads(c.execute('SELECT aliases FROM category WHERE id=4').fetchone()[0])
+    migrate('downgrade','5d9a21f067ce')
+    migrate('upgrade')
+    with sqlite3.connect(path) as c:
+        assert c.execute('SELECT COUNT(*) FROM category').fetchone()==(4,)
+        assert c.execute('SELECT version FROM category WHERE id=1').fetchone()==(2,)

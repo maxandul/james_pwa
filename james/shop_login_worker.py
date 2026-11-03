@@ -88,7 +88,7 @@ def cleanup(run_id):
             db.session.commit()
         session = api('GET', session_path(sid))
         if session.get('metadata', {}).get('james_login_run') != reference:
-            raise ProviderUnavailable('Sitzung gehoert nicht zu diesem Pilotauftrag.')
+            raise ProviderUnavailable('Sitzung gehört nicht zu diesem Pilotauftrag.')
         if session.get('status') in ('in_progress', 'requires_action'):
             api('POST', session_path(sid) + '/events', {'events': [{'type': 'agent.session.input.cancel'}]})
         api('DELETE', session_path(sid))
@@ -341,7 +341,7 @@ def worker_once(app):
             run.outcome, run.error_category = 'failed', 'internal'
             db.session.commit()
         cleanup(identifier)
-        click.echo('Anmeldetest fehlgeschlagen; gespeicherten Bereinigungsstatus pruefen.')
+        click.echo('Anmeldetest fehlgeschlagen; gespeicherten Bereinigungsstatus prüfen.')
     return True
 
 
@@ -354,13 +354,13 @@ def register_shop_cli(app):
         if not app.config['SHOP_LOGIN_PILOT_ENABLED'] or not app.config['OPENAI_API_KEY']:
             raise click.ClickException('Shop-Anmeldepilot ist deaktiviert.')
         if not authorize_single_test_without_hard_cost_cap:
-            raise click.ClickException('Dieser neue kostenpflichtige Test braucht eine ausdrueckliche Einzelgenehmigung.')
+            raise click.ClickException('Dieser neue kostenpflichtige Test braucht eine ausdrückliche Einzelgenehmigung.')
         user = db.session.scalar(select(User).where(User.email == clean_email(email)).with_for_update())
         member = membership_for(user.id) if user and user.active else None
         if not member:
             raise click.ClickException('Aktiver James-Zugang nicht gefunden.')
         if not account_bound(member.household_id):
-            raise click.ClickException('Kein Galaxus-Konto fuer diesen Haushalt eingerichtet.')
+            raise click.ClickException('Kein Galaxus-Konto für diesen Haushalt eingerichtet.')
         if db.session.scalar(select(ShopLogin.id).where(ShopLogin.household_id == member.household_id,
             ShopLogin.state != 'closed')):
             raise click.ClickException('Vorherigen Test zuerst abschliessen und bereinigen.')

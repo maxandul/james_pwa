@@ -28,9 +28,9 @@ def load_flow():
         "main.item_new" if flow == "create" else "main.home")
     titles = {"create": "Artikel per Barcode erfassen", "assign": "Barcode zuordnen", "replenish": "Nachkaufen per Barcode"}
     descriptions = {
-        "create": "Produkt scannen oder Nummer eingeben. Danach die Artikelangaben pruefen und speichern.",
-        "assign": f"Ein Produkt fuer {target.name} scannen oder seine Nummer eingeben." if target else "",
-        "replenish": "Artikel per Barcode finden. Danach Nachkaufen oder Leer und nachkaufen waehlen.",
+        "create": "Produkt scannen oder Nummer eingeben. Danach die Artikelangaben prüfen und speichern.",
+        "assign": f"Ein Produkt für {target.name} scannen oder seine Nummer eingeben." if target else "",
+        "replenish": "Artikel per Barcode finden. Danach Nachkaufen oder Leer und nachkaufen wählen.",
     }
     g.scan_context = {"scan_flow": flow, "target_item": target, "scan_back": back,
         "scan_title": titles[flow], "scan_description": descriptions[flow],
@@ -92,9 +92,9 @@ def index():
                         values[key] = value
                 source = True
                 values["data_source"] = "openfoodfacts_staging" if current_app.config["OPENFOODFACTS_ENVIRONMENT"] == "staging" else "openfoodfacts"
-                message = "Produktvorschlag gefunden. Bitte Name, Marke und Packungsangabe pruefen."
+                message = "Produktvorschlag gefunden. Bitte Name, Marke und Packungsangabe prüfen."
             else:
-                message = "Kein Produktvorschlag gefunden. Du kannst die Angaben selbst ergaenzen."
+                message = "Kein Produktvorschlag gefunden. Du kannst die Angaben selbst ergänzen."
         except CatalogUnavailable as exc:
             db.session.rollback()
             message = str(exc)
@@ -113,7 +113,7 @@ def register():
             values["item_id"] = str(target.id)
         barcode, created = register_barcode(g.household.id, values)
         db.session.commit()
-        flash("Barcode gespeichert." if created else "Dieser Barcode ist bereits bekannt. Die Zuordnung bleibt unveraendert.", "success")
+        flash("Barcode gespeichert." if created else "Dieser Barcode ist bereits bekannt. Die Zuordnung bleibt unverändert.", "success")
         if g.scan_context["scan_flow"] in {"create", "assign"}:
             return redirect(url_for("main.item_edit", item_id=barcode.product.item_id))
         return found_page(barcode)

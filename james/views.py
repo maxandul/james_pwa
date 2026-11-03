@@ -176,8 +176,8 @@ def item_action(item_id):
             request.form.get("version"), request.form.get("quantity"), data=request.form)
         db.session.commit()
         session_event = event.id
-        messages = {"purchase": "Einkauf gespeichert.", "remove": "Von der Liste entfernt. Der Bestand bleibt unveraendert.",
-            "status": "Bestand aktualisiert. Die Einkaufsliste bleibt unveraendert.", "favorite": "Favoriten aktualisiert.",
+        messages = {"purchase": "Einkauf gespeichert.", "remove": "Von der Liste entfernt. Der Bestand bleibt unverändert.",
+            "status": "Bestand aktualisiert. Die Einkaufsliste bleibt unverändert.", "favorite": "Favoriten aktualisiert.",
             "archive": "Artikel archiviert.", "restore": "Artikel wieder aktiviert."}
         flash(messages.get(event.action, "Einkaufsliste aktualisiert."), "success")
         # Reference only; no state mutation on the destination GET.
@@ -215,7 +215,7 @@ def undo(activity_id):
         change_item(g.household.id, current_user.id, target.item_id, "undo",
             request.form.get("request_id"), request.form.get("version"), activity_id=target.id)
         db.session.commit()
-        flash("Aenderung rueckgaengig gemacht.", "success")
+        flash("Änderung rückgängig gemacht.", "success")
         destination = "main.shopping" if request.form.get("return_to") == "shopping" else "main.home"
         return redirect(url_for(destination, **list_filters(destination, request.form)))
     except ValueError as exc:

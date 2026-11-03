@@ -37,7 +37,7 @@
     content.setAttribute('aria-busy', 'true');
     const button = form?.querySelector('button[type="submit"]');
     if (button) button.disabled = true;
-    say(form ? 'JayJay kuemmert sich darum …' : 'JayJay wird geholt …');
+    say(form ? 'JayJay kümmert sich darum …' : 'JayJay wird geholt …');
     reload.hidden = true;
     try {
       const response = await fetch('/jayjay?panel=1', {
@@ -50,13 +50,13 @@
       if (data.owner !== owner) { blocked = true; content.replaceChildren(); throw new Error('session'); }
       content.innerHTML = data.html;
       loaded = true;
-      say(response.ok ? '' : 'Bitte pruefe den Hinweis im Chat.');
+      say(response.ok ? '' : 'Bitte prüfe den Hinweis im Chat.');
       content.scrollTop = content.scrollHeight;
       if (data.changed) await refreshPage();
       if (form && dialog.open) content.querySelector('textarea')?.focus({preventScroll: true});
     } catch {
       if (!blocked) {
-        say(form ? 'Die Bestaetigung fehlt. Bitte lade zuerst den Verlauf neu und pruefe gespeicherte Aenderungen. Dein Auftrag wird nicht automatisch wiederholt.' : 'Der Chat ist gerade nicht erreichbar. Bitte pruefe die Verbindung oder melde dich neu an.');
+        say(form ? 'Die Bestätigung fehlt. Bitte lade zuerst den Verlauf neu und prüfe gespeicherte Änderungen. Dein Auftrag wird nicht automatisch wiederholt.' : 'Der Chat ist gerade nicht erreichbar. Bitte prüfe die Verbindung oder melde dich neu an.');
         reload.hidden = false;
       }
     } finally {

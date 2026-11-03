@@ -483,7 +483,7 @@ def test_old_closed_test_does_not_claim_success(client, app, prepared):
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'kein genauer Ergebnisnachweis' in page
-    assert 'erfolgreicher Login ist nicht bestaetigt' in page
+    assert 'erfolgreicher Login ist nicht bestätigt' in page
     assert 'beendet oder wurde abgebrochen' not in page
 
 
@@ -561,7 +561,7 @@ def test_no_authentication_is_not_hidden_by_normal_turn_completion(app, client, 
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'Ungepruefte Agentenmeldung' in page and 'nicht verfuegbar' in page
+    assert 'Ungeprüfte Agentenmeldung' in page and 'nicht verfügbar' in page
     assert 'synthetic-account-password' not in page
 
 
@@ -586,7 +586,7 @@ def test_old_completed_run_without_authentication_is_explicit(app, client, prepa
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'hinterlegten Zugangsdaten wurde nicht ausgefuehrt' in page
+    assert 'hinterlegten Zugangsdaten wurde nicht ausgeführt' in page
 
 
 def test_untrusted_report_is_not_stored(app, prepared):
@@ -611,7 +611,7 @@ def test_signed_in_claim_without_authentication_is_not_login_success(app, client
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'Ungepruefte Agentenmeldung' in page and 'kein Nachweis' in page
+    assert 'Ungeprüfte Agentenmeldung' in page and 'kein Nachweis' in page
 
 
 def test_observed_origin_denial_takes_precedence_over_agent_guess(app, prepared):
@@ -759,7 +759,7 @@ def test_device_verification_is_private_explicit_idempotent_and_does_not_call_ap
     assert client.post(path, data=payload).status_code == 302
     with app.app_context():
         assert db.session.get(ShopLogin, identifier).device_verified_at == first
-    assert 'Von dir auf deinem Geraet bestaetigt' in client.get(path).text
+    assert 'Von dir auf deinem Gerät bestätigt' in client.get(path).text
     member = app.test_client()
     login(member, 'member@example.test')
     assert member.post(path, data={'csrf_token': csrf(member, '/'), 'action': 'verify_cart', 'cart_verified': 'yes'}).status_code == 404
@@ -816,7 +816,7 @@ def test_extra_attempt_requires_fresh_consent_and_stops_after_two(app, client, m
         SHOP_CART_EXTRA_ATTEMPT_DATE=utcnow().date().isoformat())
     login(client)
     monkeypatch.setattr('james.shop_login.api', lambda *a: pytest.fail('Queueing must never start a paid session'))
-    assert 'zusaetzlicher Warenkorbversuch' in client.get('/shop-login').text
+    assert 'zusätzlicher Warenkorbversuch' in client.get('/shop-login').text
     data = {'csrf_token': csrf(client, '/shop-login'), 'task_kind': 'cart', 'cart_consent': 'yes'}
     assert client.post('/shop-login', data={**data, 'start_request_id': str(uuid4())}).status_code == 400
     data['cost_consent'] = 'yes'
