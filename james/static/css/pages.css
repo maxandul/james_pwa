@@ -1,0 +1,395 @@
+/* James UI · pages. Extend the owning component and its responsive block here. */
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
+  align-items: center;
+  gap: 100px;
+  min-height: 64vh;
+}
+
+.auth-intro h1 {
+  font-size: clamp(2.8rem,5vw,4.6rem);
+  line-height: 1.05;
+  letter-spacing: -2.6px;
+}
+
+.auth-intro>p:not(.eyebrow) {
+  margin-top: 25px;
+  color: var(--muted);
+}
+
+.auth-panel {
+  max-width: 430px;
+  width: 100%;
+  padding: 38px;
+}
+
+.illustration {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 38px;
+  flex-wrap: wrap;
+}
+
+.illustration span {
+  background: #ecefe3;
+  padding: 13px 18px;
+  border-radius: 10px;
+  font-size: .85rem;
+}
+
+.illustration span:nth-child(2) {
+  background: #efddce;
+  transform: rotate(-5deg);
+}
+
+.illustration span:last-child {
+  background: var(--green);
+  color: #fff;
+  font-size: .75rem;
+}
+
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+
+.member-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+}
+
+.member-list small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.invitations {
+  margin-top: var(--space-5);
+}
+
+.archive-section {
+  margin-top: var(--space-6);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.archive-section>p {
+  margin: 12px 0;
+}
+
+.archive-section form {
+  margin-top: var(--space-4);
+}
+
+.member-list>li>span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scan-entry {
+  margin-bottom: 26px;
+}
+
+.scan-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,300px),1fr));
+  gap: 22px;
+}
+
+.scan-layout .panel {
+  min-width: 0;
+}
+
+.camera-preview {
+  position: relative;
+  margin: 20px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #172e24;
+  aspect-ratio: 4/3;
+  max-height: 380px;
+}
+
+.camera-preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-guide {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 30%;
+  bottom: 30%;
+  border: 2px solid #fff8ed;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.camera-actions {
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.barcode-code {
+  font-family: monospace;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+
+.scan-result {
+  display: grid;
+  gap: 20px;
+}
+
+.scan-result__actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.barcode-new-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  margin: 0;
+}
+
+.barcode-new-item legend {
+  padding: 0 8px;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.catalog-lookup {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.catalog-lookup .button {
+  white-space: normal;
+}
+
+.barcode-mappings {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.barcode-mappings>p {
+  margin: 12px 0;
+}
+
+.barcode-mappings li {
+  flex-wrap: wrap;
+}
+
+.barcode-mappings small {
+  overflow-wrap: anywhere;
+}
+
+.catalogue-row {
+  display: flex;
+  align-items: end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.catalogue-row label {
+  flex: 1 1 170px;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.variant-card {
+  margin-top: var(--space-5);
+}
+
+.variant-card__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.variant-card__heading>div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.offer-details {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+}
+
+.offer-details summary {
+  min-height: 48px;
+  cursor: pointer;
+  padding: 14px 0;
+  line-height: 1.5;
+}
+
+.offer-form {
+  padding: 12px 0 8px;
+}
+
+.source-options {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 8px 24px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.source-options legend {
+  padding: 0 8px;
+  font-size: .85rem;
+}
+
+.source-options .check-field {
+  flex: 1 1 180px;
+}
+
+.source-options>p {
+  width: 100%;
+}
+
+.receipt-row {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.receipt-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-size: .85rem;
+}
+
+.receipt-row h2 {
+  overflow-wrap: anywhere;
+}
+
+@media(max-width:1000px) {
+  .auth-layout {
+    gap: 40px;
+  }
+
+  .auth-panel {
+    padding: 28px;
+  }
+}
+
+@media(max-width:640px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .auth-intro h1 {
+    font-size: 2.8rem;
+  }
+
+  .auth-intro>p:not(.eyebrow) {
+    margin-top: 18px;
+    font-size: .9rem;
+  }
+
+  .illustration {
+    display: none;
+  }
+
+  .auth-panel {
+    max-width: none;
+  }
+
+  .member-list li {
+    align-items: flex-start;
+  }
+
+  .member-list .pill {
+    font-size: .6rem;
+  }
+
+  .archive-section .button {
+    width: 100%;
+  }
+
+  .scan-entry {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .scan-result__actions form {
+    flex: 1 1 200px;
+  }
+
+  .scan-result__actions .button,.camera-actions .button {
+    width: 100%;
+  }
+
+  .camera-actions {
+    align-items: stretch;
+  }
+
+  .camera-actions .button {
+    flex: 1 1 160px;
+  }
+
+  .barcode-new-item {
+    padding: 16px;
+  }
+
+  .barcode-mappings li>form {
+    width: 100%;
+  }
+
+  .barcode-mappings li .button {
+    width: 100%;
+  }
+
+  .catalogue-row button {
+    width: 100%;
+  }
+
+  .variant-card__heading>a {
+    width: 100%;
+  }
+}
+
+@media(max-width:800px) {
+  .auth-layout {
+    grid-template-columns: minmax(0,1fr);
+    gap: var(--space-6);
+  }
+
+  .auth-panel {
+    max-width: 560px;
+  }
+
+  .illustration {
+    display: none;
+  }
+}

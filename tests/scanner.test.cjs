@@ -75,19 +75,13 @@ test('backgrounding stops camera and ignores a late detection result', async () 
 });
 
 test('named catalogue submit action survives disabling the clicked button', () => {
-  const source = fs.readFileSync(path.join(__dirname,'../james/static/app.js'),'utf8');
-  const button = {name:'lookup',value:'1',disabled:false};
-  const fields=[];
-  const form={listeners:{}, querySelectorAll:selector => selector.startsWith('button') ? [button] : [],
-    appendChild:field => fields.push(field), addEventListener(name,fn) {this.listeners[name]=fn;}};
-  const document={querySelector:selector => selector==='#offline-banner' ? {} : null,
-    querySelectorAll:selector => selector.includes('button') ? [button] : [form],
-    addEventListener() {}, createElement:() => ({setAttribute() {}})};
-  const window={location:{pathname:'/join'},addEventListener() {}};
-  vm.runInNewContext(source,{document,window,navigator:{onLine:true}});
-  form.listeners.submit({submitter:button,preventDefault() {throw Error('unexpected cancellation');}});
+  const {JSDOM} = require('jsdom');
+  const dom = new JSDOM('<body data-offline-owner="alice"><div id="offline-banner"></div><form method="post" action="/scan"><button name="lookup" value="1" type="submit">Lookup</button></form></body>', {url:'https://james.test/scan',runScripts:'outside-only'});
+  dom.window.eval(fs.readFileSync(path.join(__dirname,'../james/static/app.js'),'utf8'));
+  const form=dom.window.document.querySelector('form');
+  const button=form.querySelector('button');
+  form.dispatchEvent(new dom.window.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:button}));
   assert.equal(button.disabled,true);
-  assert.equal(fields.length,1);
-  assert.equal(fields[0].name,'lookup');
-  assert.equal(fields[0].value,'1');
+  assert.equal(form.querySelector('input[name="lookup"]').value,'1');
+  dom.window.close();
 });

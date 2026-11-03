@@ -31,6 +31,26 @@ def helpers():
     return {"request_id": lambda: str(uuid4()), "stock_labels": STOCK_LABELS}
 
 
+def list_filters(destination, values):
+    """Explicit local list context, shared by actions, undo and detail links."""
+    if destination == "main.shopping":
+        source = values.get("source", "").strip()[:60]
+        return {"source": source} if source else {}
+    view = values.get("view", "all")
+    result = {"view": view if view in {"all", "favorites", "archived"} else "all",
+        "layout": "cards" if values.get("layout") == "cards" else "compact"}
+    query = values.get("q", "").strip()[:100]
+    if query:
+        result["q"] = query
+    return result
+
+
+@main.app_context_processor
+def list_context():
+    values = request.form if request.method == "POST" else request.args
+    return {"home_context": list_filters("main.home", values)}
+
+
 @main.get("/health")
 def health():
     try:
@@ -49,15 +69,14 @@ def home():
         HouseholdItem.household_id == g.household.id).order_by(HouseholdItem.is_favorite.desc(), HouseholdItem.name)).all()
     pending = sum(1 for item, need in rows if need.quantity and not item.archived)
     active_count = sum(1 for item, need in rows if not item.archived)
-    view = request.args.get("view", "all")
-    if view not in {"all", "favorites", "archived"}:
-        view = "all"
+    context = list_filters("main.home", request.args)
+    view, query, layout = context["view"], context.get("q", ""), context["layout"]
     rows = [(item, need) for item, need in rows if item.archived == (view == "archived")
         and (view != "favorites" or item.is_favorite)]
-    query = request.args.get("q", "").strip()[:100]
     if query:
         rows = [(item, need) for item, need in rows if query.casefold() in item.name.casefold()]
-    return render_template("home.html", rows=rows, pending=pending, active_count=active_count, view=view, query=query)
+    return render_template("home.html", rows=rows, pending=pending, active_count=active_count,
+        view=view, query=query, layout=layout)
 
 
 @main.route("/items/new", methods=["GET", "POST"])
@@ -91,7 +110,7 @@ def item_edit(item_id):
                 request.form.get("request_id"), request.form.get("version"), data=request.form)
             db.session.commit()
             flash("Artikel aktualisiert.", "success")
-            return redirect(url_for("main.home", undo=event.id))
+            return redirect(url_for("main.home", undo=event.id, **list_filters("main.home", request.form)))
         except ValueError as exc:
             db.session.rollback()
             error = str(exc)
@@ -138,14 +157,9 @@ def item_action(item_id):
         flash(messages.get(event.action, "Einkaufsliste aktualisiert."), "success")
         # Reference only; no state mutation on the destination GET.
         destination = "main.shopping" if request.form.get("return_to") == "shopping" else "main.home"
-        filters = {}
-        if destination == "main.home":
-            view = "archived" if request.form.get("return_to") == "archived" else request.form.get("view", "all")
-            if view in {"all", "favorites", "archived"}:
-                filters["view"] = view
-            query = request.form.get("q", "").strip()[:100]
-            if query:
-                filters["q"] = query
+        filters = list_filters(destination, request.form)
+        if request.form.get("return_to") == "archived" and destination == "main.home":
+            filters["view"] = "archived"
         return redirect(url_for(destination, undo=session_event, **filters))
     except ValueError as exc:
         db.session.rollback()
@@ -177,7 +191,8 @@ def undo(activity_id):
             request.form.get("request_id"), request.form.get("version"), activity_id=target.id)
         db.session.commit()
         flash("Aenderung rueckgaengig gemacht.", "success")
-        return redirect(url_for("main.shopping" if request.form.get("return_to") == "shopping" else "main.home"))
+        destination = "main.shopping" if request.form.get("return_to") == "shopping" else "main.home"
+        return redirect(url_for(destination, **list_filters(destination, request.form)))
     except ValueError as exc:
         db.session.rollback()
         return render_template("error.html", message=str(exc)), 409

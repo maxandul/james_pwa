@@ -2,6 +2,20 @@
 
 Stand: 01.11.2026. Serverseitige Jinja-Templates, ein lokales Stylesheet und gezieltes JavaScript. Installationsmanifest und Service Worker fuer eine oeffentliche Offline-Huelle sind vorhanden.
 
+## Responsive foundation · 03.11.2026
+
+This section supersedes the earlier layout/refresh/version descriptions below.
+
+- Shared navigation: Haushalt / Einkauf / Mehr; bottom navigation below 1100 CSS px, side navigation when there is enough horizontal space. Fold layouts follow available CSS width rather than model names. Safe areas, visible keyboard focus, native zoom and 16px form fields remain supported.
+- Default article presentation is a compact list; cards remain available through `layout=cards`. The list context (view, query, layout; shopping source) survives actions, undo and article editing. Breadcrumbs are rendered centrally by `_breadcrumbs.html`.
+- `app.css?v=11` declares ordered cascade layers and imports six owned stylesheets from `static/css`: tokens, base, layout, components, pages, jayjay. Change the owning rule/responsive block; do not append competing overrides. Recurring spacing and shell dimensions use design tokens. Native tap highlight is replaced by a pressed state; `focus-visible` remains.
+- `app.js?v=10` progressively enhances only list mutations and undo. POST/redirect remains the server contract and no-JS fallback. Successful responses update the list without document navigation, preserve a visible row anchor and offer contextual undo. Failures remain beside the form; writes are never automatically replayed.
+- Shared `JamesPage.refresh()` replaces timer/visibility reloads and the separate JayJay list-replacement path. Generation checks discard reads that predate a mutation. Inputs that become dirty during a read prevent its application. Draft forms preserve their original version identifiers even when another action updates the same article. All draft destinations are checked before replacing anything.
+- Session-only row anchors restore position after visiting article editing. No credentials or HTML snapshots are stored by this feature.
+- Public offline shell v6 precaches the CSS imports as well as app.css; authenticated pages and writes are still excluded.
+
+Validation: Python regression tests plus DOM-based JavaScript lifecycle tests (`npm ci --prefix tests --ignore-scripts && node --test tests/*.test.cjs`). Rendered fixture pages are checked in Chromium at narrow, Fold-like and tablet widths. The preview runtime cannot execute Python, so browser checks use isolated rendered fixtures; actual POST behavior and concurrency are tested separately. Real iOS/Android keyboards, installation and folding mid-input still need device acceptance. Large-catalog database filtering/pagination remains a separate follow-up; this change prepares the compact presentation without claiming database-scale optimization.
+
 ## Gestaltung
 
 Warmer Papierhintergrund, dunkles Gruen fuer Hauptaktionen, ruhige Karten, klar erkennbare Bestandszustaende. Systemschrift ohne externe Ressourcen. Responsive Raster mit drei, zwei oder einer Artikelkarte pro Reihe. Touch-Aktionen mindestens 44 Pixel, sichtbare Fokusmarkierung und beschriftete Eingabefelder.

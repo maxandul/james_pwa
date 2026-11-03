@@ -65,3 +65,10 @@ Pre-Deploy bestaetigt nach db upgrade auch db current und db check. Die CI-Daten
 - Einheitenwechsel einschliesslich Ruecknahme ist bei aktiven Packungszuordnungen gesperrt; erst deaktivieren, Einheit aendern, Umrechnung neu bestaetigen.
 - Versionierte Artikelaktionen laufen in no_autoflush, damit Katalog-/Linkabfragen keine halbe Aenderung speichern oder die Version doppelt erhoehen. Neue Katalogeintraege nur gezielt flushen; die ganze Aktion am Ende flushen.
 - Produkt/Katalog/Angebotsformulare verwenden Versionspruefungen. Produktlinks nur HTTPS ohne eingebettete Zugangsdaten; keine Zugangsdaten speichern, keine Links automatisch aufrufen.
+
+
+## UI foundation
+
+CSS ownership: `static/app.css` imports ordered layers from `static/css/`. Edit the owning component/responsive range instead of adding another override block. Shared buttons, fields, breadcrumbs and list feedback must remain reusable. Bump the public shell cache and every matching stylesheet import reference when CSS changes. JavaScript regression tests run with `npm ci --prefix tests --ignore-scripts && node --test tests/*.test.cjs`; jsdom is a development-only dependency, not part of the Flask runtime.
+
+List writes retain POST/redirect and existing CSRF, household, idempotency and version checks. Progressive enhancement must never retry an ambiguous write automatically. Keep unsaved forms with their original version tokens and preserve the visible row anchor; all asynchronous reads must reject stale generations and foreign owner markers. JayJay and background updates use the same list refresh function.
