@@ -94,3 +94,21 @@ Diensten bereitstellen, dann den Worker auf `1` setzen und seinen erfolgreichen
 Start pruefen; erst danach den Webdienst auf `1` setzen. Dadurch kann die neue
 Testart nicht versehentlich von einer alten, noch reinen Login-Worker-Version
 bearbeitet werden. Ein GET oder das Aktivieren der Flags startet keinen Test.
+
+## Einmaliger Wiederholungsversuch nach korrigierten Zugangsdaten
+
+Der Nutzer meldete nach dem ersten Cart-Test einen Tippfehler in der hinterlegten
+E-Mail-Adresse und korrigierte die Railway-Konfiguration selbst. Die erwarteten
+Variablennamen sind vorhanden und der neue Worker-Deploy erreichte SUCCESS;
+die Werte wurden nicht ausgelesen. Der alte Test wird nicht erneut ausgefuehrt.
+
+`SHOP_CART_EXTRA_ATTEMPT_DATE=YYYY-MM-DD` kann auf dem Webdienst fuer genau einen
+UTC-Tag gesetzt werden. Nur bei exakter Uebereinstimmung mit dem aktuellen
+UTC-Datum erhoeht sich das Cart-Tageskontingent von eins auf **maximal zwei**.
+Vergangene, zukuenftige, fehlende oder ungueltige Werte belassen es bei eins.
+Die Ausnahme laeuft durch den Datumsvergleich automatisch ab, ohne Scheduler.
+Keine Aenderung am Login-Kontingent, parallelen Haushaltsslot, API-Zeitbudget
+oder an bestehenden Protokollen. Ein weiterer Test braucht weiterhin eine neue
+Anfragekennung sowie eigene Warenkorb- und Kostenfreigaben in James. Keine
+API-Sitzung durch eine Konfigurationsaenderung oder einen GET. Die Seite zeigt
+das heute geltende Kontingent und die Ausnahme ausdruecklich an.
