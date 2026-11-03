@@ -29,9 +29,7 @@
     <a {% if not in_shopping and not in_more %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
     <a {% if in_shopping %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}"><span aria-hidden="true">☷</span>Einkauf</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
-      {% if g.membership.role == 'owner' %}<a href="{{ url_for('settings.index') }}">Verwaltung</a>{% endif %}
-      <a href="{{ url_for('settings.profile') }}">Mein Profil</a>
-      <a href="{{ url_for('settings.shopping_views') }}">Einkaufsansichten</a>
+      <a href="{{ url_for('settings.index') }}">App-Verwaltung</a>
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}
     </div></details>
   </nav>

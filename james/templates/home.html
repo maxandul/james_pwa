@@ -53,5 +53,5 @@
   {% if page < pages %}<a class="button button--outline" rel="next" href="{{ home_url(page=page+1) }}">Weitere Artikel →</a>{% endif %}
 </nav>
 {% endif %}
-{% if g.membership.role == 'owner' %}<p class="form-actions"><a class="button button--quiet" href="{{ url_for('settings.index') }}">Haushalt verwalten</a></p>{% endif %}
+{% if g.membership.role == 'owner' %}<p class="form-actions"><a class="button button--quiet" href="{{ url_for('settings.index') }}">App-Verwaltung</a></p>{% endif %}
 {% endblock %}

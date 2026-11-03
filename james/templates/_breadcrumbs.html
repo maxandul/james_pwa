@@ -1,17 +1,19 @@
 {% set endpoint = request.endpoint or '' %}
 {% if current_user.is_authenticated and g.membership is defined and g.membership and endpoint != 'main.home' %}
 <nav class="breadcrumbs" aria-label="Brotkrumennavigation"><ol>
-  <li><a href="{{ url_for('main.home', **home_context) }}">Haushalt</a></li>
-  {% if request.blueprint == 'settings' %}<li><a href="{{ url_for('settings.index') }}">{{ 'Verwaltung' if g.membership.role == 'owner' else 'Einstellungen' }}</a></li>
+  {% if request.blueprint == 'settings' %}<li><a href="{{ url_for('settings.index') }}">App-Verwaltung</a></li>
   {% if endpoint == 'settings.edit_shopping_view' %}<li><a href="{{ url_for('settings.shopping_views') }}">Einkaufsansichten</a></li>{% endif %}
   {% elif request.blueprint in ['plans', 'receipts'] %}
-  <li><a href="{{ url_for('main.shopping') }}">Einkaufsliste</a></li>
+  <li><a href="{{ url_for('main.shopping') }}">Einkauf</a></li>
   {% if request.blueprint == 'plans' and plan is defined %}<li><a href="{{ url_for('plans.index') }}">Einkauf vorbereiten</a></li>{% endif %}
-  {% elif request.blueprint == 'products' and item is defined %}
+  {% elif endpoint != 'main.shopping' and request.blueprint not in ['shop_login', 'chat'] %}
+  <li><a href="{{ url_for('main.home', **home_context) }}">Haushalt</a></li>
+  {% if request.blueprint == 'products' and item is defined %}
   <li><a href="{{ url_for('main.item_edit', item_id=item.id, **home_context) }}">{{ item.name }}</a></li>
   {% elif request.blueprint == 'scan' and target_item is defined and target_item %}
   <li><a href="{{ url_for('main.item_edit', item_id=target_item.id) }}">{{ target_item.name }}</a></li>
   {% endif %}
-  <li aria-current="page">{% if request.blueprint == 'settings' %}{% if endpoint == 'settings.catalogue' %}{{ 'Warengruppen' if kind == 'category' else 'Einkaufsorte' }}{% elif endpoint == 'settings.edit_shopping_view' %}{{ 'Einkaufsansicht bearbeiten' if view else 'Neue Einkaufsansicht' }}{% else %}{{ {'profile':'Mein Profil','household':'Haushalt & Personen','catalogue':'Kataloge','shopping_views':'Einkaufsansichten','edit_shopping_view':'Einkaufsansicht bearbeiten','app_settings':'App-Einstellungen'}.get(endpoint.split('.')[-1],'Verwaltung') }}{% endif %}{% elif endpoint == 'main.shopping' %}Einkaufsliste{% elif endpoint == 'main.item_new' %}Artikel erfassen{% elif endpoint == 'main.item_edit' and item is defined %}{{ item.name }}{% elif endpoint == 'main.household' %}Zusammen nutzen{% elif endpoint == 'products.manage' %}Produkte und Einkaufsorte{% elif endpoint == 'products.catalogue' %}Warengruppen und Einkaufsorte{% elif endpoint == 'plans.index' %}Einkauf vorbereiten{% elif endpoint == 'plans.show' and plan is defined %}Vorhaben {{ plan.id }}{% elif request.blueprint == 'receipts' %}{{ 'Beleg prüfen' if receipt is defined else 'Beleg erfassen' }}{% elif request.blueprint == 'scan' %}{{ scan_title|default('Barcode') }}{% elif request.blueprint == 'shop_login' %}Shop-Anmeldung{% elif request.blueprint == 'chat' %}JayJay{% else %}Details{% endif %}</li>
+  {% endif %}
+  <li aria-current="page">{% if request.blueprint == 'settings' %}{% if endpoint == 'settings.catalogue' %}{{ 'Warengruppen' if kind == 'category' else 'Einkaufsorte' }}{% elif endpoint == 'settings.edit_shopping_view' %}{{ 'Einkaufsansicht bearbeiten' if view else 'Neue Einkaufsansicht' }}{% else %}{{ {'profile':'Mein Profil','household':'Haushalt & Personen','catalogue':'Kataloge','shopping_views':'Einkaufsansichten','edit_shopping_view':'Einkaufsansicht bearbeiten','app_settings':'App-Einstellungen'}.get(endpoint.split('.')[-1],'App-Verwaltung') }}{% endif %}{% elif endpoint == 'main.shopping' %}Einkauf{% elif endpoint == 'main.item_new' %}Artikel erfassen{% elif endpoint == 'main.item_edit' and item is defined %}{{ item.name }}{% elif endpoint == 'main.household' %}Zusammen nutzen{% elif endpoint == 'products.manage' %}Produkte und Einkaufsorte{% elif endpoint == 'products.catalogue' %}Warengruppen und Einkaufsorte{% elif endpoint == 'plans.index' %}Einkauf vorbereiten{% elif endpoint == 'plans.show' and plan is defined %}Vorhaben {{ plan.id }}{% elif request.blueprint == 'receipts' %}{{ 'Beleg prüfen' if receipt is defined else 'Beleg erfassen' }}{% elif request.blueprint == 'scan' %}{{ scan_title|default('Barcode') }}{% elif request.blueprint == 'shop_login' %}Shop-Anmeldung{% elif request.blueprint == 'chat' %}JayJay{% else %}Details{% endif %}</li>
 </ol></nav>
 {% endif %}

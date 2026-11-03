@@ -4,7 +4,7 @@ Stand: 03.11.2026. Die folgenden Regeln ersetzen die frühere reine Einladungs- 
 
 ## Bereiche und Rechte
 
-Unter Mehr → Verwaltung liegen Mein Profil, Haushalt & Personen, Warengruppen, Einkaufsorte, Einkaufsansichten und App-Einstellungen. Mitglieder sehen nur ihr Profil und die Einkaufsansichten. Die Sekundärnavigation nutzt auf breiten Displays eine Seitenspalte, darunter ein natives Auswahlfeld; ohne JavaScript bleiben normale Navigationslinks erreichbar.
+Unter Mehr → App-Verwaltung liegen Mein Profil, Haushalt & Personen, Warengruppen, Einkaufsorte, Einkaufsansichten und App-Einstellungen. Unter Mehr stehen App-Verwaltung und bei aktiviertem Testbetrieb Shop-Anmeldung. Profil und Einkaufsansichten liegen ausschliesslich innerhalb der App-Verwaltung. Mitglieder sehen dort nur ihr Profil und die Einkaufsansichten. Haushalt, Einkauf und App-Verwaltung sind gleichrangige Bereiche; Breadcrumbs beginnen beim jeweiligen Bereich. Die Sekundärnavigation nutzt auf breiten Displays eine Seitenspalte, darunter ein natives Auswahlfeld; ohne JavaScript bleiben normale Navigationslinks erreichbar.
 
 | Bereich | Mitglied | Verwaltung |
 | --- | --- | --- |
