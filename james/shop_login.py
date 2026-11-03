@@ -185,6 +185,14 @@ def index():
     return render_template('shop_login_index.html', runs=runs, start_request_id=str(uuid4()), products=PRODUCTS)
 
 
+@shop_login.get('/shop-login/<int:run_id>/status')
+@household_required
+def status(run_id):
+    run = owned(run_id)
+    # No provider read, credentials, account identifiers or request IDs.
+    return {'state': run.state, 'progress': run.auth_progress or ''}
+
+
 @shop_login.route('/shop-login/<int:run_id>', methods=['GET', 'POST'])
 @household_required
 def login(run_id):
