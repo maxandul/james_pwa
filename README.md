@@ -60,4 +60,4 @@ Ein Haushaltsartikel kann bei mehreren Laeden gekauft werden. Warengruppen/Einka
 
 ## Viele Artikel übersichtlich nutzen
 
-Die Haushaltsübersicht bietet kombinierbare Suche und Filter nach Warengruppe, Einkaufsort und Bestand. Zusätzliche Einkaufsorte und aktive Produktangebote werden berücksichtigt. Pro Seite erscheinen höchstens 48 Artikel; Trefferzahl und Bereich bleiben sichtbar. Favoriten/Archiv sowie Liste/Karten lassen sich weiter umschalten. Filter, Seite und Listenposition bleiben bei Artikelaktionen und Bearbeitung erhalten. Die aktive Einkaufsliste bleibt eine zusammenhängende Arbeitsliste.
+Die Haushaltsübersicht bietet kombinierbare Suche und Filter nach Warengruppe, Einkaufsort und Bestand. Zusätzliche Einkaufsorte und aktive Produktangebote werden berücksichtigt. Die Unicode-Suche verwendet die bereits eingesetzte Version Postgres 18. Pro Seite erscheinen höchstens 48 Artikel; Trefferzahl und Bereich bleiben sichtbar. Favoriten/Archiv sowie Liste/Karten lassen sich weiter umschalten. Filter, Seite und Listenposition bleiben bei Artikelaktionen und Bearbeitung erhalten. Die aktive Einkaufsliste bleibt eine zusammenhängende Arbeitsliste.

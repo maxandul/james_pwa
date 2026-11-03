@@ -66,10 +66,10 @@ def test_unicode_search_and_sql_wildcards_keep_literal_substring_meaning(app, cl
     item_id, _, _ = seed_item(app)
     with app.app_context():
         item = db.session.get(HouseholdItem, item_id)
-        item.name = 'Äpfel Straße 100% Bio_Qualität'
+        item.name = 'Äpfel Straße 100% Bio_Qualität 10µg ﬁt'
         db.session.commit()
     login(client)
-    for term in ['ÄPFEL', 'strasse', '100%', 'Bio_']:
+    for term in ['ÄPFEL', 'strasse', '100%', 'Bio_', 'µg', 'μg', 'ﬁt', 'fit']:
         assert row_ids(client.get('/', query_string={'q': term}).text) == [str(item_id)]
     assert not row_ids(client.get('/?q=BioX').text)
     assert not row_ids(client.get('/?q=%25x').text)

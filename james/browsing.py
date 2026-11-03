@@ -9,7 +9,7 @@ PAGE_SIZE = 48
 
 def configure_search(app):
     # SQLite's built-in lower() handles ASCII only. Keep local/test Unicode search
-    # consistent with the German case folding used on Postgres, without a migration.
+    # consistent with Postgres Unicode folding, without a schema migration.
     with app.app_context():
         engine = db.engine
         if engine.dialect.name == 'sqlite':
@@ -38,8 +38,8 @@ def browse(household_id, context):
     if context['view'] == 'favorites':
         predicates.append(HouseholdItem.is_favorite.is_(True))
     if context.get('q'):
-        folded = func.james_casefold(HouseholdItem.name) if db.engine.dialect.name == 'sqlite' else func.replace(
-            func.lower(HouseholdItem.name), 'ß', 'ss')
+        folded = func.james_casefold(HouseholdItem.name) if db.engine.dialect.name == 'sqlite' else func.casefold(
+            HouseholdItem.name.collate('pg_unicode_fast'))
         predicates.append(folded.contains(context['q'].casefold(), autoescape=True))
     if context.get('filter_category'):
         predicates.append(HouseholdItem.category == context['filter_category'])
