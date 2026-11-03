@@ -1,4 +1,5 @@
 {% macro return_fields() %}
+{% for field in ['filter_category', 'filter_source', 'filter_stock', 'page'] %}{% if home_context.get(field) %}<input type="hidden" name="{{ field }}" value="{{ home_context[field] }}">{% endif %}{% endfor %}
 <input type="hidden" name="view" value="{{ home_context.view }}">
 <input type="hidden" name="q" value="{{ home_context.get('q', '') }}">
 <input type="hidden" name="layout" value="{{ home_context.layout }}">

@@ -82,3 +82,29 @@ test('removing the acted-on row keeps its next neighbour in place and reachable'
   p.form().querySelector('button').focus();p.submit();await tick();
   assert.equal(p.scroll(),100);assert.equal(p.d.activeElement.closest('[data-item-id]').dataset.itemId,'2');
 });
+
+test('scroll restoration uses canonical list context despite empty GET fields',t=>{
+  const p=ui(async()=>response(html()));t.after(p.close);
+  p.d.querySelector('main').dataset.listUrl='/?view=all&layout=compact&filter_stock=low&page=2';
+  p.w.history.replaceState(null,'','/?view=all&layout=compact&q=&filter_source=&filter_stock=low&page=2');
+  p.w.dispatchEvent(new p.w.Event('pagehide'));
+  const keys=Object.keys(p.w.sessionStorage);
+  assert.equal(keys.length,1);assert.ok(keys[0].includes('filter_stock=low'));
+  assert.equal(keys[0].includes('filter_source='),false);assert.equal(keys[0].includes('q='),false);
+});
+test('a clamped background page applies its canonical location',async t=>{
+  const next=html({version:2}).replace('<main data-list-page="main.home">','<main data-list-page="main.home" data-list-url="/?view=all&layout=compact&page=2">');
+  const p=ui(async()=>response(next,{redirected:true,url:'https://james.test/?view=all&layout=compact&page=2'}));t.after(p.close);
+  assert.equal(await p.w.JamesPage.refresh(),true);
+  assert.ok(p.w.location.search.includes('page=2'));assert.ok(p.d.querySelector('main').dataset.listUrl.includes('page=2'));
+});
+test('an open filter panel is safe to refresh, but an edited filter is protected',async t=>{
+  let calls=0;
+  const p=ui(async()=>{calls++;return response(html({version:2}));});t.after(p.close);
+  const panel=p.d.createElement('details');panel.className='browse-filter-options';panel.open=true;
+  panel.innerHTML='<summary>Filter</summary><select name="filter_stock"><option value="low">Wird knapp</option></select>';
+  p.d.querySelector('main').append(panel);
+  assert.equal(p.w.JamesPage.canRefresh(),true);
+  panel.querySelector('select').dispatchEvent(new p.w.Event('change',{bubbles:true}));
+  assert.equal(await p.w.JamesPage.refresh(),false);assert.equal(calls,0);
+});

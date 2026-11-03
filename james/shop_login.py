@@ -26,7 +26,12 @@ ACTIVE = ('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')
 
 @shop_login.context_processor
 def shop_constants():
-    return {'shop_products': PRODUCTS}
+    return {'shop_products': PRODUCTS, 'cart_daily_limit': cart_daily_limit()}
+
+
+def cart_daily_limit():
+    """At most one extra explicitly consented attempt, only on the operator-set UTC date."""
+    return 2 if current_app.config.get('SHOP_CART_EXTRA_ATTEMPT_DATE') == utcnow().date().isoformat() else 1
 
 
 def account_bound(household_id):
@@ -165,8 +170,8 @@ def index():
         today = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         count = db.session.scalar(select(func.count(ShopLogin.id)).where(
             ShopLogin.household_id == g.household.id, ShopLogin.task_kind == kind, ShopLogin.created_at >= today))
-        if count >= (1 if kind == 'cart' else 2):
-            return render_template('error.html', message='Das Tageslimit fuer diese Testart ist erreicht (ein Warenkorbtest oder zwei Anmeldetests pro UTC-Tag).'), 409
+        if count >= (cart_daily_limit() if kind == 'cart' else 2):
+            return render_template('error.html', message=f'Das Tageslimit fuer diese Testart ist erreicht ({cart_daily_limit()} Warenkorbtest(s) oder zwei Anmeldetests pro UTC-Tag).'), 409
         run = ShopLogin(user_id=current_user.id, active_user_id=current_user.id,
             household_id=g.household.id, auth_version=current_user.auth_version,
             start_request_id=start_id, task_kind=kind, state='queued', cost_authorized_at=utcnow(),

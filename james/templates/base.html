@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='11') }}">
-  <script src="{{ url_for('static', filename='app.js', v='10') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='12') }}">
+  <script src="{{ url_for('static', filename='app.js', v='11') }}" defer></script>
   <script src="/static/offline-store.js?v=1" defer></script>
   <script src="/static/pwa.js?v=3" defer></script>
 </head>
@@ -35,7 +35,7 @@
     </div></details>
   </nav>
   {% endif %}
-  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}"{% endif %}>
+  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}" data-list-url="{{ home_url() if request.endpoint == 'main.home' else url_for('main.shopping', source=request.args.get('source') or None) }}"{% endif %}>
     {% include '_breadcrumbs.html' %}
     <div id="offline-banner" class="notice notice--error" role="status" hidden>Keine Verbindung. Aenderungen koennen gerade nicht gespeichert werden.</div>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endwith %}

@@ -56,3 +56,8 @@ James kann ueber das Browsermenue zum Startbildschirm hinzugefuegt/installiert w
 ## Produkte und mehrere Einkaufsorte (vorbereitet)
 
 Ein Haushaltsartikel kann bei mehreren Laeden gekauft werden. Warengruppen/Einkaufsorte sind erweiterbar und umbenennbar. Unter Artikel bearbeiten → Produkte und Einkaufsorte lassen sich konkrete Varianten und je Laden ein Vorzugsprodukt mit Packungsinhalt hinterlegen. Die gefilterte Einkaufsliste zeigt die passende Variante und gerundete Packungszahl; Bedarf bleibt einmalig. Keine automatische Bestellung in diesem Schritt. Auslieferung mit additiver Migration erst nach Datenbanksicherung; Details in docs/RUNBOOK.md.
+
+
+## Viele Artikel übersichtlich nutzen
+
+Die Haushaltsübersicht bietet kombinierbare Suche und Filter nach Warengruppe, Einkaufsort und Bestand. Zusätzliche Einkaufsorte und aktive Produktangebote werden berücksichtigt. Die Unicode-Suche verwendet die bereits eingesetzte Version Postgres 18. Pro Seite erscheinen höchstens 48 Artikel; Trefferzahl und Bereich bleiben sichtbar. Favoriten/Archiv sowie Liste/Karten lassen sich weiter umschalten. Filter, Seite und Listenposition bleiben bei Artikelaktionen und Bearbeitung erhalten. Die aktive Einkaufsliste bleibt eine zusammenhängende Arbeitsliste.

@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 from flask import abort
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from .extensions import db
 from .models import Category, Household, HouseholdItem, ItemSource, Product, ProductBarcode, PurchaseSource, ShopOffer
@@ -259,14 +260,29 @@ def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expect
 
 def shopping_options(rows):
     """One need can appear under several sources; it is never duplicated in the DB."""
-    allowed, offers = {}, {}
-    for item, need in rows:
-        sources = db.session.scalars(select(PurchaseSource).join(ItemSource).where(
-            ItemSource.item_id == item.id, PurchaseSource.household_id == item.household_id)).all()
-        preference = resolve(item.household_id, "source", item.source)
-        allowed[item.id] = {source.name for source in sources} | {preference.name if preference else item.source}
-        offers[item.id] = [offer for offer in item_offers(item) if offer.active]
-        allowed[item.id] |= {offer.source.name for offer in offers[item.id]}
+    if not rows:
+        return {}, {}
+    household_id = rows[0][0].household_id
+    items = {item.id: item for item, need in rows}
+    known = entries(household_id, 'source')
+    allowed = {}
+    for item in items.values():
+        preference = next((entry for entry in known if key(item.source) in {entry.name_key, *entry.aliases}), None)
+        allowed[item.id] = {preference.name if preference else item.source}
+    links = db.session.execute(select(ItemSource.item_id, PurchaseSource.name).join(PurchaseSource).where(
+        ItemSource.item_id.in_(items), PurchaseSource.household_id == household_id)).all()
+    for item_id, name in links:
+        allowed[item_id].add(name)
+    offers = {item_id: [] for item_id in items}
+    active = db.session.scalars(select(ShopOffer).join(Product).join(PurchaseSource).options(
+        joinedload(ShopOffer.product), joinedload(ShopOffer.source)).where(
+        Product.item_id.in_(items), Product.household_id == household_id,
+        ShopOffer.household_id == household_id, PurchaseSource.household_id == household_id,
+        ShopOffer.active.is_(True)).order_by(PurchaseSource.name, Product.name, ShopOffer.id)).all()
+    for offer in active:
+        item_id = offer.product.item_id
+        offers[item_id].append(offer)
+        allowed[item_id].add(offer.source.name)
     return allowed, offers
 
 

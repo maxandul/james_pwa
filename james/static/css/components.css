@@ -628,7 +628,7 @@
   padding: 12px 0;
   background: var(--paper);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: 20px;
@@ -765,6 +765,71 @@
 
 .inline-feedback .button {
   margin: 8px 0 0 8px;
+}
+
+/* Catalogue browsing: bounded pages, shared filter controls and visible context. */
+.article-filters {
+  display: grid;
+  gap: var(--space-3);
+  flex: 1 1 380px;
+  min-width: 0;
+}
+.browse-filter-options > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--green);
+  font-size: .87rem;
+  font-weight: 600;
+  list-style: none;
+}
+.browse-filter-options > summary::before { content: '+'; }
+.browse-filter-options[open] > summary::before { content: '−'; }
+.browse-filter-options > summary::-webkit-details-marker { display: none; }
+.browse-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr));
+  align-items: end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+.browse-filter-grid label {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.article-toolbar:has(.browse-filter-options[open]) { position: static; }
+.active-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.active-filters > span {
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  background: var(--green-light);
+  font-size: .8rem;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block: var(--space-5);
 }
 
 @media(max-width:1000px) {
