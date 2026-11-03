@@ -794,3 +794,44 @@ def test_disabled_cart_mode_cannot_be_queued_or_executed(app, client, prepared, 
         execute_run(app, identifier)
         assert db.session.get(ShopLogin, identifier).outcome == 'disabled'
     constructor.assert_not_called()
+
+
+def test_extra_cart_attempt_is_date_bound_and_never_unlimited(app, monkeypatch):
+    from datetime import datetime
+    from james.shop_login import cart_daily_limit
+    fixed = datetime(2026, 11, 3, 12)
+    monkeypatch.setattr('james.shop_login.utcnow', lambda: fixed)
+    with app.app_context():
+        for value in ('', None, 'bad', '2026-11-02', '2026-11-04'):
+            app.config['SHOP_CART_EXTRA_ATTEMPT_DATE'] = value
+            assert cart_daily_limit() == 1
+        app.config['SHOP_CART_EXTRA_ATTEMPT_DATE'] = '2026-11-03'
+        assert cart_daily_limit() == 2
+        monkeypatch.setattr('james.shop_login.utcnow', lambda: datetime(2026, 11, 4, 0))
+        assert cart_daily_limit() == 1
+
+
+def test_extra_attempt_requires_fresh_consent_and_stops_after_two(app, client, monkeypatch):
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key',
+        SHOP_CART_EXTRA_ATTEMPT_DATE=utcnow().date().isoformat())
+    login(client)
+    monkeypatch.setattr('james.shop_login.api', lambda *a: pytest.fail('Queueing must never start a paid session'))
+    assert 'zusaetzlicher Warenkorbversuch' in client.get('/shop-login').text
+    data = {'csrf_token': csrf(client, '/shop-login'), 'task_kind': 'cart', 'cart_consent': 'yes'}
+    assert client.post('/shop-login', data={**data, 'start_request_id': str(uuid4())}).status_code == 400
+    data['cost_consent'] = 'yes'
+    first_id = None
+    for _ in range(2):
+        request_id = str(uuid4())
+        response = client.post('/shop-login', data={**data, 'start_request_id': request_id})
+        assert response.status_code == 302
+        first_id = first_id or request_id
+        with app.app_context():
+            row = db.session.scalar(select(ShopLogin).where(ShopLogin.start_request_id == request_id))
+            row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+            db.session.commit()
+    assert client.post('/shop-login', data={**data, 'start_request_id': str(uuid4())}).status_code == 409
+    # Replaying an already consumed request remains idempotent, never a third execution.
+    assert client.post('/shop-login', data={**data, 'start_request_id': first_id}).status_code == 302
+    with app.app_context():
+        assert len(db.session.scalars(select(ShopLogin)).all()) == 2
