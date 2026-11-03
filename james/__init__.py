@@ -36,6 +36,7 @@ def create_app(test_config=None):
         OPENAI_MODEL=os.getenv('OPENAI_MODEL', ''),
         SHOP_LOGIN_PILOT_ENABLED=os.getenv('SHOP_LOGIN_PILOT_ENABLED', '') == '1',
         SHOP_CART_PILOT_ENABLED=os.getenv('SHOP_CART_PILOT_ENABLED', '') == '1',
+        SHOP_CART_EXTRA_ATTEMPT_DATE=os.getenv('SHOP_CART_EXTRA_ATTEMPT_DATE', ''),
         GALAXUS_HOUSEHOLD_ID=os.getenv('GALAXUS_HOUSEHOLD_ID', ''),
         GALAXUS_EMAIL=os.getenv('GALAXUS_EMAIL', ''),
         GALAXUS_PASSWORD=os.getenv('GALAXUS_PASSWORD', ''),
