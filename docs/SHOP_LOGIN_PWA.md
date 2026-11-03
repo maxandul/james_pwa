@@ -53,7 +53,8 @@ Zugangsdaten ausschliesslich in registrierten `browser_authentication`-
 Kontrollereignissen, nie in Modellanweisungen oder Chatnachrichten. Vor dem
 Senden wird die aktuelle API-Anforderung erneut gelesen und Identitaet,
 Haushaltsbindung, Sitzung, Zustand und Fristen werden erneut geprueft. Das
-Anmeldeziel muss exakt `https://www.galaxus.ch` sein. Andere SSO-/Login-Origins
+Anmeldeziel muss exakt `https://www.galaxus.ch` oder der verifizierte
+Galaxus-Identity-Origin `https://id.digitecgalaxus.ch` sein. Andere SSO-/Login-Origins
 stoppen den Pilot und brauchen zuerst eine verifizierte Anpassung.
 
 Nur eindeutig erkannte E-Mail-/Benutzername- und Passwortfelder werden befuellt.
@@ -142,3 +143,60 @@ Stufen erfasst. Ein alter oder unterbrochener Lauf ohne Ergebnis bleibt
 ausdruecklich unbekannt. Kein automatischer neuer Test, keine Wiederholung
 von Zugangsdaten und keine Aufweichung der Origin-Grenze. Ein neuer bezahlter
 Anmeldeversuch braucht erneut die ausdrueckliche Bestaetigung in der PWA.
+
+## Abschluss ohne Anmeldeanforderung (2026-11-03)
+
+Der naechste vom Nutzer gestartete Lauf endete regulaer nach fuenf beobachteten
+Browseraktionen, ohne registrierte Anmeldeanforderung und ohne HTTP-Fehler.
+Damit wurden die hinterlegten Zugangsdaten nicht ueber diesen Mechanismus
+uebermittelt. Es ist nicht nachgewiesen, ob eine Shop-Sperre, eine nicht gefundene
+Maske oder ein nicht angeforderter Authentifizierungsschritt den Abschluss
+ausloeste. Keine dieser Vermutungen als feststehende Ursache ausgeben.
+
+Der Auftrag nennt jetzt konkrete Schritte: Hauptagent oeffnet die Galaxus-Seite,
+wechselt ueber sichtbare Kontosteuerung zur bestehenden Anmeldung und fordert
+selbst die registrierte Browserauthentifizierung an. Er wird informiert, dass
+die Anwendung die Zugangsdaten bereits haelt. Keine Delegation dieses Schritts,
+kein Anfordern von Geheimnissen im Chat und keine Eingabe erfundener Werte.
+Die offizielle Anleitung bestaetigt, dass nur der Hauptagent Browseranmeldungen
+anfordern kann:
+https://developers.openai.com/api/docs/guides/agents-api/tools/computer-use
+
+Ohne registrierte Anmeldeanforderung wird ein normaler Turnabschluss kuenftig als
+`no_authentication` gespeichert. Auch schon vorhandene `turn_completed`-Datensaetze
+ohne Anmeldeschritt werden in der PWA ausdruecklich entsprechend erklaert.
+
+Der Agent darf genau einen festen Abschlusscode melden (Zugriff blockiert,
+Maske nicht gefunden, Authentifizierung nicht verfuegbar, Methode nicht
+unterstuetzt, angemeldete Ansicht, nicht angemeldet, unbekannt). Nur ein exakt
+passender Token aus dem beendeten Hauptturn wird angenommen; fremde Turns,
+freier Text und unbekannte Werte werden verworfen, widerspruechliche Tokens
+werden zu `unknown`. Bestehende beobachtete Anmeldeschritte werden durch eine
+solche Behauptung nicht ueberschrieben. Die PWA bezeichnet die Meldung explizit
+als ungepruefte Agentenmeldung, niemals als unabhaengigen Erfolgsnachweis. Es
+werden weiterhin keine privaten Texte, Passwoerter, Codes oder Screenshots
+gespeichert. Kein neuer kostenpflichtiger Test wurde durch die Anpassung gestartet.
+
+Eine tatsaechlich durch die Anwendung abgelehnte zusaetzliche Browser-Origin
+wird separat als fester Marker erfasst, ohne Hostname oder URL zu speichern.
+Dieser beobachtete Zugriffsstopp hat Vorrang vor einer Agentenvermutung ueber
+eine Shop-Sperre. Dieser Diagnosemarker erweitert selbst keine Origin-Grenze.
+
+### Verifizierter offizieller Login-Einstieg
+
+Die offizielle Galaxus-Hilfe https://www.galaxus.ch/de/guide/52 verlinkt ihren
+normalen Anmeldeprozess auf https://www.galaxus.ch/auth/v1/login. Beim Folgen
+dieses oeffentlichen Links am 2026-11-03 wurde ein Redirect auf den Origin
+`https://id.digitecgalaxus.ch` beobachtet. Der bisherige Pilot erlaubte nur
+`www.galaxus.ch` und haette diese Weiterleitung abgelehnt. Das ist eine konkrete
+Integrationsluecke, aber kein nachtraeglicher Beweis fuer den genauen Abschlussgrund
+des bereits geloeschten Browserlaufs. Keine OAuth-Queryparameter aufbewahren.
+
+Der Loginpilot startet jetzt am offiziellen Einstieg und erlaubt zusaetzlich
+ausschliesslich diesen exakt verifizierten Identity-Origin fuer Browserzugriff
+und registrierte Credential-Uebermittlung. Keine Subdomain-Wildcards, keine
+andere Ports und keine automatische Freigabe weiterer Redirects. Der allgemeine
+Browser-/Gastwarenkorb-Probe bleibt ohne ausdrueckliche Zusatzkonfiguration auf
+seinen bisherigen Einzel-Origin beschraenkt. Lookalikes werden abgelehnt.
+Die Sicherheits- und Kostenfreigaben, Haushaltsbindung und MFA-Pause bleiben
+bestehen. Diese Anpassung erfordert keine neue Datenbankmigration.

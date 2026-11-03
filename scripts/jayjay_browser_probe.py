@@ -29,10 +29,10 @@ def origin_for(url):
     raise ValueError('Lokale Adressen und IP-Adressen sind nicht erlaubt.')
 
 
-def approval_response(request, allowed_origin):
+def approval_response(request, allowed_origin, *, additional_allowed_origins=()):
     if request.type == 'browser_origin_access':
         return {'type': request.type,
-                'decision': 'approve' if request.origin == allowed_origin else 'deny'}
+                'decision': 'approve' if request.origin in {allowed_origin, *additional_allowed_origins} else 'deny'}
     if request.type == 'browser_authentication':
         return {'type': request.type, 'action': 'cancel'}
     raise ValueError('Unbekannte Browserfreigabe; kein automatisches Fortsetzen.')
@@ -44,12 +44,33 @@ def probe(client, url, state_path, *, seconds=120, screenshot_path=None):
         seconds=seconds, screenshot_path=screenshot_path)
 
 
+LOGIN_REPORTS = {
+    'ACCESS_BLOCKED': 'access_blocked',
+    'LOGIN_FORM_NOT_FOUND': 'form_missing',
+    'AUTH_UNAVAILABLE': 'auth_unavailable',
+    'UNSUPPORTED_METHOD': 'unsupported',
+    'SIGNED_IN': 'signed_in',
+    'NOT_SIGNED_IN': 'not_signed_in',
+    'UNKNOWN': 'unknown',
+}
+
+
+def login_report(text):
+    """Accept one exact, fixed token only. Never retain arbitrary model output."""
+    if not isinstance(text, str) or len(text) > 80:
+        return None
+    return {('JAMES_LOGIN_REPORT=' + key): value for key, value in LOGIN_REPORTS.items()}.get(text.strip())
+
+
 def run_task(client, url, state_path, *, instructions, task, seconds=120,
              screenshot_path=None, session_id=None, keep_session=False,
              authorized_uncapped_test=False, authentication_handler=None,
-             session_handler=None, session_metadata=None):
+             session_handler=None, session_metadata=None, additional_allowed_origins=()):
     """One task, no retries. Keep its ID before sending any browser input."""
     origin = origin_for(url)
+    for additional in additional_allowed_origins:
+        if additional != origin_for(additional):
+            raise ValueError('Zusaetzliche Freigabe muss ein exakter HTTPS-Origin sein.')
     if authentication_handler is not None and (screenshot_path or keep_session):
         raise ValueError('Loginpilot: keine Screenshotdateien oder Sitzungsaufbewahrung.')
     if authorized_uncapped_test and (keep_session or session_id or not 0 < seconds <= 360):
@@ -94,6 +115,7 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
         result.update(status='running', cleanup='pending')
         save()
         seen = set()
+        login_reports = {}
         timed_out = False
         with client.beta.agents.sessions.events.stream(session_id) as events:
             def expire():
@@ -128,7 +150,10 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                                 authentication_handler(action, client, session_id)
                                 seen.add(action.request_id)
                                 continue
-                            response = approval_response(action.request, origin)
+                            response = approval_response(action.request, origin,
+                                additional_allowed_origins=additional_allowed_origins)
+                            if response.get('type') == 'browser_origin_access' and response.get('decision') == 'deny':
+                                result['origin_access_denied'] = True  # No origin value retained.
                             client.beta.agents.sessions.events.create(session_id, events=[{
                                 'type': 'agent.session.input.computer_use_approval_request_result',
                                 'request_id': action.request_id, 'response': response}])
@@ -148,8 +173,19 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
                     elif event.type == 'agent.session.turn.output_text.done':
                         if authentication_handler is None:
                             result['model_report'] += event.text
+                        else:
+                            report = login_report(event.text)
+                            turn_id = getattr(event, 'turn_id', None)
+                            if (report and isinstance(turn_id, str) and 0 < len(turn_id) <= 128
+                                    and (turn_id in login_reports or len(login_reports) < 20)):
+                                previous = login_reports.get(turn_id)
+                                login_reports[turn_id] = report if previous in (None, report) else 'unknown'
                     elif event.type == 'agent.session.turn.completed' and event.turn.subagent_id is None:
                         result['status'] = 'turn_completed' if result['browser_calls'] else 'no_browser_evidence'
+                        root_report = login_reports.get(getattr(event.turn, 'id', None))
+                        if root_report:
+                            # Only the completed main turn's fixed claim; never proof of login.
+                            result['login_report'] = root_report
                         break
                     elif event.type in {'error', 'agent.session.failed', 'agent.session.environment.failed'}:
                         result['status'] = 'failed'

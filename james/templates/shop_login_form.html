@@ -28,8 +28,11 @@
 {% if run.outcome or run.state in ['closed', 'cleanup_pending'] %}
 <section aria-label="Testergebnis">
 <h2>Testergebnis</h2>
-<p>{{ {
+{% if run.outcome == 'turn_completed' and not run.auth_progress %}
+<p>Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung ueber die hinterlegten Zugangsdaten wurde nicht ausgefuehrt.</p>
+{% else %}<p>{{ {
     'turn_completed': 'Der Browserauftrag wurde beendet. Ein erfolgreicher Login ist damit noch nicht nachgewiesen.',
+    'no_authentication': 'Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung ueber die hinterlegten Zugangsdaten wurde nicht ausgefuehrt.',
     'no_browser_evidence': 'Der Auftrag endete ohne nachgewiesene Browseraktivitaet.',
     'failed': 'Der Browserauftrag ist fehlgeschlagen.',
     'timeout': 'Das Zeitlimit wurde erreicht. Abbruch und Bereinigung wurden angefordert.',
@@ -42,15 +45,23 @@
     'access_revoked': 'Die Zugangsberechtigung ist nicht mehr gueltig. Kein Browserauftrag gestartet.',
     'account_unbound': 'Die Haushaltszuordnung passt nicht. Kein Browserauftrag gestartet.',
     'credentials_missing': 'Die Shop-Zugangsdaten sind in der Dienstkonfiguration unvollstaendig. Kein Browserauftrag gestartet.'
-}.get(run.outcome, 'Fuer diesen aelteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestaetigt.') }}</p>
+}.get(run.outcome, 'Fuer diesen aelteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestaetigt.') }}</p>{% endif %}
 {% if run.auth_progress %}<p>{{ {
     'request_seen': 'Eine registrierte Anmeldeanforderung wurde erkannt.',
     'credentials_submitted': 'Gespeicherte Zugangsdaten wurden an die registrierte Anmeldung uebermittelt.',
     'manual_step': 'Eine manuelle Bestaetigung war erforderlich.',
     'manual_expired': 'Die Frist fuer die manuelle Bestaetigung ist abgelaufen.',
     'origin_rejected': 'Das Anmeldeziel wich vom freigegebenen Shop ab. Fuer diesen Schritt wurden keine Zugangsdaten uebermittelt.',
+    'origin_denied': 'Der Browser hat Zugriff auf eine zusaetzliche Webadresse angefordert. Die Anwendung hat diesen Zugriff gemaess der bestehenden Shop-Grenze abgelehnt.',
     'manual_submitted': 'Manuelle Eingaben wurden uebermittelt.',
-    'submission_unknown': 'Der Ausgang der Eingabenuebermittlung ist unklar.'
+    'submission_unknown': 'Der Ausgang der Eingabenuebermittlung ist unklar.',
+    'agent_access_blocked': 'Ungepruefte Agentenmeldung: Die Shopseite hat den Zugriff blockiert.',
+    'agent_form_missing': 'Ungepruefte Agentenmeldung: Die Anmeldemaske wurde nicht gefunden.',
+    'agent_auth_unavailable': 'Ungepruefte Agentenmeldung: Der registrierte Anmeldemechanismus war nicht verfuegbar.',
+    'agent_unsupported': 'Ungepruefte Agentenmeldung: Die geforderte Anmeldemethode wurde nicht unterstuetzt.',
+    'agent_signed_in': 'Ungepruefte Agentenmeldung: Eine angemeldete Ansicht wurde gesehen. Ohne registrierte Anmeldung ist das kein Nachweis fuer die Verwendung eures Kontos.',
+    'agent_not_signed_in': 'Ungepruefte Agentenmeldung: Die Anmeldung wurde nicht abgeschlossen.',
+    'agent_unknown': 'Der Agent lieferte keinen eindeutigen Abschlussgrund.'
 }.get(run.auth_progress, 'Der Anmeldefortschritt ist nicht nachgewiesen.') }}</p>
 {% elif run.outcome %}<p>Keine registrierte Anmeldeanforderung wurde protokolliert.</p>{% endif %}
 {% if run.http_status %}<p>OpenAI-API hat den Aufruf mit HTTP {{ run.http_status }} abgewiesen.</p>
