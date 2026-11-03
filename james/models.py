@@ -14,6 +14,9 @@ def utcnow():
 class Household(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    settings = db.Column(db.JSON, nullable=False, default=dict, server_default=db.text("'{}'"))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __mapper_args__ = {'version_id_col': version}
 
 
 class User(UserMixin, db.Model):
@@ -23,6 +26,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(512), nullable=False)
     auth_version = db.Column(db.Integer, nullable=False, default=1)
     active = db.Column(db.Boolean, nullable=False, default=True)
+
+    preferences = db.Column(db.JSON, nullable=False, default=dict, server_default=db.text("'{}'"))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __mapper_args__ = {'version_id_col': version}
 
     @property
     def is_active(self):
@@ -45,6 +52,8 @@ class Membership(db.Model):
     household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
     role = db.Column(db.String(12), nullable=False, default="member")
     active = db.Column(db.Boolean, nullable=False, default=True)
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __mapper_args__ = {'version_id_col': version}
     user = db.relationship(User)
     household = db.relationship(Household)
     __table_args__ = (db.CheckConstraint("role IN ('owner', 'member')", name="membership_role"),)
@@ -150,6 +159,7 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
     name = db.Column(db.String(60), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     name_key = db.Column(db.String(240), nullable=False)
     aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
@@ -161,6 +171,7 @@ class PurchaseSource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=False, index=True)
     name = db.Column(db.String(60), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     name_key = db.Column(db.String(240), nullable=False)
     aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
@@ -281,3 +292,19 @@ class ShopLogin(db.Model):
         db.CheckConstraint(
         "state IN ('queued','creating','running','pending','submitting','accepted','cancelled','unknown','closed','cleanup_pending')",
         name='shop_login_state'),)
+
+
+class ShoppingView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
+    source_id = db.Column(db.Integer, db.ForeignKey('purchase_source.id'), nullable=True)
+    name = db.Column(db.String(100), nullable=False)
+    category_ids = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
+    category_order = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
+    item_sort = db.Column(db.String(20), nullable=False, default='name', server_default='name')
+    is_default = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    source = db.relationship(PurchaseSource)
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.CheckConstraint("item_sort IN ('name','name_desc','favorites')", name='shopping_view_sort'),)

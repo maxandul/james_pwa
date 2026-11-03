@@ -39,15 +39,29 @@ def credential_response(schema, config, used_roles):
                 role, value = 'password', password
             else:
                 break  # Never fill codes, consent controls, or unidentified fields.
-            if role in used_roles or role in roles:
+            if role in roles:
                 break
             roles.add(role)
             values.append({'field_id': field['id'], 'value': value})
         else:
-            if values:
+            # A new password step may repeat the email field. Allow that one
+            # transition, but never replay a password or an email-only step.
+            fresh = roles - used_roles
+            repeated = roles & used_roles
+            if values and fresh and (not repeated or
+                    (repeated == {'email'} and fresh == {'password'})):
                 response = {'type': 'browser_authentication', 'action': 'submit', 'fields': values}
                 if selected is not None:
                     response['selected_option'] = selected
                 candidates.append((response, roles))
     # An ambiguous method choice must be made by the user, not by a guess.
     return candidates[0] if len(candidates) == 1 else None
+
+
+def manual_reason(schema, config, used_roles):
+    """Fixed diagnostic categories only; never return field labels or values."""
+    if schema.get('options'):
+        return 'manual_method'
+    if credential_response(schema, config, set()) and used_roles:
+        return 'manual_repeat'
+    return 'manual_fields'

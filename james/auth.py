@@ -80,7 +80,7 @@ def logout():
 @auth.route("/join", methods=["GET", "POST"])
 def join():
     if current_user.is_authenticated:
-        return render_template("error.html", message="Bitte melde dich zuerst ab, um einen neuen Zugang ueber eine Einladung einzurichten."), 409
+        return render_template("error.html", message="Bitte melde dich zuerst ab, um einen neuen Zugang über eine Einladung einzurichten."), 409
     error = None
     if request.method == "POST":
         try:

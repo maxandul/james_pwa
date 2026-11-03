@@ -57,7 +57,7 @@ def test_full_chat_turn_reads_then_changes_and_replay_never_calls_again(app, cli
     assert client.post('/jayjay', data=data).status_code == 302
     assert len(calls) == 3
     page = client.get('/jayjay').text
-    assert 'Sehr wohl.' in page and 'Tatsaechlich gespeicherte' in page
+    assert 'Sehr wohl.' in page and 'Tatsächlich gespeicherte' in page
     with app.app_context():
         assert db.session.scalar(select(func.count(Activity.id))) == 1
         assert db.session.scalar(select(ChatTurn.state)) == 'done'
@@ -258,7 +258,7 @@ def test_floating_chat_is_available_on_app_pages_without_a_navigation_tab(app, c
     assert 'id="jayjay-launcher"' not in client.get('/login').text
     login(client)
     for path in ('/', '/shopping', '/household'):
-        html = client.get(path).text
+        html = client.get(path, follow_redirects=True).text
         assert 'id="jayjay-launcher"' in html and 'id="jayjay-dialog"' in html
         nav = re.search(r'<nav class="nav".*?</nav>', html, re.S)[0]
         assert '/jayjay' not in nav

@@ -20,10 +20,10 @@ def register_cli(app):
             text = any(part.get('type') == 'output_text' and part.get('text') for item in output
                 if item.get('type') == 'message' for part in item.get('content', []))
             if result.get('status') != 'completed' or not text or any(item.get('type') == 'function_call' for item in output):
-                raise ValueError('Verbindungstest wurde nicht vollstaendig abgeschlossen.')
+                raise ValueError('Verbindungstest wurde nicht vollständig abgeschlossen.')
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
-        click.echo('OpenAI-Verbindung erfolgreich. Haushaltsdaten wurden nicht uebertragen; Chat-Aktivierung bleibt separat.')
+        click.echo('OpenAI-Verbindung erfolgreich. Haushaltsdaten wurden nicht übertragen; Chat-Aktivierung bleibt separat.')
 
     @app.cli.command("init-household")
     @click.option("--email", prompt="E-Mail")
@@ -38,7 +38,7 @@ def register_cli(app):
             household = clean_text(household, "Haushaltsname", 100)
             validate_password(password)
             if db.session.scalar(select(User.id).limit(1)):
-                raise ValueError("Bereits eingerichtet. Weitere Zugaenge nur ueber Einladungen erstellen.")
+                raise ValueError("Bereits eingerichtet. Weitere Zugänge nur über Einladungen erstellen.")
             home = Household(name=household)
             user = User(email=email, name=name)
             user.set_password(password)
@@ -49,7 +49,7 @@ def register_cli(app):
         except ValueError as exc:
             db.session.rollback()
             raise click.ClickException(str(exc)) from exc
-        click.echo("Haushalt und persoenlicher Zugang sind eingerichtet.")
+        click.echo("Haushalt und persönlicher Zugang sind eingerichtet.")
 
     @app.cli.command("reset-password")
     @click.option("--email", prompt="E-Mail")
@@ -68,11 +68,11 @@ def register_cli(app):
         except ValueError as exc:
             db.session.rollback()
             raise click.ClickException(str(exc)) from exc
-        click.echo("Passwort gesetzt; bisherige Sitzungen sind ungueltig.")
+        click.echo("Passwort gesetzt; bisherige Sitzungen sind ungültig.")
 
     @app.cli.command("revoke-member")
     @click.option("--email", prompt="E-Mail")
-    @click.confirmation_option(prompt="Diesen persoenlichen Zugang sperren?")
+    @click.confirmation_option(prompt="Diesen persönlichen Zugang sperren?")
     def revoke_member(email):
         """Block a member and their sessions; the only owner cannot be revoked."""
         email = clean_email(email)

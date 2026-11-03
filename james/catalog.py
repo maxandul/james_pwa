@@ -60,14 +60,14 @@ def fetch_suggestion(value):
         with build_opener(NoRedirect()).open(Request(url, headers=headers), timeout=3) as response:
             body = response.read(131073)
             if len(body) > 131072:
-                raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfuegbar. Bitte manuell erfassen.")
+                raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfügbar. Bitte manuell erfassen.")
             data = json.loads(body)
     except HTTPError as exc:
         if exc.code == 404:
             return None
-        raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfuegbar. Bitte manuell erfassen.") from None
+        raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfügbar. Bitte manuell erfassen.") from None
     except (URLError, TimeoutError, OSError, ValueError):
-        raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfuegbar. Bitte manuell erfassen.") from None
+        raise CatalogUnavailable("Der Produktkatalog ist gerade nicht verfügbar. Bitte manuell erfassen.") from None
     product = data.get("product") if isinstance(data, dict) else None
     if not isinstance(product, dict):
         return None

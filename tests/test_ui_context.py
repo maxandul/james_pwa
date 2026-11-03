@@ -43,7 +43,7 @@ def test_layout_is_validated_and_public_css_dependencies_are_available(app, clie
     assert 'data-layout="cards"' in client.get('/?layout=cards').text
     css = client.get('/static/app.css').text
     imports = re.findall(r'url\("([^\"]+)"\)', css)
-    assert len(imports) == 6
+    assert len(imports) == 7
     from pathlib import Path
     worker_text = Path('james/static/sw.js').read_text()
     for path in imports:

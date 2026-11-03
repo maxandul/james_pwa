@@ -59,9 +59,9 @@ def api(method, path, body=None):
             raise ValueError()
         return json.loads(raw) if raw else {}
     except HTTPError as exc:
-        raise ProviderUnavailable('Shop-Verbindung derzeit nicht verfuegbar.', exc.code) from None
+        raise ProviderUnavailable('Shop-Verbindung derzeit nicht verfügbar.', exc.code) from None
     except Exception:
-        raise ProviderUnavailable('Shop-Verbindung derzeit nicht verfuegbar.') from None
+        raise ProviderUnavailable('Shop-Verbindung derzeit nicht verfügbar.') from None
 
 
 def session_path(identifier):
@@ -141,9 +141,9 @@ def private_headers(response):
 @household_required
 def index():
     if not account_bound(g.household.id):
-        message = 'Fuer diesen Haushalt ist noch kein Galaxus-Konto eingerichtet.'
+        message = 'Für diesen Haushalt ist noch kein Galaxus-Konto eingerichtet.'
         if not current_app.config.get('GALAXUS_HOUSEHOLD_ID') and g.membership.role == 'owner':
-            message += f' Fuer die Einrichtung ist eure Haushaltskennung {g.household.id}.'
+            message += f' Für die Einrichtung ist eure Haushaltskennung {g.household.id}.'
         return render_template('error.html', message=message), 403
     if request.method == 'POST':
         if request.form.get('cost_consent') != 'yes':
@@ -154,7 +154,7 @@ def index():
         if kind == 'cart' and not current_app.config['SHOP_CART_PILOT_ENABLED']:
             abort(404)
         if kind == 'cart' and request.form.get('cart_consent') != 'yes':
-            return render_template('error.html', message='Bitte die Vorbereitung der drei Warenkorbpositionen ausdruecklich freigeben.'), 400
+            return render_template('error.html', message='Bitte die Vorbereitung der drei Warenkorbpositionen ausdrücklich freigeben.'), 400
         try:
             start_id = str(UUID(request.form.get('start_request_id', '')))
         except ValueError:
@@ -171,7 +171,7 @@ def index():
         count = db.session.scalar(select(func.count(ShopLogin.id)).where(
             ShopLogin.household_id == g.household.id, ShopLogin.task_kind == kind, ShopLogin.created_at >= today))
         if count >= (cart_daily_limit() if kind == 'cart' else 2):
-            return render_template('error.html', message=f'Das Tageslimit fuer diese Testart ist erreicht ({cart_daily_limit()} Warenkorbtest(s) oder zwei Anmeldetests pro UTC-Tag).'), 409
+            return render_template('error.html', message=f'Das Tageslimit für diese Testart ist erreicht ({cart_daily_limit()} Warenkorbtest(s) oder zwei Anmeldetests pro UTC-Tag).'), 409
         run = ShopLogin(user_id=current_user.id, active_user_id=current_user.id,
             household_id=g.household.id, auth_version=current_user.auth_version,
             start_request_id=start_id, task_kind=kind, state='queued', cost_authorized_at=utcnow(),
@@ -183,6 +183,14 @@ def index():
         ShopLogin.household_id == g.household.id, ShopLogin.auth_version == current_user.auth_version)
         .order_by(ShopLogin.id.desc()).limit(5)).all()
     return render_template('shop_login_index.html', runs=runs, start_request_id=str(uuid4()), products=PRODUCTS)
+
+
+@shop_login.get('/shop-login/<int:run_id>/status')
+@household_required
+def status(run_id):
+    run = owned(run_id)
+    # No provider read, credentials, account identifiers or request IDs.
+    return {'state': run.state, 'progress': run.auth_progress or ''}
 
 
 @shop_login.route('/shop-login/<int:run_id>', methods=['GET', 'POST'])
@@ -269,4 +277,4 @@ def login(run_id):
         return redirect(url_for('shop_login.login', run_id=run_id))
     except ProviderUnavailable:
         db.session.rollback()
-        return render_template('error.html', message='Shop-Verbindung derzeit nicht verfuegbar. Bitte keine Eingaben erneut senden.'), 503
+        return render_template('error.html', message='Shop-Verbindung derzeit nicht verfügbar. Bitte keine Eingaben erneut senden.'), 503

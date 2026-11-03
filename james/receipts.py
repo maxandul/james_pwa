@@ -77,13 +77,13 @@ def confirm_receipt(household_id, user_id, receipt_id, data):
     if receipt.state == "confirmed":
         return receipt  # repeated confirmation never books twice
     if receipt.state != "draft":
-        raise Conflict("Dieser Beleg wurde rueckgaengig gemacht und kann nicht erneut verbucht werden.")
+        raise Conflict("Dieser Beleg wurde rückgängig gemacht und kann nicht erneut verbucht werden.")
     try:
         review = serializer().loads(data.get("review_token", ""), max_age=3600)
         if review["receipt"] != receipt.id or review["household"] != household_id:
             raise BadSignature("scope")
     except (BadSignature, KeyError, TypeError):
-        raise Conflict("Die Belegpruefung ist abgelaufen. Bitte neu laden und erneut pruefen.") from None
+        raise Conflict("Die Belegprüfung ist abgelaufen. Bitte neu laden und erneut prüfen.") from None
     grouped, new_items, bookings = {}, {}, {}
     for index, row in enumerate(receipt.rows):
         target = data.get(f"target_{index}", "")
@@ -98,7 +98,7 @@ def confirm_receipt(household_id, user_id, receipt_id, data):
             item = new_items.get(key)
             if not item:
                 if any(label_key(existing.name) == key for existing in review_items(household_id)):
-                    raise Conflict("Dieser Artikel ist bereits vorhanden. Bitte aus der Liste auswaehlen.")
+                    raise Conflict("Dieser Artikel ist bereits vorhanden. Bitte aus der Liste auswählen.")
                 item = create_item(household_id, {"name": name, "unit": "Packung", "quantity": "1"})
                 new_items[key] = item
             expected = item.version
@@ -106,18 +106,18 @@ def confirm_receipt(household_id, user_id, receipt_id, data):
             try:
                 item_id = int(target)
             except ValueError:
-                raise ValueError("Bitte einen gueltigen Artikel waehlen.") from None
+                raise ValueError("Bitte einen gültigen Artikel wählen.") from None
             item = db.session.scalar(select(HouseholdItem).where(HouseholdItem.id == item_id,
                 HouseholdItem.household_id == household_id).with_for_update().execution_options(populate_existing=True))
             if not item or item.archived:
-                raise Conflict("Ein Artikel ist nicht mehr verfuegbar. Bitte die Zuordnung neu pruefen.")
+                raise Conflict("Ein Artikel ist nicht mehr verfügbar. Bitte die Zuordnung neu prüfen.")
             expected = review.get("versions", {}).get(str(item.id))
             if expected != item.version:
-                raise Conflict("Ein Artikel wurde inzwischen geaendert. Bitte alle Mengen und Zuordnungen erneut pruefen.")
+                raise Conflict("Ein Artikel wurde inzwischen geändert. Bitte alle Mengen und Zuordnungen erneut prüfen.")
         previous = grouped.get(item.id, (item, expected, 0))
         total = previous[2] + quantity
         if total > 999:
-            raise ValueError("Pro Artikel sind hoechstens 999 Einheiten moeglich.")
+            raise ValueError("Pro Artikel sind höchstens 999 Einheiten möglich.")
         grouped[item.id] = (item, expected, total)
         bookings[index] = {"item_id": item.id, "name": item.name, "unit": item.unit, "quantity": quantity}
     if not grouped:
@@ -181,16 +181,16 @@ def undo(receipt_id):
         lock_household(g.household.id)
         receipt = scoped_receipt(receipt_id)
         if receipt.state != "confirmed":
-            raise Conflict("Dieser Beleg ist nicht mehr rueckgaengig machbar.")
+            raise Conflict("Dieser Beleg ist nicht mehr rückgängig machbar.")
         for event_id in receipt.activity_ids:
             event = db.session.get(Activity, event_id)
             if not event or event.household_id != g.household.id:
-                raise Conflict("Die Belegbuchung ist nicht mehr verfuegbar.")
+                raise Conflict("Die Belegbuchung ist nicht mehr verfügbar.")
             change_item(g.household.id, current_user.id, event.item_id, "undo", str(uuid4()),
                 event.version_after, activity_id=event.id)
         receipt.state = "reversed"
         db.session.commit()
-        flash("Belegbuchungen rueckgaengig gemacht. Neu angelegte Artikel bleiben erhalten.", "success")
+        flash("Belegbuchungen rückgängig gemacht. Neu angelegte Artikel bleiben erhalten.", "success")
         return redirect(url_for("receipts.review", receipt_id=receipt_id))
     except ValueError as exc:
         db.session.rollback()

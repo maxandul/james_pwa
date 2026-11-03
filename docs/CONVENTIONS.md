@@ -15,7 +15,7 @@ Stand: 01.11.2026.
 - Tests verwenden ausschliesslich Beispieldaten. Fremde Haushalte, CSRF, Einladungen, Replay, Teilkauf und Ruecknahme sind Pflichtfaelle.
 - Schemaaenderungen mit Alembic; Migrationsdateien in eigenem Commit. Kein `create_all()` im normalen App-Start.
 - Dokumente mit Umsetzungsstand pflegen. Noch offene Funktionen nicht als fertig kennzeichnen.
-- Deutsch ohne Eszett. Keine extern geladenen Fonts oder Scripts.
+- Deutsche UI-Texte mit echten Umlauten (ä, ö, ü, Ä, Ö, Ü), nicht ae/oe/ue. Schweizer Rechtschreibung mit ss statt Eszett. Gilt auch für Fehler, Hilfen, Offline, ARIA und JayJay; verbindlich in `AGENTS.md`. Keine extern geladenen Fonts oder Scripts.
 
 Einladungslinks werden pro Haushalt unter einer Zeilensperre ausgestellt, damit auch gleichzeitiges Neuausstellen nur einen aktiven Link fuer dieselbe Adresse hinterlaesst. Der Postgres-Test prueft diesen Fall mit zwei Transaktionen.
 

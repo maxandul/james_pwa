@@ -1,27 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Galaxus anmelden · James{% endblock %}
 {% block content %}
+{% if not schema and run.state in ['queued','creating','running','submitting','accepted'] %}
+<div id="shop-login-watch" data-status-url="{{ url_for('shop_login.status', run_id=run.id) }}" data-state="{{ run.state }}" data-progress="{{ run.auth_progress or '' }}"></div>
+<script src="{{ url_for('static', filename='shop-login-status.js', v='1') }}" defer></script>
+{% endif %}
 <h1>{{ 'Galaxus-Warenkorbtest' if run.task_kind == 'cart' else 'Galaxus-Anmeldung' }}</h1>
 {% if schema %}
 <p>Anmeldeziel: <strong>{{ schema.credential_origin }}</strong></p>
-<p>Deine Eingaben werden an den OpenAI-gehosteten Shopbrowser uebermittelt und dort fuer die Galaxus-Anmeldung verwendet. James speichert sie nicht im Chat oder in der Datenbank.</p>
+<p>Deine Eingaben werden an den OpenAI-gehosteten Shopbrowser übermittelt und dort für die Galaxus-Anmeldung verwendet. James speichert sie nicht im Chat oder in der Datenbank.</p>
 {% if schema.options and selected is none %}
-<form method="get"><label>Anmeldemethode<select name="option">{% for option in schema.options %}<option value="{{ option.id }}">{{ option.label }}</option>{% endfor %}</select></label><button class="button" type="submit">Methode auswaehlen</button></form>
+<form method="get"><label>Anmeldemethode<select name="option">{% for option in schema.options %}<option value="{{ option.id }}">{{ option.label }}</option>{% endfor %}</select></label><button class="button" type="submit">Methode auswählen</button></form>
 {% else %}
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <input type="hidden" name="request_id" value="{{ run.request_id }}">
 <input type="hidden" name="option" value="{{ selected or '' }}">
 {% for field in fields %}<label>{{ field.label }}<input type="password" name="value_{{ loop.index0 }}" maxlength="2048" autocomplete="off" {% if field.required %}required{% endif %}></label>{% endfor %}
-<label><input type="checkbox" name="destination_confirmed" value="yes" required> Ich habe das Anmeldeziel geprueft und moechte die Eingaben an diesen Shopbrowser uebermitteln.</label>
-<button class="button" type="submit" name="action" value="submit">Anmeldung uebermitteln</button>
+<label><input type="checkbox" name="destination_confirmed" value="yes" required> Ich habe das Anmeldeziel geprüft und möchte die Eingaben an diesen Shopbrowser übermitteln.</label>
+<button class="button" type="submit" name="action" value="submit">Anmeldung übermitteln</button>
 </form>{% endif %}
 {% else %}
-{% if run.state == 'accepted' %}<p>Eingaben uebermittelt. Eine erfolgreiche Anmeldung ist damit noch nicht bestaetigt. Aktualisiere die Seite, falls ein weiterer Schritt erforderlich ist.</p>
-{% elif run.state == 'queued' %}<p>Der Anmeldetest ist vorgemerkt. Der Pilotdienst uebernimmt ihn. Ohne rechtzeitigen Start laeuft er automatisch ab.</p>
-{% elif run.state in ['creating','running'] %}<p>Der Browser bereitet die Anmeldung vor. Bitte die Seite aktualisieren.</p>
-{% elif run.state == 'submitting' %}<p>Uebermittlung laeuft. Bitte nicht erneut senden.</p>
-{% elif run.state == 'unknown' %}<p>Der Ausgang der Uebermittlung ist unklar. Nicht erneut senden; der Test wird abgebrochen und geprueft.</p>
+{% if run.state == 'accepted' %}<p>Eingaben übermittelt. Eine erfolgreiche Anmeldung ist damit noch nicht bestätigt. Die Seite zeigt einen weiteren nötigen Schritt automatisch an.</p>
+{% elif run.state == 'queued' %}<p>Der Anmeldetest ist vorgemerkt. Der Pilotdienst übernimmt ihn. Ohne rechtzeitigen Start läuft er automatisch ab.</p>
+{% elif run.state in ['creating','running'] %}<p>Der Browser bereitet die Anmeldung vor. Ein nötiger Anmeldeschritt erscheint hier automatisch.</p>
+{% elif run.state == 'submitting' %}<p>Übermittlung läuft. Bitte nicht erneut senden.</p>
+{% elif run.state == 'unknown' %}<p>Der Ausgang der Übermittlung ist unklar. Nicht erneut senden; der Test wird abgebrochen und geprüft.</p>
 {% elif run.state == 'cleanup_pending' %}<p>Die Bereinigung der Browsersitzung ist noch offen.</p>
 {% else %}<p>Die Bearbeitung dieses Tests ist abgeschlossen. Das Ergebnis steht unten.</p>{% endif %}
 {% endif %}
@@ -29,45 +33,51 @@
 <section aria-label="Testergebnis">
 <h2>Testergebnis</h2>
 {% if run.outcome == 'turn_completed' and not run.auth_progress %}
-<p>Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung ueber die hinterlegten Zugangsdaten wurde nicht ausgefuehrt.</p>
+<p>Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung über die hinterlegten Zugangsdaten wurde nicht ausgeführt.</p>
 {% else %}<p>{{ {
     'turn_completed': 'Der Browserauftrag wurde beendet. Ein erfolgreicher Login ist damit noch nicht nachgewiesen.',
-    'no_authentication': 'Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung ueber die hinterlegten Zugangsdaten wurde nicht ausgefuehrt.',
-    'no_browser_evidence': 'Der Auftrag endete ohne nachgewiesene Browseraktivitaet.',
+    'no_authentication': 'Der Browserauftrag endete ohne registrierte Anmeldeanforderung. Eine Anmeldung über die hinterlegten Zugangsdaten wurde nicht ausgeführt.',
+    'no_browser_evidence': 'Der Auftrag endete ohne nachgewiesene Browseraktivität.',
     'failed': 'Der Browserauftrag ist fehlgeschlagen.',
     'timeout': 'Das Zeitlimit wurde erreicht. Abbruch und Bereinigung wurden angefordert.',
     'expired': 'Der Test ist abgelaufen.',
     'disconnected': 'Die Verbindung zum Browserauftrag wurde unterbrochen.',
     'cancelled': 'Der Test wurde abgebrochen.',
-    'submission_unknown': 'Der Ausgang einer Eingabenuebermittlung ist unklar. Sie wurde nicht automatisch wiederholt.',
-    'disabled': 'Der Pilot war bei der Ausfuehrung deaktiviert. Kein Browserauftrag gestartet.',
+    'submission_unknown': 'Der Ausgang einer Eingabenübermittlung ist unklar. Sie wurde nicht automatisch wiederholt.',
+    'disabled': 'Der Pilot war bei der Ausführung deaktiviert. Kein Browserauftrag gestartet.',
     'consent_missing': 'Die Kostenfreigabe fehlte. Kein Browserauftrag gestartet.',
-    'access_revoked': 'Die Zugangsberechtigung ist nicht mehr gueltig. Kein Browserauftrag gestartet.',
+    'access_revoked': 'Die Zugangsberechtigung ist nicht mehr gültig. Kein Browserauftrag gestartet.',
     'account_unbound': 'Die Haushaltszuordnung passt nicht. Kein Browserauftrag gestartet.',
-    'credentials_missing': 'Die Shop-Zugangsdaten sind in der Dienstkonfiguration unvollstaendig. Kein Browserauftrag gestartet.'
-}.get(run.outcome, 'Fuer diesen aelteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestaetigt.') }}</p>{% endif %}
+    'credentials_missing': 'Die Shop-Zugangsdaten sind in der Dienstkonfiguration unvollständig. Kein Browserauftrag gestartet.'
+}.get(run.outcome, 'Für diesen älteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestätigt.') }}</p>{% endif %}
 {% if run.auth_progress %}<p>{{ {
     'request_seen': 'Eine registrierte Anmeldeanforderung wurde erkannt.',
-    'credentials_submitted': 'Gespeicherte Zugangsdaten wurden an die registrierte Anmeldung uebermittelt.',
-    'manual_step': 'Eine manuelle Bestaetigung war erforderlich.',
-    'manual_expired': 'Die Frist fuer die manuelle Bestaetigung ist abgelaufen.',
-    'origin_rejected': 'Das Anmeldeziel wich vom freigegebenen Shop ab. Fuer diesen Schritt wurden keine Zugangsdaten uebermittelt.',
-    'origin_denied': 'Der Browser hat Zugriff auf eine zusaetzliche Webadresse angefordert. Die Anwendung hat diesen Zugriff gemaess der bestehenden Shop-Grenze abgelehnt.',
-    'manual_submitted': 'Manuelle Eingaben wurden uebermittelt.',
-    'submission_unknown': 'Der Ausgang der Eingabenuebermittlung ist unklar.',
-    'agent_access_blocked': 'Ungepruefte Agentenmeldung: Die Shopseite hat den Zugriff blockiert.',
-    'agent_form_missing': 'Ungepruefte Agentenmeldung: Die Anmeldemaske wurde nicht gefunden.',
-    'agent_auth_unavailable': 'Ungepruefte Agentenmeldung: Der registrierte Anmeldemechanismus war nicht verfuegbar.',
-    'agent_unsupported': 'Ungepruefte Agentenmeldung: Die geforderte Anmeldemethode wurde nicht unterstuetzt.',
-    'agent_signed_in': 'Ungepruefte Agentenmeldung: Eine angemeldete Ansicht wurde gesehen. Ohne registrierte Anmeldung ist das kein Nachweis fuer die Verwendung eures Kontos.',
-    'agent_not_signed_in': 'Ungepruefte Agentenmeldung: Die Anmeldung wurde nicht abgeschlossen.',
+    'credentials_submitted': 'In diesem älteren Lauf wurden Anmeldefelder übermittelt. Welche Felder, wurde nicht getrennt erfasst.',
+    'both_submitted': 'E-Mail und Passwort wurden an den Anmeldemechanismus übermittelt. Ob Galaxus sie angenommen hat, ist damit noch nicht bestätigt.',
+    'email_submitted': 'Bisher wurde nur die E-Mail übermittelt. Eine Passwortübergabe wurde nicht erfasst.',
+    'password_submitted': 'Das Passwort wurde übermittelt. Eine E-Mail-Übergabe wurde nicht erfasst.',
+    'manual_step': 'Eine manuelle Bestätigung war erforderlich.',
+    'manual_method': 'Eine Anmeldemethode muss in der App ausgewählt werden.',
+    'manual_repeat': 'Der Shop hat bereits übermittelte Zugangsdaten erneut angefordert. Bitte den nächsten Schritt in der App prüfen.',
+    'manual_fields': 'Zusätzliche oder nicht eindeutig zugeordnete Anmeldefelder erfordern eine Eingabe in der App.',
+    'manual_expired': 'Die Frist für die manuelle Bestätigung ist abgelaufen.',
+    'origin_rejected': 'Das Anmeldeziel wich vom freigegebenen Shop ab. Für diesen Schritt wurden keine Zugangsdaten übermittelt.',
+    'origin_denied': 'Der Browser hat Zugriff auf eine zusätzliche Webadresse angefordert. Die Anwendung hat diesen Zugriff gemäss der bestehenden Shop-Grenze abgelehnt.',
+    'manual_submitted': 'Manuelle Eingaben wurden übermittelt.',
+    'submission_unknown': 'Der Ausgang der Eingabenübermittlung ist unklar.',
+    'agent_access_blocked': 'Ungeprüfte Agentenmeldung: Die Shopseite hat den Zugriff blockiert.',
+    'agent_form_missing': 'Ungeprüfte Agentenmeldung: Die Anmeldemaske wurde nicht gefunden.',
+    'agent_auth_unavailable': 'Ungeprüfte Agentenmeldung: Der registrierte Anmeldemechanismus war nicht verfügbar.',
+    'agent_unsupported': 'Ungeprüfte Agentenmeldung: Die geforderte Anmeldemethode wurde nicht unterstützt.',
+    'agent_signed_in': 'Ungeprüfte Agentenmeldung: Eine angemeldete Ansicht wurde gesehen. Ohne registrierte Anmeldung ist das kein Nachweis für die Verwendung eures Kontos.',
+    'agent_not_signed_in': 'Ungeprüfte Agentenmeldung: Die Anmeldung wurde nicht abgeschlossen.',
     'agent_unknown': 'Der Agent lieferte keinen eindeutigen Abschlussgrund.'
 }.get(run.auth_progress, 'Der Anmeldefortschritt ist nicht nachgewiesen.') }}</p>
 {% elif run.outcome %}<p>Keine registrierte Anmeldeanforderung wurde protokolliert.</p>{% endif %}
 {% if run.http_status %}<p>OpenAI-API hat den Aufruf mit HTTP {{ run.http_status }} abgewiesen.</p>
 {% elif run.error_category %}<p>{{ {
     'connection': 'Technischer Hinweis: Verbindungsfehler zur API.',
-    'request_validation': 'Technischer Hinweis: Eine Anforderung wurde durch die lokale Pruefung gestoppt.',
+    'request_validation': 'Technischer Hinweis: Eine Anforderung wurde durch die lokale Prüfung gestoppt.',
     'internal': 'Technischer Hinweis: Interner Verarbeitungsfehler.',
     'environment_failed': 'Technischer Hinweis: Die Browserumgebung ist fehlgeschlagen.',
     'agent_failed': 'Technischer Hinweis: Die API hat einen Agentenfehler gemeldet.',
@@ -75,38 +85,42 @@
     'turn_cancelled': 'Technischer Hinweis: Die API hat den Browserauftrag als abgebrochen gemeldet.',
     'provider_failed': 'Technischer Hinweis: Die API hat keinen genaueren Fehlernachweis geliefert.',
     'api': 'Technischer Hinweis: API-Fehler.'
-}.get(run.error_category, 'Technischer Ausgang nicht naeher bestimmbar.') }}</p>{% endif %}
+}.get(run.error_category, 'Technischer Ausgang nicht näher bestimmbar.') }}</p>{% endif %}
 {% if run.browser_calls is not none %}<p>Beobachtete Browseraktionen: {{ run.browser_calls }}</p>{% endif %}
 {% if run.state == 'closed' %}<p>Die Bereinigung dieses Tests ist abgeschlossen.</p>{% endif %}
 </section>
 {% endif %}
 {% if run.agent_report and not (run.auth_progress or '').startswith('agent_') %}
-<p>Ungepruefte Agentenmeldung: {{ {
+<p>Ungeprüfte Agentenmeldung: {{ {
     'signed_in': 'Eine angemeldete Ansicht wurde beobachtet.',
     'not_signed_in': 'Die Anmeldung wurde nicht abgeschlossen.',
     'access_blocked': 'Der Zugriff wurde blockiert.',
     'form_missing': 'Die Anmeldemaske wurde nicht gefunden.',
-    'auth_unavailable': 'Der Anmeldemechanismus war nicht verfuegbar.',
-    'unsupported': 'Die Anmeldemethode wurde nicht unterstuetzt.',
-    'cart_ready': 'Alle drei Warenkorbpositionen mit den Zielmengen wurden beobachtet. Bitte auf deinem Geraet nachpruefen.',
-    'cart_partial': 'Der Warenkorb ist nur teilweise vorbereitet. Bitte vorhandene Positionen vor einem weiteren Versuch pruefen.',
+    'auth_unavailable': 'Der Anmeldemechanismus war nicht verfügbar.',
+    'unsupported': 'Die Anmeldemethode wurde nicht unterstützt.',
+    'cart_ready': 'Alle drei Warenkorbpositionen mit den Zielmengen wurden beobachtet. Bitte auf deinem Gerät nachprüfen.',
+    'cart_partial': 'Der Warenkorb ist nur teilweise vorbereitet. Bitte vorhandene Positionen vor einem weiteren Versuch prüfen.',
     'cart_conflict': 'Vorhandene Mengen widersprechen den Zielmengen. Es wurde keine automatische Mengenreduktion angefordert.',
-    'product_unavailable': 'Eine exakte Testvariante war nicht verfuegbar.',
+    'product_unavailable': 'Eine exakte Testvariante war nicht verfügbar.',
     'account_not_verified': 'Das angemeldete Haushaltskonto ist nicht ausreichend nachgewiesen.',
+    'login_rejected': 'Die Webseite hat die Anmeldung abgelehnt. Bitte die Zugangsdaten direkt bei Galaxus prüfen.',
+    'verification_required': 'Eine zusätzliche Bestätigung konnte nicht abgeschlossen werden.',
+    'login_incomplete': 'Der mehrstufige Anmeldeablauf konnte nicht abgeschlossen werden.',
+    'redirect_pending': 'Die Rückleitung von der Anmeldung zum Shop wurde nicht abgeschlossen.',
     'unknown': 'Kein eindeutiger Abschlussgrund.'
-}.get(run.agent_report, 'Kein eindeutiger Abschlussgrund.') }} Diese Meldung ist kein unabhaengiger Nachweis.</p>
+}.get(run.agent_report, 'Kein eindeutiger Abschlussgrund.') }} Diese Meldung ist kein unabhängiger Nachweis.</p>
 {% endif %}
 {% if run.task_kind == 'cart' %}
-<section aria-label="Warenkorb auf deinem Geraet pruefen">
-<h2>Auf deinem Geraet pruefen</h2>
-<p>Oeffne <a href="https://www.galaxus.ch" target="_blank" rel="noopener noreferrer">Galaxus</a>, melde dich im selben gemeinsamen Konto an und oeffne den Warenkorb. Es wurde keine Bestellung angefordert.</p>
+<section aria-label="Warenkorb auf deinem Gerät prüfen">
+<h2>Auf deinem Gerät prüfen</h2>
+<p>Öffne <a href="https://www.galaxus.ch" target="_blank" rel="noopener noreferrer">Galaxus</a>, melde dich im selben gemeinsamen Konto an und öffne den Warenkorb. Es wurde keine Bestellung angefordert.</p>
 <ul>{% for product in shop_products %}<li>{{ product.quantity }} × {{ product.name }}, {{ product.package }} ({{ product.id }})</li>{% endfor %}</ul>
-{% if run.device_verified_at %}<p><strong>Von dir auf deinem Geraet bestaetigt.</strong> Dies ist deine manuelle Pruefung des gemeinsamen Warenkorbs.</p>
+{% if run.device_verified_at %}<p><strong>Von dir auf deinem Gerät bestätigt.</strong> Dies ist deine manuelle Prüfung des gemeinsamen Warenkorbs.</p>
 {% elif run.state == 'closed' %}
 <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label><input type="checkbox" name="cart_verified" value="yes" required> Ich habe im selben Konto alle drei exakten Artikel und Gesamtmengen 2/1/1 auf meinem Geraet gesehen.</label>
-<button class="button" type="submit" name="action" value="verify_cart">Warenkorbpruefung bestaetigen</button></form>
-{% else %}<p>Bitte bis zum Ende des Tests warten. Bei einem Abbruch koennen bereits einzelne Positionen vorhanden sein.</p>{% endif %}
+<label><input type="checkbox" name="cart_verified" value="yes" required> Ich habe im selben Konto alle drei exakten Artikel und Gesamtmengen 2/1/1 auf meinem Gerät gesehen.</label>
+<button class="button" type="submit" name="action" value="verify_cart">Warenkorbprüfung bestätigen</button></form>
+{% else %}<p>Bitte bis zum Ende des Tests warten. Bei einem Abbruch können bereits einzelne Positionen vorhanden sein.</p>{% endif %}
 </section>
 {% endif %}
 <p><a class="button button--outline" href="{{ url_for('shop_login.login', run_id=run.id) }}">Status aktualisieren</a></p>

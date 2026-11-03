@@ -12,9 +12,9 @@
   const say = text => { if (notice) notice.textContent = text; };
   function savedMessage(snapshot) {
     const time = new Date(snapshot.saved_at).toLocaleString('de-CH');
-    say(offlineState === 'ready' ? 'Offline-Liste auf diesem Geraet bereit: ' + time + '.' :
+    say(offlineState === 'ready' ? 'Offline-Liste auf diesem Gerät bereit: ' + time + '.' :
       offlineState === 'preparing' ? 'Liste gespeichert. Offline-Start wird noch vorbereitet.' :
-        'Liste gespeichert, aber Offline-Start ist hier derzeit nicht verfuegbar. Bitte spaeter online erneut oeffnen.');
+        'Liste gespeichert, aber Offline-Start ist hier derzeit nicht verfügbar. Bitte später online erneut öffnen.');
   }
   const clear = () => {
     blocked = true;
@@ -23,7 +23,7 @@
   try {
     if (owner) generation = store.claim(localStorage, owner);
     else if (!offlinePage) store.clear(localStorage);
-  } catch { say('Offline-Speicherung ist in diesem Browser nicht verfuegbar.'); }
+  } catch { say('Offline-Speicherung ist in diesem Browser nicht verfügbar.'); }
 
   document.querySelectorAll('form[action="/logout"]').forEach(form => {
     form.addEventListener('submit', clear, { capture: true });
@@ -58,7 +58,7 @@
     document.querySelector('#offline-clear').hidden = !valid;
     document.querySelector('#offline-heading').textContent = valid ? snapshot.household : 'Einkaufsliste offline';
     document.querySelector('#offline-time').textContent = valid ? 'Gespeicherter Stand: ' +
-      new Date(snapshot.saved_at).toLocaleString('de-CH') + '. Seitdem kann sich die Liste geaendert haben.' : '';
+      new Date(snapshot.saved_at).toLocaleString('de-CH') + '. Seitdem kann sich die Liste geändert haben.' : '';
     if (!valid) return;
     if (!snapshot.items.length) {
       const empty = document.createElement('li');
@@ -98,7 +98,7 @@
         }
       }).catch(() => {
       offlineState = 'unavailable';
-      say('Offline-Start ist noch nicht verfuegbar. Bitte spaeter online erneut oeffnen.');
+      say('Offline-Start ist noch nicht verfügbar. Bitte später online erneut öffnen.');
     });
   }
   const button = document.querySelector('#install-app');

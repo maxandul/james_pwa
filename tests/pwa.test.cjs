@@ -58,7 +58,7 @@ function worker() {
       saved.push(...paths.map(request => new URL(request.url).pathname + new URL(request.url).search));
     } }),
       match: async path => { matched.push(path); return 'cached shell'; },
-      keys: async () => ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'james-shell-v7', 'other-app'],
+      keys: async () => ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'james-shell-v7', 'james-shell-v8', 'james-shell-v9', 'other-app'],
       delete: async key => deleted.push(key) },
   });
   vm.runInContext(fs.readFileSync('james/static/sw.js', 'utf8'), context);
@@ -88,7 +88,7 @@ test('offline list navigation falls back only to the anonymous shell', async () 
 test('worker upgrades clean only obsolete James shell caches', async () => {
   const w = worker(); let done;
   w.listeners.activate({ waitUntil: promise => { done = promise; } }); await done;
-  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6']);
+  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'james-shell-v7', 'james-shell-v8']);
 });
 
 function page(storage, offline, fetch, serviceWorker) {
@@ -135,5 +135,5 @@ test('offline ready is announced only after shell installation completes', async
   await new Promise(done => setImmediate(done));
   assert.match(elements.get('#offline-save-status').textContent, /noch vorbereitet/);
   ready({}); await new Promise(done => setImmediate(done));
-  assert.match(elements.get('#offline-save-status').textContent, /Offline-Liste auf diesem Geraet bereit/);
+  assert.match(elements.get('#offline-save-status').textContent, /Offline-Liste auf diesem Gerät bereit/);
 });

@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% from '_offer_form.html' import offer_form with context %}
 {% block content %}
-<section class="page-heading"><div><p class="eyebrow">PRODUKTE UND EINKAUFSORTE</p><h1>{{ item.name }}</h1><p class="muted">Ein Haushaltsartikel, mehrere passende Produkte. Pro Einkaufsort koennt ihr eine Variante bevorzugen.</p></div><a class="button button--quiet" href="{{ url_for('main.item_edit', item_id=item.id, **home_context) }}">Zum Artikel</a></section>
+<section class="page-heading"><div><p class="eyebrow">PRODUKTE UND EINKAUFSORTE</p><h1>{{ item.name }}</h1><p class="muted">Ein Haushaltsartikel, mehrere passende Produkte. Pro Einkaufsort könnt ihr eine Variante bevorzugen.</p></div><a class="button button--quiet" href="{{ url_for('main.item_edit', item_id=item.id, **home_context) }}">Zum Artikel</a></section>
 {% if error %}<div class="notice notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if item.archived %}<section class="panel"><p>Dieser Artikel ist archiviert. Zum Bearbeiten zuerst wieder aktivieren.</p></section>{% else %}
-<section class="panel form-panel"><h2>{{ 'Produkt bearbeiten' if editing else 'Produkt hinzufuegen' }}</h2>
+<section class="panel form-panel"><h2>{{ 'Produkt bearbeiten' if editing else 'Produkt hinzufügen' }}</h2>
 {% set values = request.form if request.method == 'POST' and request.endpoint == 'products.manage' else {} %}
 <form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% if editing %}<input type="hidden" name="version" value="{{ values.get('version', editing.version) }}">{% endif %}
 <label>Produktname<input name="product_name" maxlength="200" required value="{{ values.get('product_name', editing.name if editing else '') }}" placeholder="Zum Beispiel Bio-Vollmilch"></label>
@@ -17,5 +17,5 @@
 {% for offer in offers if offer.product_id == product.id %}<details class="offer-details" {% if failed_offer_id is defined and failed_offer_id == offer.id %}open{% endif %}><summary>{{ offer.source.name }} · {{ 'Nicht mehr verwendet' if not offer.active else 'Bevorzugt' if offer.preferred else 'Alternative' }} · 1 Packung = {{ offer.units_per_pack|amount }} {{ item.unit }}</summary>{% if offer.url %}<a class="button button--quiet" href="{{ offer.url }}" target="_blank" rel="noopener noreferrer">Produkt im Shop ansehen</a>{% endif %}{% if not item.archived %}{{ offer_form(product, offer) }}{% endif %}</details>{% endfor %}
 {% if not item.archived %}<details class="offer-details" {% if failed_product_id is defined and failed_product_id == product.id and failed_offer_id is none %}open{% endif %}><summary>Weiteren Einkaufsort zuordnen</summary>{{ offer_form(product) }}</details>{% endif %}
 </section>{% else %}<section class="empty"><h2>Noch kein konkretes Produkt hinterlegt.</h2><p>Erfasst zum Beispiel eure bevorzugte Coop- und Migros-Milch. Euer Bedarf bleibt einmal beim Artikel {{ item.name }}.</p></section>{% endfor %}
-<p class="small muted">Shoplinks oeffnen das Produkt. Es wird kein Warenkorb befuellt und nichts bestellt. Preise und Lieferbarkeit werden hier noch nicht abgefragt.</p>
+<p class="small muted">Shoplinks öffnen das Produkt. Es wird kein Warenkorb befüllt und nichts bestellt. Preise und Lieferbarkeit werden hier noch nicht abgefragt.</p>
 {% endblock %}

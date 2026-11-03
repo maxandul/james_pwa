@@ -15,6 +15,6 @@ if (sharePlan && navigator.share) {
   sharePlan.hidden = false;
   sharePlan.addEventListener('click', async () => {
     try { await navigator.share({title: 'Einkauf mit James', text: planText.value}); }
-    catch (error) { if (error.name !== 'AbortError') planStatus.textContent = 'Teilen nicht moeglich. Du kannst die Liste kopieren.'; }
+    catch (error) { if (error.name !== 'AbortError') planStatus.textContent = 'Teilen nicht möglich. Du kannst die Liste kopieren.'; }
   });
 }

@@ -36,13 +36,13 @@ def test_catalogue_has_real_choices_and_manages_household_names(app, client):
     login(client)
     html = client.get(f'/items/{item_id}/edit').text
     assert '<select name="category"' in html and 'Migros' in html and 'Tierbedarf' in html
-    response = client.post('/catalogue', data={'csrf_token': csrf(client, '/catalogue'), 'kind': 'category', 'name': 'Tiefkuehlkost'})
+    response = client.post('/catalogue', data={'csrf_token': csrf(client, '/catalogue'), 'kind': 'category', 'name': 'Tiefkühlkost'})
     assert response.status_code == 302
-    assert 'Tiefkuehlkost' in client.get('/items/new').text
-    response = client.post('/catalogue', data={'csrf_token': csrf(client, '/catalogue'), 'kind': 'category', 'name': 'TIEFKUEHLKOST'})
+    assert 'Tiefkühlkost' in client.get('/items/new').text
+    response = client.post('/catalogue', data={'csrf_token': csrf(client, '/catalogue'), 'kind': 'category', 'name': 'TIEFKÜHLKOST'})
     assert response.status_code == 409
     with app.app_context():
-        assert len([entry for entry in entries(home, 'category') if entry.name_key == 'tiefkuehlkost']) == 1
+        assert len([entry for entry in entries(home, 'category') if entry.name_key == 'tiefkühlkost']) == 1
 
 
 def test_rename_updates_references_and_rejects_stale_forms(app, client):
@@ -131,7 +131,7 @@ def test_preferred_product_and_pack_rounding_are_shop_specific(app, client):
         assert db.session.scalar(select(ShopOffer).where(ShopOffer.product_id == first, ShopOffer.source_id == migros)).preferred
     login(client)
     coop_page, migros_page = client.get('/shopping?source=Coop').text, client.get('/shopping?source=Migros').text
-    assert 'Variante B' in coop_page and '2 Packung(en)' in coop_page and 'mehr als benoetigt' in coop_page
+    assert 'Variante B' in coop_page and '2 Packung(en)' in coop_page and 'mehr als benötigt' in coop_page
     assert 'Variante A' in migros_page and 'Variante B' not in migros_page
 
 
@@ -141,7 +141,7 @@ def test_multiple_unpreferred_variants_require_a_choice(app, client):
         offer(app, home, item_id, variant(app, home, item_id, name), source(app, home, 'Coop'))
     login(client)
     action(client, item_id, 'replenish', 1)
-    assert 'Mehrere Produkte verfuegbar' in client.get('/shopping?source=Coop').text
+    assert 'Mehrere Produkte verfügbar' in client.get('/shopping?source=Coop').text
 
 
 @pytest.mark.parametrize('quantity,url', [('0',''), ('NaN',''), ('1.0001',''), ('1','javascript:alert(1)'), ('1','https://user:secret@example.test/')], ids=['zero','nan','precision','script','credentials'])

@@ -29,18 +29,18 @@ def run_tool(args, deadline):
             output.seek(0)
             result = output.read(256001)
         if len(result) > 256000:
-            raise ValueError("Der Beleg ist zu umfangreich. Bitte einen kuerzeren Ausschnitt verwenden.")
+            raise ValueError("Der Beleg ist zu umfangreich. Bitte einen kürzeren Ausschnitt verwenden.")
         return result.decode("utf-8", errors="replace")
     except FileNotFoundError:
-        raise ValueError("Die lokale Texterkennung ist hier nicht installiert. Du kannst den Belegtext einfuegen.") from None
+        raise ValueError("Die lokale Texterkennung ist hier nicht installiert. Du kannst den Belegtext einfügen.") from None
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        raise ValueError("Der Beleg konnte nicht gelesen werden. Bitte ein klares Foto, ein ungeschuetztes PDF oder Text verwenden.") from None
+        raise ValueError("Der Beleg konnte nicht gelesen werden. Bitte ein klares Foto, ein ungeschütztes PDF oder Text verwenden.") from None
 
 
 def extract_text(data):
     deadline = time.monotonic() + 20
     if len(data) > 10 * 1024 * 1024:
-        raise ValueError("Die Datei darf hoechstens 10 MB gross sein.")
+        raise ValueError("Die Datei darf höchstens 10 MB gross sein.")
     pdf = data.startswith(b"%PDF-")
     image = data.startswith(b"\x89PNG\r\n\x1a\n") or data.startswith(b"\xff\xd8\xff")
     if not pdf and not image:
@@ -53,7 +53,7 @@ def extract_text(data):
             info = run_tool(["pdfinfo", str(path)], deadline)
             pages = re.search(r"^Pages:\s+(\d+)", info, re.M)
             if not pages or not 1 <= int(pages[1]) <= 3:
-                raise ValueError("Bitte einen Beleg mit hoechstens drei Seiten verwenden.")
+                raise ValueError("Bitte einen Beleg mit höchstens drei Seiten verwenden.")
             texts = []
             for number in range(1, int(pages[1]) + 1):
                 page_text = run_tool(["pdftotext", "-f", str(number), "-l", str(number), "-layout", str(path), "-"], deadline)
@@ -73,7 +73,7 @@ def clean_receipt_text(text):
     text = normalize("NFKC", text).replace("\x00", "").replace("\x0c", "\n").strip()
     text = "".join(c for c in text if c in "\n\t" or ord(c) >= 32)
     if not text or len(text) > MAX_TEXT:
-        raise ValueError("Bitte einen lesbaren Belegtext mit hoechstens 24'000 Zeichen verwenden.")
+        raise ValueError("Bitte einen lesbaren Belegtext mit höchstens 24'000 Zeichen verwenden.")
     return text
 
 
@@ -102,7 +102,7 @@ def parse_lines(text):
             continue
         rows.append({"label": label, "raw": raw[:300], "quantity": amount if 1 <= amount <= 999 else 1})
         if len(rows) > MAX_ROWS:
-            raise ValueError("Mehr als 60 moegliche Zeilen. Bitte den Beleg in kleinere Abschnitte aufteilen.")
+            raise ValueError("Mehr als 60 mögliche Zeilen. Bitte den Beleg in kleinere Abschnitte aufteilen.")
     if not rows:
-        raise ValueError("Keine moeglichen Artikel erkannt. Bitte den Belegtext pruefen oder zeilenweise einfuegen.")
+        raise ValueError("Keine möglichen Artikel erkannt. Bitte den Belegtext prüfen oder zeilenweise einfügen.")
     return rows

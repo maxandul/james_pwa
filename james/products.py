@@ -6,7 +6,7 @@ from sqlalchemy import select
 from .assortment import (CATEGORIES, SOURCES, entries, item_offers, item_products, key,
     save_entry, save_offer, save_product)
 from .extensions import db
-from .models import HouseholdItem, Product
+from .models import HouseholdItem, Product, Household
 from .services import Conflict
 from .views import household_required
 
@@ -29,17 +29,29 @@ def catalogue_choices():
         entry = next((entry for entry in catalogues[kind]
             if entry.name_key == name_key or name_key in entry.aliases), None)
         return entry.name if entry else str(name or "")
-    return {"category_names": sorted({label("category", name) for name in CATEGORIES} | {entry.name for entry in categories}),
-        "source_names": sorted({label("source", name) for name in SOURCES} | {entry.name for entry in sources}),
+    home = g.household
+    def choices(kind, defaults, records):
+        all_records = entries(home.id, kind, include_inactive=True)
+        blocked = {value for value in home.settings.get('catalogue_deleted', [])}
+        blocked |= {f'{kind}:{name}' for entry in all_records if not entry.active for name in (entry.name_key, *entry.aliases)}
+        return sorted({label(kind, name) for name in defaults if f'{kind}:{key(name)}' not in blocked} | {entry.name for entry in records})
+    return {"category_names": choices('category', CATEGORIES, categories),
+        "source_names": choices('source', SOURCES, sources),
         "purchase_sources": sources, "catalogue_label": label}
 
 
 @products.route("/catalogue", methods=["GET", "POST"])
 @household_required
 def catalogue():
+    if g.membership.role != 'owner':
+        abort(403)
+    if request.method == 'GET':
+        return redirect(url_for('settings.catalogue', kind='category'))
     error, status = None, 200
     if request.method == "POST":
         try:
+            from .administration import locked_membership
+            locked_membership()
             raw_id = request.form.get("entry_id")
             try:
                 entry_id = int(raw_id) if raw_id else None
@@ -79,7 +91,7 @@ def manage(item_id, product_id=None):
         try:
             save_product(g.household.id, item_id, request.form, product_id)
             db.session.commit()
-            flash("Produkt gespeichert. Bestand und Einkaufsliste bleiben unveraendert.", "success")
+            flash("Produkt gespeichert. Bestand und Einkaufsliste bleiben unverändert.", "success")
             return redirect(url_for("products.manage", item_id=item_id))
         except ValueError as exc:
             db.session.rollback()

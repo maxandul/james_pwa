@@ -56,7 +56,7 @@ def create_plan(household_id, source_id, review, data):
     lock_household(household_id)
     source = db.session.scalar(select(PurchaseSource).where(PurchaseSource.id == source_id,
         PurchaseSource.household_id == household_id).execution_options(populate_existing=True))
-    if not source:
+    if not source or not source.active:
         abort(404)
     existing = db.session.scalar(select(PurchasePlan).where(PurchasePlan.household_id == household_id,
         PurchasePlan.request_id == review['request_id']))
@@ -67,10 +67,10 @@ def create_plan(household_id, source_id, review, data):
         requested = {int(key.removeprefix('include_')) for key, value in data.items()
             if key.startswith('include_') and value == '1'}
     except ValueError:
-        raise ValueError('Bitte gueltige Artikel auswaehlen.') from None
+        raise ValueError('Bitte gültige Artikel auswählen.') from None
     rows = candidates(household_id, source)
     if not requested.issubset({item.id for item, _, _ in rows}):
-        raise Conflict('Ein ausgewaehlter Artikel ist nicht mehr offen oder fuer diesen Laden verfuegbar. Bitte neu pruefen.')
+        raise Conflict('Ein ausgewählter Artikel ist nicht mehr offen oder für diesen Laden verfügbar. Bitte neu prüfen.')
     lines = []
     for item, need, available in rows:
         if data.get(f'include_{item.id}') != '1':
@@ -78,17 +78,17 @@ def create_plan(household_id, source_id, review, data):
         version_matches(item, review.get('versions', {}).get(str(item.id)))
         quantity = positive_int(data.get(f'quantity_{item.id}'))
         if quantity > available:
-            raise Conflict('Ein Teil der Menge wurde inzwischen eingeplant oder erledigt. Bitte neu pruefen.')
+            raise Conflict('Ein Teil der Menge wurde inzwischen eingeplant oder erledigt. Bitte neu prüfen.')
         choice = selected_offer([offer for offer in item_offers(item) if offer.active], source.name, quantity)
         offer = choice.get('offer')
         if review.get('offers', {}).get(str(item.id)) != [[entry.id, entry.version, entry.product.version] for entry in item_offers(item)]:
-            raise Conflict('Die Produktzuordnung wurde inzwischen geaendert. Bitte neu pruefen.')
+            raise Conflict('Die Produktzuordnung wurde inzwischen geändert. Bitte neu prüfen.')
         lines.append({'item_id': item.id, 'name': item.name, 'unit': item.unit,
             'quantity': quantity, 'reserved': quantity,
             'product': offer.product.name if offer else '', 'url': offer.url if offer else '',
             'units_per_pack': str(offer.units_per_pack) if offer else None})
     if not lines:
-        raise ValueError('Bitte mindestens einen noch verfuegbaren Artikel auswaehlen.')
+        raise ValueError('Bitte mindestens einen noch verfügbaren Artikel auswählen.')
     plan = PurchasePlan(household_id=household_id, source_id=source.id,
         request_id=review['request_id'], lines=lines)
     db.session.add(plan)
@@ -105,9 +105,9 @@ def change_plan(household_id, plan_id, version, action, reference=''):
     version_matches(plan, version)
     allowed = {'ordered': ('draft',), 'closed': ACTIVE, 'cancelled': ACTIVE}
     if action not in allowed or plan.state not in allowed[action]:
-        raise Conflict('Diese Statusaenderung ist nicht mehr moeglich. Bitte neu laden.')
+        raise Conflict('Diese Statusänderung ist nicht mehr möglich. Bitte neu laden.')
     if len(reference) > 100 or any(ord(c) < 32 for c in reference):
-        raise ValueError('Bitte eine kurze Bestellreferenz ohne Zeilenumbrueche verwenden.')
+        raise ValueError('Bitte eine kurze Bestellreferenz ohne Zeilenumbrüche verwenden.')
     plan.state = action
     if action == 'ordered':
         plan.reference = reference.strip()
@@ -123,5 +123,5 @@ def line_description(line):
         covered = packs * units
         text += f" – {line['product']}: {packs} Packung(en), {covered.normalize():f} {line['unit']}"
     else:
-        text += ' – Produkt im Shop noch auswaehlen'
+        text += ' – Produkt im Shop noch auswählen'
     return text

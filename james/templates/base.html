@@ -9,10 +9,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='12') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='13') }}">
   <script src="{{ url_for('static', filename='app.js', v='11') }}" defer></script>
   <script src="/static/offline-store.js?v=1" defer></script>
-  <script src="/static/pwa.js?v=3" defer></script>
+  <script src="/static/pwa.js?v=4" defer></script>
 </head>
 <body class="{{ 'app-shell' if current_user.is_authenticated and g.membership is defined and g.membership else 'auth-shell' }}" data-offline-owner="{{ offline_owner }}">
   <a class="skip-link" href="#main-content">Zum Inhalt</a>
@@ -24,20 +24,19 @@
   </header>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
   {% set in_shopping = request.endpoint == 'main.shopping' or request.blueprint in ['plans', 'receipts'] %}
-  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint == 'shop_login' %}
+  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] %}
   <nav class="nav" aria-label="Hauptnavigation">
     <a {% if not in_shopping and not in_more %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
     <a {% if in_shopping %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}"><span aria-hidden="true">☷</span>Einkauf</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
-      <a href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte</a>
-      {% if g.membership.role == 'owner' %}<a href="{{ url_for('main.household') }}">Zusammen nutzen</a>{% endif %}
+      <a href="{{ url_for('settings.index') }}">App-Verwaltung</a>
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}
     </div></details>
   </nav>
   {% endif %}
-  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}" data-list-url="{{ home_url() if request.endpoint == 'main.home' else url_for('main.shopping', source=request.args.get('source') or None) }}"{% endif %}>
+  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}" data-list-url="{{ home_url() if request.endpoint == 'main.home' else url_for('main.shopping', source=selected_source or None, view_id=selected_view.id if selected_view else 0) }}"{% endif %}>
     {% include '_breadcrumbs.html' %}
-    <div id="offline-banner" class="notice notice--error" role="status" hidden>Keine Verbindung. Aenderungen koennen gerade nicht gespeichert werden.</div>
+    <div id="offline-banner" class="notice notice--error" role="status" hidden>Keine Verbindung. Änderungen können gerade nicht gespeichert werden.</div>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endwith %}
     {% if undo_event %}
     <div class="undo" data-undo-item="{{ undo_event.item.id }}"><span>{{ undo_event.item.name }} · gespeichert</span><form method="post" action="{{ url_for('main.undo', activity_id=undo_event.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_id" value="{{ request_id() }}"><input type="hidden" name="version" value="{{ undo_event.version_after }}"><input type="hidden" name="return_to" value="{{ 'shopping' if request.endpoint == 'main.shopping' else 'home' }}">{{ return_fields() }}<button class="button button--outline" type="submit">Rückgängig</button></form></div>
@@ -45,18 +44,18 @@
     {% block content %}{% endblock %}
   </main>
   <div id="action-feedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
-  <section class="pwa-help" aria-label="App und Offline-Nutzung"><p id="offline-save-status" class="small muted" role="status"></p><button id="install-app" class="button button--outline" type="button" hidden>James als App installieren</button><details><summary>App installieren und Liste offline nutzen</summary><p class="small muted">Im Browsermenue kannst du James installieren oder zum Startbildschirm hinzufuegen. Die Einkaufsliste wird auf diesem Geraet gespeichert, wenn du James online und angemeldet oeffnest. Beim Abmelden wird sie entfernt. Geraetespeicher kann vom Browser geloescht werden.</p><a class="button button--quiet" href="/offline">Gespeicherte Einkaufsliste ansehen</a></details></section>
+  <section class="pwa-help" aria-label="App und Offline-Nutzung"><p id="offline-save-status" class="small muted" role="status"></p><button id="install-app" class="button button--outline" type="button" hidden>James als App installieren</button><details><summary>App installieren und Liste offline nutzen</summary><p class="small muted">Im Browsermenü kannst du James installieren oder zum Startbildschirm hinzufügen. Die Einkaufsliste wird auf diesem Gerät gespeichert, wenn du James online und angemeldet öffnest. Beim Abmelden wird sie entfernt. Gerätespeicher kann vom Browser gelöscht werden.</p><a class="button button--quiet" href="/offline">Gespeicherte Einkaufsliste ansehen</a></details></section>
   <footer class="footer">Weniger dran denken. Mehr zuhause sein.<span>James · Erste Version</span></footer>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
   <a id="jayjay-launcher" class="jayjay-launcher" href="{{ url_for('chat.index') }}" aria-label="Mit JayJay sprechen" aria-haspopup="dialog" aria-controls="jayjay-dialog"><span class="jayjay-mark" aria-hidden="true">j.</span><span>JayJay</span></a>
   <dialog id="jayjay-dialog" class="jayjay" aria-labelledby="jayjay-title">
-    <header class="jayjay-header"><div><p class="eyebrow">EUER BUTLER</p><h2 id="jayjay-title">JayJay ist fuer euch da.</h2></div><button id="jayjay-close" class="button button--quiet" type="button" aria-label="Chat schliessen">✕</button></header>
+    <header class="jayjay-header"><div><p class="eyebrow">EUER BUTLER</p><h2 id="jayjay-title">JayJay ist für euch da.</h2></div><button id="jayjay-close" class="button button--quiet" type="button" aria-label="Chat schliessen">✕</button></header>
     <div id="jayjay-content" class="jayjay-content" aria-busy="false"></div>
     <p id="jayjay-status" class="jayjay-status small" role="status"></p>
     <button id="jayjay-reload" class="button button--outline" type="button" hidden>Verlauf neu laden</button>
     <button id="jayjay-refresh" class="button button--outline" type="button" hidden>App-Ansicht aktualisieren</button>
   </dialog>
-  <script src="{{ url_for('static', filename='jayjay.js', v='2') }}" defer></script>
+  <script src="{{ url_for('static', filename='jayjay.js', v='3') }}" defer></script>
   {% endif %}
 </body>
 </html>

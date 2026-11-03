@@ -483,7 +483,7 @@ def test_old_closed_test_does_not_claim_success(client, app, prepared):
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'kein genauer Ergebnisnachweis' in page
-    assert 'erfolgreicher Login ist nicht bestaetigt' in page
+    assert 'erfolgreicher Login ist nicht bestätigt' in page
     assert 'beendet oder wurde abgebrochen' not in page
 
 
@@ -561,7 +561,7 @@ def test_no_authentication_is_not_hidden_by_normal_turn_completion(app, client, 
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'Ungepruefte Agentenmeldung' in page and 'nicht verfuegbar' in page
+    assert 'Ungeprüfte Agentenmeldung' in page and 'nicht verfügbar' in page
     assert 'synthetic-account-password' not in page
 
 
@@ -586,7 +586,7 @@ def test_old_completed_run_without_authentication_is_explicit(app, client, prepa
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'hinterlegten Zugangsdaten wurde nicht ausgefuehrt' in page
+    assert 'hinterlegten Zugangsdaten wurde nicht ausgeführt' in page
 
 
 def test_untrusted_report_is_not_stored(app, prepared):
@@ -611,7 +611,7 @@ def test_signed_in_claim_without_authentication_is_not_login_success(app, client
         db.session.commit()
     page = client.get(f'/shop-login/{identifier}').text
     assert 'ohne registrierte Anmeldeanforderung' in page
-    assert 'Ungepruefte Agentenmeldung' in page and 'kein Nachweis' in page
+    assert 'Ungeprüfte Agentenmeldung' in page and 'kein Nachweis' in page
 
 
 def test_observed_origin_denial_takes_precedence_over_agent_guess(app, prepared):
@@ -640,7 +640,7 @@ def test_verified_galaxus_identity_origin_supports_registered_authentication(app
     api_client.beta.agents.sessions.events.create.assert_called_once()
     with app.app_context():
         row = db.session.get(ShopLogin, identifier)
-        assert row.auth_progress == 'credentials_submitted'
+        assert row.auth_progress == 'both_submitted'
 
 
 @pytest.mark.parametrize('origin', ['https://id.digitecgalaxus.ch.evil.example',
@@ -759,7 +759,7 @@ def test_device_verification_is_private_explicit_idempotent_and_does_not_call_ap
     assert client.post(path, data=payload).status_code == 302
     with app.app_context():
         assert db.session.get(ShopLogin, identifier).device_verified_at == first
-    assert 'Von dir auf deinem Geraet bestaetigt' in client.get(path).text
+    assert 'Von dir auf deinem Gerät bestätigt' in client.get(path).text
     member = app.test_client()
     login(member, 'member@example.test')
     assert member.post(path, data={'csrf_token': csrf(member, '/'), 'action': 'verify_cart', 'cart_verified': 'yes'}).status_code == 404
@@ -816,7 +816,7 @@ def test_extra_attempt_requires_fresh_consent_and_stops_after_two(app, client, m
         SHOP_CART_EXTRA_ATTEMPT_DATE=utcnow().date().isoformat())
     login(client)
     monkeypatch.setattr('james.shop_login.api', lambda *a: pytest.fail('Queueing must never start a paid session'))
-    assert 'zusaetzlicher Warenkorbversuch' in client.get('/shop-login').text
+    assert 'zusätzlicher Warenkorbversuch' in client.get('/shop-login').text
     data = {'csrf_token': csrf(client, '/shop-login'), 'task_kind': 'cart', 'cart_consent': 'yes'}
     assert client.post('/shop-login', data={**data, 'start_request_id': str(uuid4())}).status_code == 400
     data['cost_consent'] = 'yes'
@@ -835,3 +835,80 @@ def test_extra_attempt_requires_fresh_consent_and_stops_after_two(app, client, m
     assert client.post('/shop-login', data={**data, 'start_request_id': first_id}).status_code == 302
     with app.app_context():
         assert len(db.session.scalars(select(ShopLogin)).all()) == 2
+
+
+@pytest.mark.parametrize('repeat_email', [False, True])
+def test_multistep_handler_preserves_progress_and_submits_first_password(app, prepared, monkeypatch, repeat_email):
+    from types import SimpleNamespace as NS
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import login_handler
+    identifier, _, schema = prepared
+    email = {'id': 'email', 'label': 'E-Mail', 'type': 'email', 'required': True}
+    password = {'id': 'password', 'label': 'Passwort', 'type': 'password', 'required': True}
+    schema['fields'] = [email]
+    monkeypatch.setattr('james.shop_login_worker.challenge', lambda run: schema)
+    handler = login_handler(app, identifier)
+    api_client = MagicMock()
+    def stage(request_id):
+        handler(NS(request=NS(credential_origin='https://www.galaxus.ch'),
+            request_id=request_id, turn_id='turn-1'), api_client, 'synthetic-session')
+    stage('email-step')
+    with app.app_context():
+        assert db.session.get(ShopLogin, identifier).auth_progress == 'email_submitted'
+    schema['fields'] = [email, password] if repeat_email else [password]
+    stage('password-step')
+    with app.app_context():
+        assert db.session.get(ShopLogin, identifier).auth_progress == 'both_submitted'
+    calls = api_client.beta.agents.sessions.events.create.call_args_list
+    assert len(calls) == 2
+    assert calls[1].kwargs['events'][0]['request_id'] == 'password-step'
+    assert any(f['field_id'] == 'password' for f in calls[1].kwargs['events'][0]['response']['fields'])
+
+
+def test_second_password_and_email_only_retry_still_require_manual_input(app):
+    from james.shop_account import credential_response
+    email = {'id': 'email', 'label': 'E-Mail', 'type': 'email', 'required': True}
+    password = {'id': 'password', 'label': 'Passwort', 'type': 'password', 'required': True}
+    for fields, used in [([email], {'email'}), ([password], {'password'}),
+                          ([email, password], {'email', 'password'}), ([email, password], {'password'})]:
+        assert credential_response({'credential_origin': 'https://www.galaxus.ch',
+            'fields': fields, 'options': []}, app.config, used) is None
+
+
+def test_status_poll_is_private_read_only_and_does_not_fetch_credentials(app, client, prepared, monkeypatch):
+    identifier, _, _ = prepared
+    monkeypatch.setattr('james.shop_login.api', lambda *a: pytest.fail('status must not fetch authentication'))
+    result = client.get(f'/shop-login/{identifier}/status')
+    assert result.status_code == 200
+    assert result.json == {'state': 'pending', 'progress': ''}
+    assert result.headers['Cache-Control'] == 'no-store'
+    other = app.test_client()
+    login(other, 'member@example.test')
+    assert other.get(f'/shop-login/{identifier}/status').status_code == 404
+
+
+def test_status_poll_stops_on_manual_form_and_does_not_claim_password_sent(app, client, prepared):
+    identifier, _, _ = prepared
+    assert b'shop-login-status.js' not in client.get(f'/shop-login/{identifier}').data
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.state, row.auth_progress, row.outcome = 'accepted', 'email_submitted', 'turn_completed'
+        db.session.commit()
+    page = client.get(f'/shop-login/{identifier}').data.decode()
+    assert 'shop-login-status.js' in page
+    assert 'nur die E-Mail' in page
+    assert 'E-Mail und Passwort wurden' not in page
+
+
+@pytest.mark.parametrize('report', ['login_rejected', 'verification_required', 'login_incomplete', 'redirect_pending'])
+def test_precise_login_failure_is_retained_for_login_and_cart(app, prepared, report):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.auth_progress = 'email_submitted'
+        for kind in ('login', 'cart'):
+            row.task_kind = kind
+            db.session.commit()
+            save_result(identifier, {'status': 'turn_completed', 'login_report': report})
+            assert row.agent_report == report
