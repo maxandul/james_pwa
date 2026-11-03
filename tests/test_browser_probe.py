@@ -193,3 +193,88 @@ def test_terminal_failure_stage_is_fixed_metadata_only(tmp_path, event_type, sta
     assert result['status'] == 'failed' and result['failure_stage'] == stage
     assert result['cleanup'] == 'deleted'
     assert 'private-secret' not in str(result)
+
+
+@pytest.mark.parametrize('text', [
+    'JAMES_LOGIN_REPORT=ACCESS_BLOCKED secret-password',
+    'Some private text: JAMES_LOGIN_REPORT=ACCESS_BLOCKED',
+    'JAMES_LOGIN_REPORT=private-password', 'private-password', 'x' * 1000, None,
+])
+def test_login_report_rejects_free_text_and_unknown_values(text):
+    assert module.login_report(text) is None
+
+
+@pytest.mark.parametrize('token,value', list(module.LOGIN_REPORTS.items()))
+def test_login_report_accepts_only_fixed_tokens(token, value):
+    assert module.login_report('JAMES_LOGIN_REPORT=' + token) == value
+
+
+def test_login_report_only_from_completed_main_turn_and_never_raw_text(tmp_path):
+    client, _ = fake_client([
+        NS(type='agent.session.turn.output_text.done', turn_id='child', text='JAMES_LOGIN_REPORT=SIGNED_IN'),
+        NS(type='agent.session.turn.output_text.done', turn_id='main', text='private-password private-account'),
+        NS(type='agent.session.turn.output_text.done', turn_id='main', text='JAMES_LOGIN_REPORT=AUTH_UNAVAILABLE'),
+        NS(type='agent.session.turn.completed', turn=NS(id='main', subagent_id=None)),
+    ])
+    path = tmp_path / 'auth-report.json'
+    result = module.run_task(client, 'https://www.galaxus.ch', path, instructions='test', task='test',
+        authentication_handler=lambda *args: None)
+    assert result['login_report'] == 'auth_unavailable'
+    assert result['model_report'] == ''
+    assert 'private-password' not in path.read_text() and 'private-account' not in path.read_text()
+    assert 'SIGNED_IN' not in path.read_text()
+
+
+def test_conflicting_main_turn_reports_become_unknown(tmp_path):
+    client, _ = fake_client([
+        NS(type='agent.session.turn.output_text.done', turn_id='main', text='JAMES_LOGIN_REPORT=ACCESS_BLOCKED'),
+        NS(type='agent.session.turn.output_text.done', turn_id='main', text='JAMES_LOGIN_REPORT=SIGNED_IN'),
+        NS(type='agent.session.turn.completed', turn=NS(id='main', subagent_id=None)),
+    ])
+    result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'conflict.json',
+        instructions='test', task='test', authentication_handler=lambda *args: None)
+    assert result['login_report'] == 'unknown'
+
+
+def test_denied_extra_origin_is_recorded_without_retaining_its_value(tmp_path):
+    client, sessions = fake_client([
+        NS(type='agent.session.requires_action'),
+        NS(type='agent.session.turn.completed', turn=NS(id='main', subagent_id=None)),
+    ])
+    sessions.retrieve.return_value = NS(required_actions=[NS(type='computer_use_approval_request',
+        request_id='request-origin', request=NS(type='browser_origin_access', origin='https://private-origin.example'))])
+    path = tmp_path / 'origin.json'
+    result = module.run_task(client, 'https://www.galaxus.ch', path,
+        instructions='test', task='test', authentication_handler=lambda *args: None)
+    assert result['origin_access_denied'] is True
+    assert 'private-origin.example' not in path.read_text()
+    decisions = [c.kwargs['events'][0].get('response', {}) for c in sessions.events.create.call_args_list]
+    assert {'type': 'browser_origin_access', 'decision': 'deny'} in decisions
+
+
+def test_only_explicit_additional_login_origin_is_approved(tmp_path):
+    client, sessions = fake_client([
+        NS(type='agent.session.requires_action'),
+        NS(type='agent.session.turn.completed', turn=NS(id='main', subagent_id=None)),
+    ])
+    sessions.retrieve.return_value = NS(required_actions=[
+        NS(type='computer_use_approval_request', request_id='identity',
+            request=NS(type='browser_origin_access', origin='https://id.digitecgalaxus.ch')),
+        NS(type='computer_use_approval_request', request_id='lookalike',
+            request=NS(type='browser_origin_access', origin='https://id.digitecgalaxus.ch.evil.example')),
+    ])
+    module.run_task(client, 'https://www.galaxus.ch/auth/v1/login', tmp_path / 'login.json',
+        instructions='test', task='test', authentication_handler=lambda *args: None,
+        additional_allowed_origins=('https://id.digitecgalaxus.ch',))
+    responses = {event['request_id']: event['response']['decision']
+        for call in sessions.events.create.call_args_list for event in call.kwargs['events'] if 'response' in event}
+    assert responses == {'identity': 'approve', 'lookalike': 'deny'}
+
+
+@pytest.mark.parametrize('origin', ['https://id.digitecgalaxus.ch/path', 'http://id.digitecgalaxus.ch', 'https://user:secret@id.digitecgalaxus.ch'])
+def test_invalid_additional_origin_never_creates_session(tmp_path, origin):
+    client, sessions = fake_client([])
+    with pytest.raises(ValueError):
+        module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'invalid.json',
+            instructions='test', task='test', additional_allowed_origins=(origin,))
+    sessions.create.assert_not_called()

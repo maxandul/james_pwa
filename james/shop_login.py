@@ -17,6 +17,9 @@ from .views import household_required
 
 shop_login = Blueprint('shop_login', __name__)
 SHOP_ORIGIN = 'https://www.galaxus.ch'
+SHOP_IDENTITY_ORIGIN = 'https://id.digitecgalaxus.ch'
+SHOP_LOGIN_ORIGINS = frozenset((SHOP_ORIGIN, SHOP_IDENTITY_ORIGIN))
+SHOP_LOGIN_URL = SHOP_ORIGIN + '/auth/v1/login'
 ACTIVE = ('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')
 
 
@@ -83,7 +86,7 @@ def challenge(run):
     action = next((a for a in session.get('required_actions', [])
         if a.get('type') == 'computer_use_approval_request' and a.get('request_id') == rid
         and a.get('turn_id') == tid and a.get('request', {}).get('type') == 'browser_authentication'), None)
-    if not action or action['request'].get('credential_origin') != SHOP_ORIGIN:
+    if not action or action['request'].get('credential_origin') not in SHOP_LOGIN_ORIGINS:
         abort(410)
     return action['request']
 

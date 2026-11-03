@@ -519,7 +519,7 @@ def test_executor_preserves_failure_details_after_successful_cleanup(app, client
 
 @pytest.mark.parametrize('result,outcome,error', [
     ({'status': 'timeout', 'browser_calls': 12}, 'timeout', None),
-    ({'status': 'turn_completed'}, 'turn_completed', None),
+    ({'status': 'turn_completed'}, 'no_authentication', None),
     ({'status': 'failed', 'failure_stage': 'environment_failed'}, 'failed', 'environment_failed'),
     ({'status': 'failed', 'error_type': 'APIConnectionError'}, 'failed', 'connection'),
     ({'status': 'failed', 'error_type': 'private-secret'}, 'failed', 'internal'),
@@ -546,3 +546,111 @@ def test_cleanup_retains_user_cancellation_reason(app, prepared):
         assert cleanup(identifier)
         row = db.session.get(ShopLogin, identifier)
         assert row.state == 'closed' and row.outcome == 'cancelled'
+
+
+def test_no_authentication_is_not_hidden_by_normal_turn_completion(app, client, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5,
+            'login_report': 'auth_unavailable', 'model_report': 'synthetic-account-password'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == 'no_authentication'
+        assert row.auth_progress == 'agent_auth_unavailable'
+        row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+        db.session.commit()
+    page = client.get(f'/shop-login/{identifier}').text
+    assert 'ohne registrierte Anmeldeanforderung' in page
+    assert 'Ungepruefte Agentenmeldung' in page and 'nicht verfuegbar' in page
+    assert 'synthetic-account-password' not in page
+
+
+def test_agent_report_cannot_replace_observed_authentication(app, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.auth_progress = 'credentials_submitted'
+        db.session.commit()
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5, 'login_report': 'access_blocked'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == 'turn_completed' and row.auth_progress == 'credentials_submitted'
+
+
+def test_old_completed_run_without_authentication_is_explicit(app, client, prepared):
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+        row.outcome, row.browser_calls = 'turn_completed', 5
+        db.session.commit()
+    page = client.get(f'/shop-login/{identifier}').text
+    assert 'ohne registrierte Anmeldeanforderung' in page
+    assert 'hinterlegten Zugangsdaten wurde nicht ausgefuehrt' in page
+
+
+def test_untrusted_report_is_not_stored(app, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5,
+            'login_report': 'private-secret', 'model_report': 'private-secret'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == 'no_authentication' and row.auth_progress is None
+        assert 'private-secret' not in repr({c.name: getattr(row, c.name) for c in row.__table__.columns})
+
+
+def test_signed_in_claim_without_authentication_is_not_login_success(app, client, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5, 'login_report': 'signed_in'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == 'no_authentication' and row.auth_progress == 'agent_signed_in'
+        row.state, row.active_user_id, row.active_household_id = 'closed', None, None
+        db.session.commit()
+    page = client.get(f'/shop-login/{identifier}').text
+    assert 'ohne registrierte Anmeldeanforderung' in page
+    assert 'Ungepruefte Agentenmeldung' in page and 'kein Nachweis' in page
+
+
+def test_observed_origin_denial_takes_precedence_over_agent_guess(app, prepared):
+    from james.shop_login_worker import save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        save_result(identifier, {'status': 'turn_completed', 'browser_calls': 5,
+            'origin_access_denied': True, 'login_report': 'access_blocked'})
+        row = db.session.get(ShopLogin, identifier)
+        assert row.outcome == 'no_authentication' and row.auth_progress == 'origin_denied'
+
+
+def test_verified_galaxus_identity_origin_supports_registered_authentication(app, client, prepared):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from james.shop_login_worker import login_handler
+    identifier, _, schema = prepared
+    schema['credential_origin'] = 'https://id.digitecgalaxus.ch'
+    schema['fields'][0]['label'] = 'E-Mail'
+    page = client.get(f'/shop-login/{identifier}')
+    assert page.status_code == 200 and b'https://id.digitecgalaxus.ch' in page.data
+    api_client = MagicMock()
+    approval = SimpleNamespace(request=SimpleNamespace(credential_origin='https://id.digitecgalaxus.ch'),
+        request_id='request-1', turn_id='turn-1')
+    login_handler(app, identifier)(approval, api_client, 'synthetic-session')
+    api_client.beta.agents.sessions.events.create.assert_called_once()
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        assert row.auth_progress == 'credentials_submitted'
+
+
+@pytest.mark.parametrize('origin', ['https://id.digitecgalaxus.ch.evil.example',
+    'https://digitecgalaxus.ch', 'https://id.digitecgalaxus.ch:8443'])
+def test_identity_lookalikes_cannot_receive_credentials(app, client, prepared, origin):
+    from james.shop_account import credential_response
+    identifier, calls, schema = prepared
+    schema['credential_origin'] = origin
+    schema['fields'][0]['label'] = 'E-Mail'
+    assert client.get(f'/shop-login/{identifier}').status_code == 410
+    with app.app_context():
+        assert credential_response(schema, app.config, set()) is None
+    assert not [call for call in calls if call[0] == 'POST']

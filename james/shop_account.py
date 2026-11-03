@@ -5,7 +5,7 @@ Unknown fields/methods (including MFA) remain a manual PWA challenge.
 """
 from werkzeug.exceptions import HTTPException
 
-from .shop_login import SHOP_ORIGIN, fields_for
+from .shop_login import SHOP_LOGIN_ORIGINS, fields_for
 
 
 _EMAIL_LABELS = {'email', 'e-mail', 'e-mail-adresse', 'email address', 'e-mail address', 'benutzername', 'username'}
@@ -13,7 +13,7 @@ _PASSWORD_LABELS = {'password', 'passwort'}
 
 
 def credential_response(schema, config, used_roles):
-    if schema.get('credential_origin') != SHOP_ORIGIN:
+    if schema.get('credential_origin') not in SHOP_LOGIN_ORIGINS:
         return None
     email, password = config.get('GALAXUS_EMAIL', ''), config.get('GALAXUS_PASSWORD', '')
     if not email or not password or len(email) > 2048 or len(password) > 2048:
