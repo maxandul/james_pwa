@@ -1,0 +1,30 @@
+/* Administration shell and editable shopping routes. */
+.settings-layout { display: grid; gap: var(--space-5); min-width: 0; }
+.settings-content { min-width: 0; }
+.settings-nav { display: flex; flex-wrap: wrap; gap: var(--space-2); align-content: start; }
+.settings-nav a { display: flex; align-items: center; min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-control); text-decoration: none; background: var(--surface); font-size: .9rem; }
+.settings-nav a[aria-current] { background: var(--green-light); border-color: #b6c9b0; color: var(--green); font-weight: 600; }
+.settings-nav-mobile { display: grid; gap: var(--space-2); font-size: .85rem; font-weight: 600; }
+.settings-record { padding-block: var(--space-5); border-bottom: 1px solid var(--line); min-width: 0; }
+.settings-record:last-of-type { border-bottom: 0; }
+.settings-record h3 { margin-bottom: var(--space-2); }
+.settings-record form { min-width: 0; }
+.settings-record-actions { display: flex; align-items: end; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
+.settings-record-actions label { display: grid; gap: var(--space-2); flex: 1 1 180px; }
+.settings-danger { margin-top: var(--space-4); padding-top: var(--space-3); }
+.settings-danger > summary { color: var(--danger); font-weight: 600; }
+.settings-danger .form { margin-top: var(--space-3); }
+.aisle-order { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
+.aisle-order li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); min-width: 0; }
+.aisle-order .check-field { min-width: 0; font-size: .9rem; }
+.aisle-order-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.aisle-order-actions .button { min-width: 44px; padding: 10px; }
+.shopping-view-select { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); margin-block: var(--space-5); }
+.shopping-view-select label { display: grid; gap: var(--space-2); flex: 1 1 260px; min-width: 0; }
+.shopping-view-select a { min-height: 44px; display: flex; align-items: center; }
+@media (max-width:999px) { .settings-enhanced .settings-nav { display: none; } }
+@media (min-width:1000px) {
+  .settings-layout { grid-template-columns: 200px minmax(0,1fr); }
+  .settings-nav { flex-direction: column; }
+  .settings-nav-mobile { display: none; }
+}

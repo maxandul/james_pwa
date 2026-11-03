@@ -258,7 +258,7 @@ def test_floating_chat_is_available_on_app_pages_without_a_navigation_tab(app, c
     assert 'id="jayjay-launcher"' not in client.get('/login').text
     login(client)
     for path in ('/', '/shopping', '/household'):
-        html = client.get(path).text
+        html = client.get(path, follow_redirects=True).text
         assert 'id="jayjay-launcher"' in html and 'id="jayjay-dialog"' in html
         nav = re.search(r'<nav class="nav".*?</nav>', html, re.S)[0]
         assert '/jayjay' not in nav

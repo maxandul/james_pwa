@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'james-shell-v7';
-const FILES = ['/offline', '/static/app.css?v=12', '/static/css/tokens.css?v=12','/static/css/base.css?v=12','/static/css/layout.css?v=12','/static/css/components.css?v=12','/static/css/pages.css?v=12','/static/css/jayjay.css?v=12', '/static/offline-store.js?v=1',
+const CACHE = 'james-shell-v8';
+const FILES = ['/offline', '/static/app.css?v=13', '/static/css/tokens.css?v=13','/static/css/base.css?v=13','/static/css/layout.css?v=13','/static/css/components.css?v=13','/static/css/pages.css?v=13','/static/css/jayjay.css?v=13', '/static/css/settings.css?v=13', '/static/offline-store.js?v=1',
   '/static/pwa.js?v=3', '/static/icon-192.png', '/static/icon-512.png', '/manifest.webmanifest'];
 const STATIC = new Set(FILES.filter(path => path !== '/offline'));
 

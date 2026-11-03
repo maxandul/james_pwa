@@ -237,7 +237,7 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         for field in ("name", "category", "source", "unit", "default_quantity", "is_favorite", "archived"):
             if field in undo_target.before_state:
                 setattr(item, field, undo_target.before_state[field])
-        item.category, item.source = canonical_labels(household_id, item.category, item.source)
+        item.category, item.source = canonical_labels(household_id, item.category, item.source, allow_inactive=True)
         restored_sources = undo_target.before_state.get("source_ids")
         if restored_sources is None and "source" in undo_target.before_state:
             restored_sources = []

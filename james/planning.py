@@ -56,7 +56,7 @@ def create_plan(household_id, source_id, review, data):
     lock_household(household_id)
     source = db.session.scalar(select(PurchaseSource).where(PurchaseSource.id == source_id,
         PurchaseSource.household_id == household_id).execution_options(populate_existing=True))
-    if not source:
+    if not source or not source.active:
         abort(404)
     existing = db.session.scalar(select(PurchasePlan).where(PurchasePlan.household_id == household_id,
         PurchasePlan.request_id == review['request_id']))

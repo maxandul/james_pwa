@@ -35,10 +35,20 @@ def list_filters(destination, values):
     """Explicit local list context, shared by actions, undo and detail links."""
     if destination == "main.shopping":
         source = values.get("source", "").strip()[:60]
-        return {"source": source} if source else {}
+        result = {"source": source} if source else {}
+        try:
+            view_id = int(values.get('view_id') or 0)
+        except (ValueError, TypeError):
+            view_id = 0
+        if 'view_id' in values:
+            result['view_id'] = max(0, view_id)
+        return result
     view = values.get("view", "all")
+    layout = getattr(g, 'household', None).settings.get('layout', 'compact') if getattr(g, 'household', None) else 'compact'
+    if current_user.is_authenticated and current_user.preferences.get('layout') in {'compact', 'cards'}:
+        layout = current_user.preferences['layout']
     result = {"view": view if view in {"all", "favorites", "archived"} else "all",
-        "layout": "cards" if values.get("layout") == "cards" else "compact"}
+        "layout": "cards" if values.get("layout", layout) == "cards" else "compact"}
     query = (values.get("q") or "").strip()[:100]
     if query:
         result["q"] = query
@@ -145,13 +155,16 @@ def shopping():
     from .assortment import shopping_options, selected_offer
     allowed, offers = shopping_options(rows)
     sources = sorted({name for names in allowed.values() for name in names})
-    source = request.args.get("source", "")
+    from .shopping_views import arrange, resolve_view
+    selected_view, source, saved_views = resolve_view(request.args)
     if source:
         rows = [(item, need) for item, need in rows if source in allowed[item.id]]
+    rows, shopping_groups, hidden_count = arrange(rows, selected_view)
     choices = {item.id: selected_offer(offers[item.id], source, need.quantity) for item, need in rows} if source else {}
     from .planning import reservations
     return render_template("shopping.html", rows=rows, sources=sources, selected_source=source,
-        allowed_sources=allowed, choices=choices, planned=reservations(g.household.id))
+        allowed_sources=allowed, choices=choices, planned=reservations(g.household.id),
+        selected_view=selected_view, saved_views=saved_views, shopping_groups=shopping_groups, hidden_count=hidden_count)
 
 
 @main.post("/items/<int:item_id>/action")
@@ -215,9 +228,13 @@ def undo(activity_id):
 def household():
     if g.membership.role != "owner":
         abort(403)
+    if request.method == 'GET':
+        return redirect(url_for('settings.household'))
     error = None
     if request.method == "POST":
         try:
+            from .administration import locked_membership
+            locked_membership()
             invitation, token = make_invitation(g.membership, request.form.get("email"))
             db.session.commit()
             origin = current_app.config["PUBLIC_BASE_URL"].rstrip("/")
@@ -237,6 +254,8 @@ def household():
 def revoke_invitation(invitation_id):
     if g.membership.role != "owner":
         abort(403)
+    from .administration import locked_membership
+    locked_membership()
     invitation = db.session.scalar(select(Invitation).where(
         Invitation.id == invitation_id, Invitation.household_id == g.household.id).with_for_update())
     if not invitation:

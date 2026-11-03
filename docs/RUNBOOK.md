@@ -196,3 +196,7 @@ Nach Zugangseinrichtung zunaechst JAYJAY_ENABLED=0 lassen und flask --app james 
 Tageslimit: 20 Nachrichten pro Haushalt, Reset 00:00 UTC. Vier Modellrunden/maximal vier Aenderungen pro Nachricht. Ein hängender Lauf wird nicht automatisch fortgesetzt. Nach einer Minute kann eine neue Nachricht begonnen werden; vorher tatsächliche Änderungen prüfen. Kein exaktes CHF-Budget. OpenAI-Projektbudget und Modellkosten separat pruefen.
 
 Erst unterstuetzt: Artikel lesen/anlegen, Nachkauf/Extra/Entfernen, Bestandsstatus, Favoriten, Archiv/Wiederaktivierung. Keine endgueltige Loeschung, keine Metadatenbearbeitung, keine Bestellungen, keine Rezepte/Kalender/Wetter/Spotify/Sprache. Fehler nach Buchung: gespeicherte Aktionen beachten und gezielt ueber vorhandene Activity-Ruecknahme korrigieren. Chatturns werden im Browser niemals offline gespeichert.
+
+## Verwaltung und Einkaufsansichten · 03.11.2026
+
+Die additive Revision `5d9a21f067ce` ergänzt Einstellungen, Profilvorgaben, Versionen, Aktivstatus der Kataloge und gespeicherte Einkaufsansichten. Upgrade/Schemaabgleich erfolgen wie bisher vor dem Webstart. Keine Live-Datenbank herunterstufen; ein Code-Rollback lässt die neuen Spalten und Ansichten bestehen. Details zu Rechten, Katalogentfernung, persönlichen Daten und Kompatibilität: [ADMINISTRATION.md](ADMINISTRATION.md).

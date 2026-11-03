@@ -62,6 +62,10 @@ def create_app(test_config=None):
             # Multipart decoder needs room for a read chunk plus its buffered remainder.
             request.max_form_memory_size = 256 * 1024
             request.max_form_parts = 300
+        elif request.path.startswith('/settings/shopping-views'):
+            request.max_content_length = 256 * 1024
+            request.max_form_memory_size = 256 * 1024
+            request.max_form_parts = 3000
         elif request.path == '/plans' or request.path.startswith('/plans/'):
             request.max_content_length = 256 * 1024
             request.max_form_memory_size = 256 * 1024
@@ -100,6 +104,8 @@ def create_app(test_config=None):
     from .shop_login import shop_login
     app.register_blueprint(auth)
     app.register_blueprint(main)
+    from .settings import settings
+    app.register_blueprint(settings)
     app.register_blueprint(scan)
     app.register_blueprint(pwa)
     app.register_blueprint(products)

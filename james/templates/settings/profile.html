@@ -1,0 +1,14 @@
+{% extends 'settings/base.html' %}
+{% block settings_content %}
+<section class="panel"><h2>Mein Profil</h2><form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="profile"><input type="hidden" name="version" value="{{ request.form.get('version',current_user.version) }}">
+<label>Name<input name="name" required maxlength="80" value="{{ request.form.get('name',current_user.name) }}" autocomplete="name"></label>
+<label>Artikeldarstellung<select name="layout">{% for key,label in [('household','Vorgabe des Haushalts'),('compact','Kompakte Liste'),('cards','Karten')] %}<option value="{{ key }}" {% if current_user.preferences.get('layout','household') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<label>Standard-Einkaufsansicht<select name="default_view_id"><option value="">Vorgabe des Haushalts / Einkaufsorts</option>{% for view in views %}<option value="{{ view.id }}" {% if current_user.preferences.get('default_view_id') == view.id %}selected{% endif %}>{{ view.name }}</option>{% endfor %}</select><small>Wird beim Öffnen der Einkaufsliste verwendet. Du kannst dort jederzeit eine andere Ansicht wählen.</small></label>
+<button class="button button--primary" type="submit">Profil speichern</button></form></section>
+<section class="panel"><h2>Zugangsdaten</h2><p class="small muted">Änderungen erfordern dein aktuelles Passwort. Andere Sitzungen werden danach abgemeldet.</p><form method="post" class="form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="credentials"><input type="hidden" name="version" value="{{ request.form.get('version',current_user.version) }}">
+<label>E-Mail-Adresse<input name="email" type="email" required maxlength="254" value="{{ current_user.email }}" autocomplete="username"></label>
+<label>Aktuelles Passwort<input name="current_password" type="password" required maxlength="128" autocomplete="current-password"></label>
+<label>Neues Passwort (optional)<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password"><small>Leer lassen, wenn nur die E-Mail-Adresse geändert werden soll.</small></label>
+<label>Neues Passwort bestätigen<input name="password_confirm" type="password" maxlength="128" autocomplete="new-password"></label>
+<button class="button button--outline" type="submit">Zugangsdaten ändern</button></form></section>
+{% endblock %}

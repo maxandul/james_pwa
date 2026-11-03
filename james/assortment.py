@@ -21,26 +21,38 @@ def key(value):
 
 
 def lock_household(household_id):
-    db.session.scalar(select(Household).where(Household.id == household_id).with_for_update())
+    return db.session.scalar(select(Household).where(Household.id == household_id).with_for_update().execution_options(populate_existing=True))
 
 
-def entries(household_id, kind):
+def entries(household_id, kind, include_inactive=False):
     model = KINDS[kind]
-    return db.session.scalars(select(model).where(model.household_id == household_id).order_by(model.name)).all()
+    return db.session.scalars(select(model).where(model.household_id == household_id,
+        *([] if include_inactive else [model.active.is_(True)])).order_by(model.active.desc(), model.name)).all()
 
 
 def resolve(household_id, kind, value):
     name = clean_text(value, "Bezeichnung", 60)
     name_key = key(name)
-    return next((entry for entry in entries(household_id, kind)
+    home = db.session.get(Household, household_id)
+    target_id = home.settings.get('catalogue_redirects', {}).get(f'{kind}:{name_key}')
+    if target_id:
+        target = db.session.get(KINDS[kind], target_id)
+        if target and target.household_id == household_id:
+            return target
+    return next((entry for entry in entries(household_id, kind, include_inactive=True)
         if entry.name_key == name_key or name_key in entry.aliases), None)
 
 
 def ensure_entry(household_id, kind, value):
     existing = resolve(household_id, kind, value)
     if existing:
+        if not existing.active:
+            raise Conflict('Diese Bezeichnung ist deaktiviert. Bitte einen aktiven Eintrag wählen.')
         return existing
     name = clean_text(value, "Bezeichnung", 60)
+    home = db.session.get(Household, household_id)
+    if f'{kind}:{key(name)}' in home.settings.get('catalogue_deleted', []):
+        raise Conflict('Diese Bezeichnung wurde entfernt. Bitte einen aktiven Eintrag wählen.')
     entry = KINDS[kind](household_id=household_id, name=name, name_key=key(name), aliases=[])
     db.session.add(entry)
     db.session.flush([entry])
@@ -49,16 +61,20 @@ def ensure_entry(household_id, kind, value):
 
 def ensure_defaults(household_id):
     for kind, names in (("category", CATEGORIES), ("source", SOURCES)):
-        known = {name_key for entry in entries(household_id, kind) for name_key in [entry.name_key, *entry.aliases]}
+        known = {name_key for entry in entries(household_id, kind, include_inactive=True) for name_key in [entry.name_key, *entry.aliases]}
+        home = db.session.get(Household, household_id)
+        known |= {value.split(':', 1)[1] for value in home.settings.get('catalogue_deleted', []) if value.startswith(kind + ':')}
         for name in names:
             if key(name) not in known:
                 ensure_entry(household_id, kind, name)
 
 
-def canonical_labels(household_id, category, source):
+def canonical_labels(household_id, category, source, allow_inactive=False):
     ensure_defaults(household_id)
-    return (ensure_entry(household_id, "category", category).name,
-        ensure_entry(household_id, "source", source).name)
+    def entry(kind, name):
+        found = resolve(household_id, kind, name) if allow_inactive else None
+        return found or ensure_entry(household_id, kind, name)
+    return (entry('category', category).name, entry('source', source).name)
 
 
 def version_matches(entry, value):
@@ -79,6 +95,10 @@ def save_entry(household_id, kind, name, entry_id=None, version=None):
     if entry_id is None:
         if collision:
             raise Conflict("Diese Bezeichnung ist bereits vorhanden.")
+        home = db.session.get(Household, household_id)
+        settings = dict(home.settings)
+        settings['catalogue_deleted'] = [value for value in settings.get('catalogue_deleted', []) if value != f'{kind}:{key(name)}']
+        home.settings = settings
         return ensure_entry(household_id, kind, name)
     model = KINDS[kind]
     entry = db.session.scalar(select(model).where(model.id == entry_id, model.household_id == household_id))
@@ -114,7 +134,8 @@ def offer_source_ids(item):
 
 
 def sync_sources(item, data=None, restore_ids=None):
-    preferred = ensure_entry(item.household_id, "source", item.source)
+    preferred = resolve(item.household_id, "source", item.source) if restore_ids is not None else None
+    preferred = preferred or ensure_entry(item.household_id, "source", item.source)
     selected = set(source_ids(item))
     if restore_ids is not None:
         selected = set(restore_ids)
@@ -125,7 +146,7 @@ def sync_sources(item, data=None, restore_ids=None):
         except (TypeError, ValueError):
             raise ValueError("Bitte gueltige Einkaufsorte waehlen.") from None
     selected |= {preferred.id} | offer_source_ids(item)
-    valid = {entry.id for entry in entries(item.household_id, "source")}
+    valid = {entry.id for entry in entries(item.household_id, "source", include_inactive=restore_ids is not None)}
     if not selected.issubset(valid):
         raise ValueError("Bitte nur Einkaufsorte aus eurem Haushalt waehlen.")
     links = db.session.scalars(select(ItemSource).where(ItemSource.item_id == item.id)).all()
@@ -224,8 +245,8 @@ def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expect
         raise ValueError("Bitte einen Einkaufsort waehlen.") from None
     source = db.session.scalar(select(PurchaseSource).where(
         PurchaseSource.id == source_id, PurchaseSource.household_id == household_id))
-    if not source:
-        raise ValueError("Bitte einen Einkaufsort aus eurem Haushalt waehlen.")
+    if not source or not source.active:
+        raise ValueError("Bitte einen aktiven Einkaufsort aus eurem Haushalt waehlen.")
     if expected_unit is not None and expected_unit != item.unit:
         raise Conflict("Die Artikeleinheit wurde geaendert. Bitte neu laden und den Packungsinhalt erneut pruefen.")
     offer = db.session.get(ShopOffer, offer_id) if offer_id else None

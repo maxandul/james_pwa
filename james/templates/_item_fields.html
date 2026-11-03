@@ -1,10 +1,10 @@
 <label>Artikelname<input name="name" required maxlength="100" placeholder="Zum Beispiel Kaffee" value="{{ values.get('name', '') }}"></label>
 <div class="form-grid">
-<label>Warengruppe<select name="category" required>{% for name in category_names %}<option value="{{ name }}" {% if catalogue_label('category', values.get('category', 'Vorrat')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
-<label>Bevorzugter Einkaufsort<select name="source" required>{% for name in source_names %}<option value="{{ name }}" {% if catalogue_label('source', values.get('source', 'Laden')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+<label>Warengruppe<select name="category" required>{% if catalogue_label('category', values.get('category', 'Vorrat')) not in category_names %}<option value="" disabled selected>Warengruppe wählen (bisheriger Eintrag inaktiv)</option>{% endif %}{% for name in category_names %}<option value="{{ name }}" {% if catalogue_label('category', values.get('category', 'Vorrat')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+<label>Bevorzugter Einkaufsort<select name="source" required>{% if catalogue_label('source', values.get('source', 'Laden')) not in source_names %}<option value="" disabled selected>Einkaufsort wählen (bisheriger Eintrag inaktiv)</option>{% endif %}{% for name in source_names %}<option value="{{ name }}" {% if catalogue_label('source', values.get('source', 'Laden')) == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
 </div>
 {% include '_source_options.html' %}
-<a class="small" href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte verwalten</a>
+{% if g.membership.role == 'owner' %}<a class="small" href="{{ url_for('settings.catalogue', kind='category') }}">Warengruppen und Einkaufsorte verwalten</a>{% endif %}
 
 <div class="form-grid">
   <label>Gewohnte Nachkaufmenge<input type="number" inputmode="numeric" min="1" max="999" step="1" name="quantity" required value="{{ values.get('quantity', '1') }}"></label>

@@ -35,6 +35,9 @@ def test_article_migration_preserves_existing_rows_and_history(tmp_path):
         assert connection.execute("SELECT name,is_favorite,archived FROM household_item").fetchone() == ("Kaffee", 0, 0)
         assert connection.execute("SELECT quantity FROM shopping_need").fetchone() == (2,)
         assert connection.execute("SELECT COUNT(*) FROM activity").fetchone() == (1,)
+        assert connection.execute("SELECT settings,version FROM household").fetchone() == ("{}",1)
+        assert connection.execute("SELECT preferences,version FROM user").fetchone() == ("{}",1)
+
 
     migrate("downgrade", "e691ea9e9398")
     migrate("upgrade")

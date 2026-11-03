@@ -3,7 +3,7 @@
 <input type="hidden" name="view" value="{{ home_context.view }}">
 <input type="hidden" name="q" value="{{ home_context.get('q', '') }}">
 <input type="hidden" name="layout" value="{{ home_context.layout }}">
-{% if request.endpoint == 'main.shopping' %}<input type="hidden" name="source" value="{{ request.args.get('source', '')[:60] }}">{% endif %}
+{% if request.endpoint == 'main.shopping' %}<input type="hidden" name="view_id" value="{{ selected_view.id if selected_view else 0 }}"><input type="hidden" name="source" value="{{ request.args.get('source', '')[:60] }}">{% endif %}
 {% endmacro %}
 {% macro action_fields(item, action, destination='home') %}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

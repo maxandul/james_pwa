@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='12') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='13') }}">
   <script src="{{ url_for('static', filename='app.js', v='11') }}" defer></script>
   <script src="/static/offline-store.js?v=1" defer></script>
   <script src="/static/pwa.js?v=3" defer></script>
@@ -24,18 +24,19 @@
   </header>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
   {% set in_shopping = request.endpoint == 'main.shopping' or request.blueprint in ['plans', 'receipts'] %}
-  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint == 'shop_login' %}
+  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] %}
   <nav class="nav" aria-label="Hauptnavigation">
     <a {% if not in_shopping and not in_more %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
     <a {% if in_shopping %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}"><span aria-hidden="true">☷</span>Einkauf</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
-      <a href="{{ url_for('products.catalogue') }}">Warengruppen und Einkaufsorte</a>
-      {% if g.membership.role == 'owner' %}<a href="{{ url_for('main.household') }}">Zusammen nutzen</a>{% endif %}
+      {% if g.membership.role == 'owner' %}<a href="{{ url_for('settings.index') }}">Verwaltung</a>{% endif %}
+      <a href="{{ url_for('settings.profile') }}">Mein Profil</a>
+      <a href="{{ url_for('settings.shopping_views') }}">Einkaufsansichten</a>
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}
     </div></details>
   </nav>
   {% endif %}
-  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}" data-list-url="{{ home_url() if request.endpoint == 'main.home' else url_for('main.shopping', source=request.args.get('source') or None) }}"{% endif %}>
+  <main class="main" id="main-content" {% if request.endpoint in ['main.home', 'main.shopping'] %}data-list-page="{{ request.endpoint }}" data-list-url="{{ home_url() if request.endpoint == 'main.home' else url_for('main.shopping', source=selected_source or None, view_id=selected_view.id if selected_view else 0) }}"{% endif %}>
     {% include '_breadcrumbs.html' %}
     <div id="offline-banner" class="notice notice--error" role="status" hidden>Keine Verbindung. Aenderungen koennen gerade nicht gespeichert werden.</div>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% endwith %}
