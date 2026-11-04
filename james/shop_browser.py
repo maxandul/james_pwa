@@ -75,11 +75,21 @@ def index():
             if not item or item.state != 'active' or not item.expires_at or item.expires_at <= utcnow():
                 abort(409)
             item.confirmed_at = utcnow()
+        elif action == 'cart':
+            if (not item or item.state != 'active' or not item.confirmed_at
+                    or not item.expires_at or item.expires_at <= utcnow() + timedelta(seconds=180)
+                    or item.cart_state in ('queued', 'running')):
+                abort(409)
+            if request.form.get('consent') != 'yes':
+                abort(400)
+            item.cart_state = 'queued'
+            item.cart_actions = 0
         else:
             abort(400)
         db.session.commit()
         return redirect(url_for('shop_browser.index'))
-    return render_template('shop_browser.html', profile=item, now=utcnow())
+    from .shop_cart import PRODUCTS
+    return render_template('shop_browser.html', profile=item, now=utcnow(), products=PRODUCTS)
 
 
 @shop_browser.get('/shop-browser/live')
