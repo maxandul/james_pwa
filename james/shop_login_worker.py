@@ -431,14 +431,21 @@ def register_shop_cli(app):
     @click.option('--watch', is_flag=True, help='Observe the queue continuously; deploy as a supervised single-replica worker.')
     def worker(watch):
         """Only consumes explicitly consented PWA jobs; also reconciles stale sessions."""
+        previous_browser_gate = None
         while True:
             if app.config.get('SHOP_BROWSER_ENABLED'):
                 from .shop_browser_worker import worker_once as browser_once
                 from .readiness import database_ready
                 ready = database_ready()
                 db.session.rollback()
+                if ready != previous_browser_gate:
+                    app.logger.warning('Shopbrowser worker gate: enabled=True schema_ready=%s', ready)
+                    previous_browser_gate = ready
                 if ready:
                     browser_once(app)
+            elif previous_browser_gate is None:
+                app.logger.warning('Shopbrowser worker gate: enabled=False')
+                previous_browser_gate = False
             worker_once(app)
             db.session.remove()
             if not watch:

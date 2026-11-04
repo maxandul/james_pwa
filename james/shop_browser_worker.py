@@ -1,5 +1,6 @@
 """Single-replica worker holding CDP open during the user's manual login."""
 from time import monotonic, sleep
+from flask import current_app
 
 from sqlalchemy import select, update
 
@@ -23,17 +24,33 @@ def set_fields(pid, **values):
     db.session.commit()
 
 
+def session_status(provider, sid):
+    try:
+        return provider.session(sid)['status']
+    except BrowserUnavailable as exc:
+        if exc.status == 404:
+            return 'MISSING'
+        raise
+
+
 def finish(provider, pid, *, forget=False, pause=sleep):
     db.session.expire_all()
     item = db.session.get(ShopBrowser, pid)
     sid, context = item.session_id, item.context_id
     db.session.rollback()
     if sid:
-        status = provider.session(sid)['status']
-        if status not in ('COMPLETED', 'TIMED_OUT', 'ERROR'):
-            provider.release(sid)
+        current_app.logger.warning('Shopbrowser cleanup phase: session')
+        terminal = ('COMPLETED', 'TIMED_OUT', 'ERROR', 'MISSING')
+        status = session_status(provider, sid)
+        if status not in terminal:
+            try:
+                provider.release(sid)
+            except BrowserUnavailable as exc:
+                # A release can race provider expiry; verify absence with GET.
+                if exc.status != 404 or session_status(provider, sid) not in terminal:
+                    raise
         for _ in range(10):
-            if provider.session(sid)['status'] in ('COMPLETED', 'TIMED_OUT', 'ERROR'):
+            if session_status(provider, sid) in terminal:
                 break
             pause(1)
         else:
@@ -46,14 +63,16 @@ def finish(provider, pid, *, forget=False, pause=sleep):
     interrupted = item.cart_state in ('queued', 'running')
     db.session.rollback()
     if forget and context:
+        current_app.logger.warning('Shopbrowser cleanup phase: context')
         try:
             provider.delete_context(context)
         except BrowserUnavailable as exc:
-            if 'HTTP 404' not in str(exc):
+            if exc.status != 404:
                 raise
     set_fields(pid, session_id=None, live_url=None, state='idle', error_category=None,
                **({'cart_state': 'INTERRUPTED'} if interrupted else {}),
                **({'context_id': None, 'confirmed_at': None} if forget else {}))
+    current_app.logger.warning('Shopbrowser cleanup complete: forgotten=%s', forget)
 
 
 def connect(provider, pid):
@@ -139,6 +158,8 @@ def worker_once(app):
         if state == 'error' and item.error_category == 'creation_unknown':
             db.session.rollback()
             continue
+        app.logger.warning('Shopbrowser pending: state=%s session=%s context=%s',
+                           state, bool(item.session_id), bool(item.context_id))
         try:
             if state == 'queued' and valid(item) and item.expires_at > utcnow():
                 claimed = db.session.execute(update(ShopBrowser).where(ShopBrowser.id == pid,
@@ -159,6 +180,10 @@ def worker_once(app):
             rejected = isinstance(exc, BrowserUnavailable) and exc.status in (400, 401, 402, 403, 404, 422, 429) and not item.session_id
             unknown = item.state == 'creating' and not item.session_id and not rejected
             forgetting = item.state == 'forgetting'
+            # Fixed categories only: never log provider URLs, credentials or error bodies.
+            app.logger.warning('Shopbrowser operation failed: state=%s http=%s kind=%s',
+                               item.state, exc.status if isinstance(exc, BrowserUnavailable) else 0,
+                               'provider' if isinstance(exc, BrowserUnavailable) else 'internal')
             set_fields(pid, state='forgetting' if forgetting else 'idle' if rejected else 'error', live_url=None,
                        error_category=('provider_http_' + str(exc.status)) if rejected else 'creation_unknown' if unknown else 'cleanup_pending' if item.session_id else 'browser_unavailable')
         finally:

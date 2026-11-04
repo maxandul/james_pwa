@@ -228,3 +228,56 @@ def test_cart_worker_preserves_close_request(enabled, monkeypatch):
         assert item.cart_actions == 2
         run_pending_cart(pid, Mock())
     assert agent.call_count == 1
+
+
+def test_missing_session_and_context_finish_deletion(enabled):
+    pid = record(enabled, state='forgetting')
+    provider = Mock()
+    provider.session.side_effect = BrowserUnavailable('synthetic absent', status=404)
+    provider.delete_context.side_effect = BrowserUnavailable('synthetic absent', status=404)
+    with enabled.app_context():
+        finish(provider, pid, forget=True, pause=lambda _: None)
+        item = db.session.get(ShopBrowser, pid)
+        assert item.state == 'idle'
+        assert item.session_id is None and item.context_id is None
+        assert item.error_category is None
+    provider.release.assert_not_called()
+    provider.delete_context.assert_called_once_with('context')
+
+
+@pytest.mark.parametrize('status', [401, 403, 429, 500])
+def test_provider_failure_keeps_deletion_references(enabled, status):
+    pid = record(enabled, state='forgetting')
+    provider = Mock()
+    provider.session.side_effect = BrowserUnavailable('synthetic unavailable', status=status)
+    with enabled.app_context():
+        with pytest.raises(BrowserUnavailable):
+            finish(provider, pid, forget=True, pause=lambda _: None)
+        item = db.session.get(ShopBrowser, pid)
+        assert item.state == 'forgetting' and item.session_id == 'session'
+        assert item.context_id == 'context'
+    provider.delete_context.assert_not_called()
+
+
+def test_release_expiry_race_is_verified(enabled):
+    pid = record(enabled, state='forgetting')
+    provider = Mock()
+    provider.session.side_effect = [
+        {'status': 'RUNNING'}, BrowserUnavailable('absent', status=404),
+        BrowserUnavailable('absent', status=404)]
+    provider.release.side_effect = BrowserUnavailable('absent', status=404)
+    with enabled.app_context():
+        finish(provider, pid, forget=True, pause=lambda _: None)
+        assert db.session.get(ShopBrowser, pid).state == 'idle'
+    provider.delete_context.assert_called_once()
+
+
+def test_release_404_does_not_hide_running_session(enabled):
+    pid = record(enabled, state='forgetting')
+    provider = Mock()
+    provider.session.return_value = {'status': 'RUNNING'}
+    provider.release.side_effect = BrowserUnavailable('absent', status=404)
+    with enabled.app_context():
+        with pytest.raises(BrowserUnavailable):
+            finish(provider, pid, forget=True, pause=lambda _: None)
+    provider.delete_context.assert_not_called()
