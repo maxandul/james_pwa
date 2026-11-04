@@ -106,3 +106,24 @@ def test_reject_unexpected_live_url(url):
     p.request = Mock(return_value={'debuggerFullscreenUrl': url})
     with pytest.raises(BrowserUnavailable):
         p.live_url(SESSION)
+
+
+def test_bodyless_delete_does_not_advertise_empty_json(monkeypatch):
+    from contextlib import nullcontext
+    from urllib.error import HTTPError
+    observed = []
+    def open_request(req, timeout):
+        observed.append(req)
+        if req.method == 'DELETE' and req.data is None and req.has_header('Content-type'):
+            raise HTTPError(req.full_url, 400, 'Empty JSON body', {}, None)
+        return nullcontext(SimpleNamespace(read=lambda n: b''))
+    monkeypatch.setattr('scripts.shop_browser_context.build_opener',
+                        lambda *args: SimpleNamespace(open=open_request))
+    p = Browserbase('synthetic-only', PROJECT)
+    p.delete_context(CONTEXT)
+    p.release(SESSION)
+    deletion, release = observed
+    assert deletion.method == 'DELETE' and deletion.data is None
+    assert not deletion.has_header('Content-type')
+    assert release.get_header('Content-type') == 'application/json'
+    assert json.loads(release.data)['status'] == 'REQUEST_RELEASE'
