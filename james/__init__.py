@@ -66,6 +66,10 @@ def create_app(test_config=None):
             request.max_content_length = 256 * 1024
             request.max_form_memory_size = 256 * 1024
             request.max_form_parts = 3000
+        elif request.path.startswith('/cooking'):
+            request.max_content_length = 5 * 1024 * 1024
+            request.max_form_memory_size = 256 * 1024
+            request.max_form_parts = 1000
         elif request.path == '/plans' or request.path.startswith('/plans/'):
             request.max_content_length = 256 * 1024
             request.max_form_memory_size = 256 * 1024
@@ -113,6 +117,8 @@ def create_app(test_config=None):
     app.register_blueprint(plans)
     app.register_blueprint(chat)
     app.register_blueprint(shop_login)
+    from .cooking import cooking
+    app.register_blueprint(cooking)
     register_cli(app)
     from .shop_login_worker import register_shop_cli
     register_shop_cli(app)

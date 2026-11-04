@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Galaxus anmelden · James{% endblock %}
 {% block content %}
+{% if not schema and run.state in ['queued','creating','running','submitting','accepted'] %}
+<div id="shop-login-watch" data-status-url="{{ url_for('shop_login.status', run_id=run.id) }}" data-state="{{ run.state }}" data-progress="{{ run.auth_progress or '' }}"></div>
+<script src="{{ url_for('static', filename='shop-login-status.js', v='1') }}" defer></script>
+{% endif %}
 <h1>{{ 'Galaxus-Warenkorbtest' if run.task_kind == 'cart' else 'Galaxus-Anmeldung' }}</h1>
 {% if schema %}
 <p>Anmeldeziel: <strong>{{ schema.credential_origin }}</strong></p>
@@ -17,9 +21,9 @@
 <button class="button" type="submit" name="action" value="submit">Anmeldung übermitteln</button>
 </form>{% endif %}
 {% else %}
-{% if run.state == 'accepted' %}<p>Eingaben übermittelt. Eine erfolgreiche Anmeldung ist damit noch nicht bestätigt. Aktualisiere die Seite, falls ein weiterer Schritt erforderlich ist.</p>
+{% if run.state == 'accepted' %}<p>Eingaben übermittelt. Eine erfolgreiche Anmeldung ist damit noch nicht bestätigt. Die Seite zeigt einen weiteren nötigen Schritt automatisch an.</p>
 {% elif run.state == 'queued' %}<p>Der Anmeldetest ist vorgemerkt. Der Pilotdienst übernimmt ihn. Ohne rechtzeitigen Start läuft er automatisch ab.</p>
-{% elif run.state in ['creating','running'] %}<p>Der Browser bereitet die Anmeldung vor. Bitte die Seite aktualisieren.</p>
+{% elif run.state in ['creating','running'] %}<p>Der Browser bereitet die Anmeldung vor. Ein nötiger Anmeldeschritt erscheint hier automatisch.</p>
 {% elif run.state == 'submitting' %}<p>Übermittlung läuft. Bitte nicht erneut senden.</p>
 {% elif run.state == 'unknown' %}<p>Der Ausgang der Übermittlung ist unklar. Nicht erneut senden; der Test wird abgebrochen und geprüft.</p>
 {% elif run.state == 'cleanup_pending' %}<p>Die Bereinigung der Browsersitzung ist noch offen.</p>
@@ -48,8 +52,14 @@
 }.get(run.outcome, 'Für diesen älteren oder unterbrochenen Lauf liegt kein genauer Ergebnisnachweis vor. Ein erfolgreicher Login ist nicht bestätigt.') }}</p>{% endif %}
 {% if run.auth_progress %}<p>{{ {
     'request_seen': 'Eine registrierte Anmeldeanforderung wurde erkannt.',
-    'credentials_submitted': 'Gespeicherte Zugangsdaten wurden an die registrierte Anmeldung übermittelt.',
+    'credentials_submitted': 'In diesem älteren Lauf wurden Anmeldefelder übermittelt. Welche Felder, wurde nicht getrennt erfasst.',
+    'both_submitted': 'E-Mail und Passwort wurden an den Anmeldemechanismus übermittelt. Ob Galaxus sie angenommen hat, ist damit noch nicht bestätigt.',
+    'email_submitted': 'Bisher wurde nur die E-Mail übermittelt. Eine Passwortübergabe wurde nicht erfasst.',
+    'password_submitted': 'Das Passwort wurde übermittelt. Eine E-Mail-Übergabe wurde nicht erfasst.',
     'manual_step': 'Eine manuelle Bestätigung war erforderlich.',
+    'manual_method': 'Eine Anmeldemethode muss in der App ausgewählt werden.',
+    'manual_repeat': 'Der Shop hat bereits übermittelte Zugangsdaten erneut angefordert. Bitte den nächsten Schritt in der App prüfen.',
+    'manual_fields': 'Zusätzliche oder nicht eindeutig zugeordnete Anmeldefelder erfordern eine Eingabe in der App.',
     'manual_expired': 'Die Frist für die manuelle Bestätigung ist abgelaufen.',
     'origin_rejected': 'Das Anmeldeziel wich vom freigegebenen Shop ab. Für diesen Schritt wurden keine Zugangsdaten übermittelt.',
     'origin_denied': 'Der Browser hat Zugriff auf eine zusätzliche Webadresse angefordert. Die Anwendung hat diesen Zugriff gemäss der bestehenden Shop-Grenze abgelehnt.',
@@ -93,6 +103,10 @@
     'cart_conflict': 'Vorhandene Mengen widersprechen den Zielmengen. Es wurde keine automatische Mengenreduktion angefordert.',
     'product_unavailable': 'Eine exakte Testvariante war nicht verfügbar.',
     'account_not_verified': 'Das angemeldete Haushaltskonto ist nicht ausreichend nachgewiesen.',
+    'login_rejected': 'Die Webseite hat die Anmeldung abgelehnt. Bitte die Zugangsdaten direkt bei Galaxus prüfen.',
+    'verification_required': 'Eine zusätzliche Bestätigung konnte nicht abgeschlossen werden.',
+    'login_incomplete': 'Der mehrstufige Anmeldeablauf konnte nicht abgeschlossen werden.',
+    'redirect_pending': 'Die Rückleitung von der Anmeldung zum Shop wurde nicht abgeschlossen.',
     'unknown': 'Kein eindeutiger Abschlussgrund.'
 }.get(run.agent_report, 'Kein eindeutiger Abschlussgrund.') }} Diese Meldung ist kein unabhängiger Nachweis.</p>
 {% endif %}

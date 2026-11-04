@@ -112,3 +112,46 @@ oder an bestehenden Protokollen. Ein weiterer Test braucht weiterhin eine neue
 Anfragekennung sowie eigene Warenkorb- und Kostenfreigaben in James. Keine
 API-Sitzung durch eine Konfigurationsaenderung oder einen GET. Die Seite zeigt
 das heute geltende Kontingent und die Ausnahme ausdruecklich an.
+
+## Mehrstufige Anmeldung und Diagnose
+
+Die Zugangsdatenübergabe ist ein Zwischenschritt. Der Browserauftrag muss danach
+sichtbare Weiter-/Anmelden-Schaltflächen bedienen, weitere Passwort- oder
+Bestätigungsschritte anfordern und die Rückleitung in den Shop abwarten. Erst
+nach einer sichtbar angemeldeten Kontoansicht beginnt die Warenkorbvorbereitung.
+
+- E-Mail und Passwort werden getrennt als übermittelt erfasst. Bei beiden lautet
+  der Status `both_submitted`; keiner dieser Status ist ein Loginbeweis.
+- Nach einer E-Mail-Stufe darf die erste Passwort-Stufe die E-Mail nochmals
+  enthalten. Eine wiederholte Passwortübergabe oder eine reine Wiederholung der
+  E-Mail wird weiterhin an die Person übergeben. Unklarer Versand wird nicht
+  wiederholt.
+- Der private Statusendpunkt liefert nur Zustand und feste Fortschrittskategorie.
+  Die Warteseite lädt bei einer Zustandsänderung neu, aber niemals nach einer
+  Eingabe oder während eines Formular-Submits. Manuelle Formulare werden nicht
+  automatisch neu geladen.
+- Feste Agentenberichte unterscheiden abgelehnte Anmeldung, ausstehende manuelle
+  Bestätigung, unvollständigen Login und ausstehende Rückleitung. Sie bleiben als
+  ungeprüfte Agentenmeldung gekennzeichnet. Rollen der übermittelten Felder und
+  manuelle Kategorien stehen zusätzlich als feste Marker im Worker-Log;
+  Feldwerte, freie Feldbeschriftungen und private Screenshots werden nicht geloggt.
+
+Automatisierte Tests prüfen die getrennte und die kombinierte zweite Login-Stufe,
+Datenschutz und Haushaltsgrenzen des Statusendpunkts sowie unveränderte
+Wiederholungs- und Warenkorbgrenzen. Ein erfolgreicher Test mit dem echten Shop
+und die Prüfung desselben Kontowarenkorbs auf einem zweiten Gerät bleiben die
+Abnahme. Lokale Tests beweisen keine Shop-Anmeldung.
+
+## Ausbau zu JayJays Shop-Agenten
+
+Die bestehende Trennung bleibt: JayJay klärt Einkauf und Produktvarianten; ein
+Shop-Auftrag führt den begrenzten Browserablauf aus. Ein neuer Shop benötigt
+seine eigenen geprüften Anmeldeziele, Produktkennungen und Fähigkeitsnachweise.
+Der aktuelle Galaxus-Pilot ist noch kein universeller Bestellagent.
+
+Nächste Abnahmen: (1) angemeldeter Galaxus-Warenkorb mit den festen Zielmengen,
+(2) Übergabe geprüfter Positionen aus einem Einkaufsvorhaben, (3) weitere Shops.
+Ein verbindlicher Bestellabschluss ist eine spätere getrennte Funktion mit
+konkreter Bestellfreigabe und Prüfung des Bestellergebnisses; er wird durch diese
+Login-Korrektur nicht aktiviert. Gastwarenkorb, vorbereiteter Kontowarenkorb und
+bestätigte Bestellung bleiben unterschiedliche Ergebnisse.

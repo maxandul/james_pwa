@@ -12,7 +12,7 @@ from .models import ShopLogin, User, utcnow
 from .services import clean_email, membership_for
 from .shop_login import (ACTIVE, ProviderUnavailable, SHOP_IDENTITY_ORIGIN, SHOP_LOGIN_ORIGINS,
     SHOP_LOGIN_URL, account_bound, api, challenge, identity_valid, session_path)
-from .shop_account import credential_response
+from .shop_account import credential_response, manual_reason
 from .shop_cart import CART_PREPARATION
 
 
@@ -28,9 +28,24 @@ At the login form, invoke the registered browser authentication mechanism.
 The application already holds the household account's email and password and
 will answer the registered authentication request. It is not necessary to ask
 the caller for credentials in chat. Never type invented values or request values
-in chat. Never repeat credentials, verification codes or private account details.
-Handle email/password stages through this mechanism and let the application
-pause for manual verification. Only the main agent can request authentication.
+in chat. Never disclose credentials, verification codes or private account details.
+Complete the entire multi-step login before deciding whether sign-in succeeded.
+An accepted authentication response ONLY supplies the requested fields. It does
+not prove the form was submitted or sign-in completed. After EACH response,
+inspect the current page, click its visible Weiter/Continue/Anmelden/Sign in
+control if necessary, and wait for the resulting page/redirect. Request the next
+password or verification step through the registered authentication mechanism.
+A password page after the email step is normal progress, not a login failure.
+If a method choice is offered, use the registered mechanism so the user can
+choose it. Let the application pause for manual verification. Do not ask the
+user to act inside the inaccessible hosted browser or send secrets in chat.
+Do not re-submit credentials after an explicit rejection. Report LOGIN_REJECTED
+only when the website actually rejects them. Report VERIFICATION_REQUIRED only
+if a required manual step cannot be completed through the mechanism. Report
+LOGIN_INCOMPLETE if the ordinary login flow cannot be completed; report
+REDIRECT_PENDING if the identity redirect remains unresolved. Never invent a
+failure cause. After the last step wait for the shop to finish loading, then
+open its visible account control to verify an authenticated account view. Only the main agent can request authentication.
 If the mechanism is unavailable, report AUTH_UNAVAILABLE instead of pretending
 the login was attempted. Never submit ordinary browser text with secrets.
 Do not disclose personal data. The caller deletes the temporary session.
@@ -50,6 +65,10 @@ JAMES_LOGIN_REPORT=AUTH_UNAVAILABLE
 JAMES_LOGIN_REPORT=UNSUPPORTED_METHOD
 JAMES_LOGIN_REPORT=SIGNED_IN
 JAMES_LOGIN_REPORT=NOT_SIGNED_IN
+JAMES_LOGIN_REPORT=LOGIN_REJECTED
+JAMES_LOGIN_REPORT=VERIFICATION_REQUIRED
+JAMES_LOGIN_REPORT=LOGIN_INCOMPLETE
+JAMES_LOGIN_REPORT=REDIRECT_PENDING
 JAMES_LOGIN_REPORT=UNKNOWN
 Choose ACCESS_BLOCKED only for an observed access restriction, not a guess.
 The caller will delete this temporary session. No screenshots or private text
@@ -105,7 +124,7 @@ def cleanup(run_id):
 
 
 def login_handler(app, run_id):
-    used_roles = set()  # Never retry an account field in this session, even under a new request ID.
+    used_roles = set()  # Passwords never replay; email may accompany the first password stage.
     def handle(approval, client, session_id):
         if approval.request.credential_origin not in SHOP_LOGIN_ORIGINS:
             with app.app_context():
@@ -151,11 +170,14 @@ def login_handler(app, run_id):
                     db.session.commit()
                     raise ValueError('Ausgang der Anmeldung unklar; keine Wiederholung.') from None
                 db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id,
-                    ShopLogin.state == 'submitting').values(state='accepted', auth_progress='credentials_submitted'))
+                    ShopLogin.state == 'submitting').values(state='accepted', auth_progress=('both_submitted' if used_roles == {'email', 'password'}
+                        else 'email_submitted' if 'email' in used_roles else 'password_submitted')))
                 db.session.commit()
+                click.echo('Anmeldeschritt: ' + ','.join(sorted(roles)) + '; Übergabe angenommen; Webseitenlogin offen.')
                 return
-            run.auth_progress = 'manual_step'
+            run.auth_progress = manual_reason(schema, app.config, used_roles)
             db.session.commit()
+            click.echo('Anmeldeschritt: ' + run.auth_progress + '; Eingabe in der App erforderlich.')
             db.session.rollback()
         until = monotonic() + 120
         while monotonic() < until:
@@ -266,7 +288,8 @@ def execute_run(app, run_id):
             '; Fehlerkategorie: ' + (observed.error_category or 'none') +
             '; HTTP: ' + str(observed.http_status or 0) +
             '; Browseraktionen: ' + str(observed.browser_calls or 0) +
-            '; Anmeldung: ' + (observed.auth_progress or 'not_observed'))
+            '; Anmeldung: ' + (observed.auth_progress or 'not_observed') +
+            '; Agentenbericht: ' + (observed.agent_report or 'none'))
 
 
 def save_result(run_id, result):
@@ -280,10 +303,11 @@ def save_result(run_id, result):
     if (result.get('status') in ('turn_completed', 'no_browser_evidence')
             and isinstance(report, str) and report in LOGIN_REPORTS.values()
             and (run.task_kind == 'cart' or report in ('access_blocked', 'form_missing',
-                'auth_unavailable', 'unsupported', 'signed_in', 'not_signed_in', 'unknown'))):
+                'auth_unavailable', 'unsupported', 'signed_in', 'not_signed_in', 'unknown',
+                'login_rejected', 'verification_required', 'login_incomplete', 'redirect_pending'))):
         run.agent_report = report
         if (run.task_kind == 'cart' and report == 'cart_ready'
-                and run.auth_progress not in ('credentials_submitted', 'manual_submitted')):
+                and run.auth_progress not in ('credentials_submitted', 'both_submitted', 'email_submitted', 'password_submitted', 'manual_submitted')):
             run.agent_report = 'account_not_verified'
     status = result.get('status')
     outcomes = {'turn_completed', 'no_browser_evidence', 'failed', 'timeout', 'disconnected'}

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='13') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='14') }}">
   <script src="{{ url_for('static', filename='app.js', v='11') }}" defer></script>
   <script src="/static/offline-store.js?v=1" defer></script>
   <script src="/static/pwa.js?v=4" defer></script>
@@ -24,10 +24,11 @@
   </header>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
   {% set in_shopping = request.endpoint == 'main.shopping' or request.blueprint in ['plans', 'receipts'] %}
-  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] %}
+  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] or request.endpoint == 'cooking.manage_categories' %}
   <nav class="nav" aria-label="Hauptnavigation">
-    <a {% if not in_shopping and not in_more %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
+    <a {% if not in_shopping and not in_more and request.blueprint != 'cooking' %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
     <a {% if in_shopping %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}"><span aria-hidden="true">☷</span>Einkauf</a>
+    <a {% if request.blueprint == 'cooking' and request.endpoint != 'cooking.manage_categories' %}aria-current="page"{% endif %} href="{{ url_for('cooking.index') }}"><span aria-hidden="true">♧</span>Kochen</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
       <a href="{{ url_for('settings.index') }}">App-Verwaltung</a>
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}

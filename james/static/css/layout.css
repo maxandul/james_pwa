@@ -177,7 +177,7 @@
   inset: auto 0 0;
   z-index: var(--z-nav);
   display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
+  grid-template-columns: repeat(4,minmax(0,1fr));
   gap: 4px;
   min-height: var(--nav-height);
   padding: 6px max(12px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));

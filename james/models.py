@@ -99,6 +99,7 @@ class ShoppingNeed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, db.ForeignKey("household_item.id"), unique=True, nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0)
+    recipe_context = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     item = db.relationship(HouseholdItem)
     __table_args__ = (db.CheckConstraint("quantity BETWEEN 0 AND 999", name="need_quantity"),)
 
@@ -308,3 +309,75 @@ class ShoppingView(db.Model):
     source = db.relationship(PurchaseSource)
     __mapper_args__ = {'version_id_col': version}
     __table_args__ = (db.CheckConstraint("item_sort IN ('name','name_desc','favorites')", name='shopping_view_sort'),)
+
+
+class RecipeCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    name = db.Column(db.String(60), nullable=False)
+    name_key = db.Column(db.String(240), nullable=False)
+    position = db.Column(db.Integer, nullable=False, default=0)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.UniqueConstraint('household_id', 'name_key', name='recipe_category_household_name'),)
+
+
+class Recipe(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('recipe_category.id'), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, nullable=False, default='')
+    servings = db.Column(db.Numeric(10, 3), nullable=False, default=4)
+    yield_unit = db.Column(db.String(30), nullable=False, default='Portionen')
+    prep_minutes = db.Column(db.Integer, nullable=False, default=0)
+    cook_minutes = db.Column(db.Integer, nullable=False, default=0)
+    rest_minutes = db.Column(db.Integer, nullable=False, default=0)
+    steps = db.Column(db.JSON, nullable=False, default=list)
+    tags = db.Column(db.JSON, nullable=False, default=list)
+    source = db.Column(db.String(1000), nullable=False, default='')
+    is_favorite = db.Column(db.Boolean, nullable=False, default=False)
+    image = db.Column(db.LargeBinary)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    category = db.relationship(RecipeCategory)
+    author = db.relationship(User, foreign_keys=[updated_by])
+    ingredients = db.relationship('RecipeIngredient', cascade='all, delete-orphan', order_by='RecipeIngredient.position')
+    notes = db.relationship('RecipeNote', cascade='all, delete-orphan', order_by='RecipeNote.created_at.desc()')
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.CheckConstraint('servings > 0', name='recipe_servings'),)
+
+
+class RecipeIngredient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False, index=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('household_item.id'), nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Numeric(12, 3))
+    unit = db.Column(db.String(30), nullable=False, default='')
+    group = db.Column(db.String(60), nullable=False, default='')
+    detail = db.Column(db.String(160), nullable=False, default='')
+    is_staple = db.Column(db.Boolean, nullable=False, default=False)
+    item = db.relationship(HouseholdItem)
+    __table_args__ = (db.CheckConstraint('amount IS NULL OR amount > 0', name='recipe_ingredient_amount'),)
+
+
+class RecipeNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    author = db.relationship(User)
+
+
+class CookingAction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    request_id = db.Column(db.String(36), nullable=False)
+    fingerprint = db.Column(db.String(64), nullable=False)
+    __table_args__ = (db.UniqueConstraint('household_id', 'request_id', name='cooking_action_request'),)
