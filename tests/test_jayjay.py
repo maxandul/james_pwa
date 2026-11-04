@@ -8,6 +8,7 @@ from werkzeug.exceptions import Forbidden, NotFound
 from james.extensions import db
 from james.jayjay import execute_tool, run_turn, start_turn
 from james.models import Activity, ChatTurn, HouseholdItem, User
+from james.services import Conflict
 from test_app import csrf, login, seed_item
 
 
@@ -290,3 +291,74 @@ def test_panel_submission_returns_private_escaped_history_and_does_not_repeat_ac
     client.post('/logout', data={'csrf_token':csrf(client, '/')})
     login(client, 'member@example.test')
     assert 'privater Testauftrag' not in client.get('/jayjay?panel=1').json['html']
+
+
+def test_conversations_keep_model_context_separate_and_reopen_history(app, client, monkeypatch):
+    _, home, user = seed_item(app)
+    enable(app)
+    login(client)
+    calls = []
+    def respond(messages, deadline):
+        calls.append(list(messages))
+        return {'status': 'completed', 'output': [{'type': 'message', 'content': [{'type': 'output_text', 'text': 'Antwort'}]}]}
+    monkeypatch.setattr('james.jayjay.responses_request', respond)
+    first, second = str(uuid4()), str(uuid4())
+    token = csrf(client, '/jayjay')
+    def send(identifier, text):
+        return client.post('/jayjay?panel=1', data=dict(csrf_token=token, conversation_id=identifier, request_id=str(uuid4()), message=text))
+    assert send(first, 'Geheimnis im ersten Chat').status_code == 200
+    assert send(second, 'Zweites Thema').status_code == 200
+    assert calls[-1] == [{'role': 'user', 'content': 'Zweites Thema'}]
+    assert send(first, 'Zurück zum ersten Thema').status_code == 200
+    assert calls[-1][0]['content'] == 'Geheimnis im ersten Chat'
+    assert all('Zweites Thema' not in message['content'] for message in calls[-1])
+    new = client.get('/jayjay?panel=1&new=1').json
+    assert 'Geheimnis im ersten Chat</p>' not in new['html']
+    reopened = client.get('/jayjay?panel=1&conversation=' + first)
+    assert 'Geheimnis im ersten Chat</p>' in reopened.json['html']
+    assert reopened.headers['Cache-Control'] == 'no-store'
+    # Even another member of the same household cannot open or change this chat.
+    client.post('/logout', data={'csrf_token': csrf(client, '/')})
+    login(client, 'member@example.test')
+    assert client.get('/jayjay?panel=1&conversation=' + first).status_code == 404
+    token = csrf(client, '/jayjay')
+    assert send(first, 'Fremder Auftrag').status_code == 404
+    assert client.post('/jayjay?panel=1', data=dict(csrf_token=token, conversation_id=first, operation='rename', title='Fremder Titel')).status_code == 404
+
+
+def test_conversation_rename_delete_csrf_and_running_protection(app, client, monkeypatch):
+    from james.models import ChatConversation
+    _, home, user = seed_item(app)
+    enable(app)
+    login(client)
+    monkeypatch.setattr('james.jayjay.responses_request', lambda *a: {'status': 'completed', 'output': [{'type': 'message', 'content': [{'type': 'output_text', 'text': 'Hallo'}]}]})
+    identifier = str(uuid4())
+    token = csrf(client, '/jayjay')
+    client.post('/jayjay?panel=1', data=dict(csrf_token=token, conversation_id=identifier, request_id=str(uuid4()), message='Erster Titel'))
+    assert client.post('/jayjay?panel=1', data=dict(conversation_id=identifier, operation='delete')).status_code == 400
+    data = dict(csrf_token=token, conversation_id=identifier, operation='rename', title='<b>Neuer Titel</b>')
+    assert client.post('/jayjay?panel=1', data=data).status_code == 200
+    html = client.get('/jayjay?panel=1&history=1&q=Neuer').json['html']
+    assert '&lt;b&gt;Neuer Titel&lt;/b&gt;' in html and '<b>Neuer Titel</b>' not in html
+    with app.app_context():
+        db.session.scalar(select(ChatTurn)).state = 'running'
+        db.session.commit()
+    data['operation'] = 'delete'
+    assert client.post('/jayjay?panel=1', data=data).status_code == 409
+    with app.app_context():
+        db.session.scalar(select(ChatTurn)).state = 'done'
+        db.session.commit()
+    assert client.post('/jayjay?panel=1', data=data).status_code == 200
+    assert client.get('/jayjay?conversation=' + identifier).status_code == 404
+    with app.app_context():
+        assert db.session.get(ChatConversation, identifier) is None
+        assert db.session.scalar(select(func.count(ChatTurn.id))) == 0
+
+
+def test_conversation_replay_cannot_move_a_turn_to_another_chat(app):
+    _, home, user = seed_item(app)
+    request_id, first, second = str(uuid4()), str(uuid4()), str(uuid4())
+    with app.app_context():
+        start_turn(user, home, 'Hallo', request_id, first)
+        with pytest.raises(Conflict):
+            start_turn(user, home, 'Hallo', request_id, second)

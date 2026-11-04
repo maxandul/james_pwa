@@ -1,4 +1,5 @@
 import os
+import sys
 import secrets
 import subprocess
 import sqlite3
@@ -116,3 +117,25 @@ def test_umlaut_migration_preserves_category_ids_views_and_removed_defaults(tmp_
     with sqlite3.connect(path) as c:
         assert c.execute('SELECT COUNT(*) FROM category').fetchone()==(4,)
         assert c.execute('SELECT version FROM category WHERE id=1').fetchone()==(2,)
+
+
+def test_chat_migration_groups_existing_turns_without_losing_actions(tmp_path):
+    import sqlite3
+    env = dict(os.environ, APP_ENV='development', SECRET_KEY='migration-test-secret-' * 3,
+        DATABASE_URL='sqlite:///' + (tmp_path / 'chat.sqlite').as_posix())
+    def migrate(*args):
+        subprocess.run([sys.executable, '-m', 'flask', '--app', 'james', 'db', *args], env=env, check=True, capture_output=True)
+    migrate('upgrade', '7a4224e5e7e4')
+    path = tmp_path / 'chat.sqlite'
+    with sqlite3.connect(path) as connection:
+        connection.execute("INSERT INTO household(id,name,settings,version) VALUES(1,'Test','{}',1)")
+        connection.execute("INSERT INTO user(id,email,name,password_hash,active,auth_version,preferences,version) VALUES(1,'test@example.test','Test','test',1,1,'{}',1)")
+        connection.execute("INSERT INTO chat_turn(id,household_id,user_id,auth_version,request_id,prompt,reply,state,actions,created_at) VALUES(1,1,1,1,'request','Hallo','Antwort','done','[]','2026-11-02')")
+    migrate('upgrade')
+    migrate('check')
+    with sqlite3.connect(path) as connection:
+        row = connection.execute('SELECT prompt,reply,actions,conversation_id FROM chat_turn').fetchone()
+        assert row[:3] == ('Hallo','Antwort','[]') and row[3]
+        assert connection.execute('SELECT title,user_id,household_id FROM chat_conversation').fetchone() == ('Bisheriger Verlauf',1,1)
+    migrate('downgrade', '7a4224e5e7e4')
+    migrate('upgrade')
