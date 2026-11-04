@@ -141,6 +141,7 @@ def run_pending_cart(pid, page):
     result = run_cart(page, current_app.config.get('OPENAI_API_KEY'), stopped,
                       lambda count: set_fields(pid, cart_actions=count))
     set_fields(pid, cart_state=result)
+    current_app.logger.warning('Shopbrowser cart result: %s', result)
 
 
 def worker_once(app):
