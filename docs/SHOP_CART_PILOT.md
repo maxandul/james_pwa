@@ -76,7 +76,7 @@ Pro Haushalt und UTC-Tag maximal zwei reine Anmeldetests und **ein** separat
 freigegebener Warenkorbtest. Bestehende Logintests verbrauchen den einen
 Warenkorbversuch nicht. Der eindeutige aktive Haushaltsslot gilt fuer beide
 Testarten gemeinsam. Kein automatischer Neuversuch nach Fehler, Neustart oder
-unklarem Ausgang. Der vorhandene sechsminuetige Ablauf mit Cancellation und
+unklarem Ausgang. Der vorhandene zwölfminütige Ablauf mit Cancellation und
 Bereinigung gilt weiter; kein garantiertes hartes Geldlimit. Das Loeschen des
 Browserlaufs soll einen kontogebundenen Warenkorb nicht loeschen; die reale
 Geraetepruefung muss diese Annahme bestaetigen.
@@ -155,3 +155,17 @@ Ein verbindlicher Bestellabschluss ist eine spätere getrennte Funktion mit
 konkreter Bestellfreigabe und Prüfung des Bestellergebnisses; er wird durch diese
 Login-Korrektur nicht aktiviert. Gastwarenkorb, vorbereiteter Kontowarenkorb und
 bestätigte Bestellung bleiben unterschiedliche Ergebnisse.
+
+## Zeitbudget und Abbruchursache
+
+Neue, ausdrücklich gestartete Tests haben ein Gesamtbudget von zwölf Minuten
+ab Absenden des Startformulars, einschliesslich Warteschlange und Browseraufbau.
+Die Oberfläche nennt diese Frist vor der Kostenfreigabe. Bestehende Laufzeiten
+werden nicht verlängert. Der Browser-Timer erhält nur die verbleibende Frist;
+manuelle Schritte bleiben auf höchstens zwei Minuten innerhalb der Gesamtfrist
+begrenzt. Ein Zeitbudget ist weiterhin kein garantiertes Geldlimit.
+
+Der Watchdog protokolliert eine feste Abbruchkategorie ohne private Daten.
+Ein nach Fristablauf abgebrochener Turn wird als `expired` ausgewiesen, statt
+lediglich als allgemeiner Fehler. Eine manuelle Stornierung bleibt als solche
+sichtbar. Die Änderung beweist noch keinen erfolgreichen Shop-Login.

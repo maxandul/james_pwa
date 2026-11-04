@@ -139,7 +139,7 @@ def test_explicit_single_test_authorization_never_retains_uncapped_session(tmp_p
     client, sessions = fake_client([])
     sessions.create.return_value = NS(id='synthetic-session', spend_control=None)
     result = module.run_task(client, 'https://www.galaxus.ch', tmp_path / 'authorized.json',
-        instructions='test', task='single test', seconds=360, authorized_uncapped_test=True)
+        instructions='test', task='single test', seconds=720, authorized_uncapped_test=True)
     assert result['cost_control'] == 'explicit_uncapped_single_test'
     assert result['cleanup'] == 'deleted'
     assert 'spend_control' not in sessions.create.call_args.kwargs
@@ -148,7 +148,7 @@ def test_explicit_single_test_authorization_never_retains_uncapped_session(tmp_p
 
 
 @pytest.mark.parametrize('options', [
-    {'keep_session': True}, {'session_id': 'existing'}, {'seconds': 361},
+    {'keep_session': True}, {'session_id': 'existing'}, {'seconds': 721},
 ])
 def test_uncapped_authorization_cannot_expand_into_persistent_or_longer_run(tmp_path, options):
     client, sessions = fake_client([])
