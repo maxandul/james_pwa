@@ -38,9 +38,14 @@ class Browserbase:
         self.key, self.project = key, identifier(project)
 
     def request(self, method, path, payload=None):
+        headers = {'X-BB-API-Key': self.key, 'Accept': 'application/json'}
+        # Browserbase rejects bodyless DELETE requests advertised as JSON (400).
+        # Match the provider SDK: Content-Type describes an actual request body.
+        if payload is not None:
+            headers['Content-Type'] = 'application/json'
         req = Request('https://api.browserbase.com/v1/' + path, method=method,
                       data=json.dumps(payload).encode() if payload is not None else None,
-                      headers={'X-BB-API-Key': self.key, 'Content-Type': 'application/json'})
+                      headers=headers)
         try:
             with build_opener(NoRedirect).open(req, timeout=20) as response:
                 raw = response.read(256001)
