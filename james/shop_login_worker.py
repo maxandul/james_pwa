@@ -432,6 +432,13 @@ def register_shop_cli(app):
     def worker(watch):
         """Only consumes explicitly consented PWA jobs; also reconciles stale sessions."""
         while True:
+            if app.config.get('SHOP_BROWSER_ENABLED'):
+                from .shop_browser_worker import worker_once as browser_once
+                from .readiness import database_ready
+                ready = database_ready()
+                db.session.rollback()
+                if ready:
+                    browser_once(app)
             worker_once(app)
             db.session.remove()
             if not watch:
