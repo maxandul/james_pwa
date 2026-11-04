@@ -30,6 +30,7 @@ def test_no_checkout_or_quantity_edit():
     d = driver()
     for label in ['Zur Kasse', 'Jetzt bestellen', 'Kaufen', 'Entfernen', '+']:
         assert not d.permitted({'tag': 'BUTTON', 'label': label})
+    assert not d.permitted({'tag': 'BUTTON', 'label': 'In den Warenkorb', 'product': '999'})
 
 
 def test_ambiguous_add_consumes_budget_before_dispatch():

@@ -76,7 +76,8 @@ class CartDriver:
             return True
         pid = product_id(self.page.url)
         if label in ('in den warenkorb', 'zum warenkorb hinzufügen') and pid in TARGETS:
-            return self.additions[pid] < TARGETS[pid]
+            # Recommendation cards on an allowed product page are separate products.
+            return c.get('product') in (None, pid) and self.additions[pid] < TARGETS[pid]
         return False
 
     def click(self, action):
