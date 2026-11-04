@@ -17,7 +17,9 @@ from uuid import UUID
 
 
 class BrowserUnavailable(Exception):
-    pass
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -46,17 +48,17 @@ class Browserbase:
                 raise ValueError()
             return json.loads(raw) if raw else {}
         except HTTPError as exc:
-            raise BrowserUnavailable(f'Browserdienst nicht verfügbar (HTTP {exc.code}).') from None
+            raise BrowserUnavailable(f'Browserdienst nicht verfügbar (HTTP {exc.code}).', status=exc.code) from None
         except Exception:
             raise BrowserUnavailable('Browserdienst nicht erreichbar; Ausgang der Anfrage prüfen.') from None
 
     def create_context(self):
         return identifier(self.request('POST', 'contexts', {'projectId': self.project})['id'])
 
-    def create_session(self, context):
+    def create_session(self, context, *, keep_alive=True):
         return self.request('POST', 'sessions', {
             'projectId': self.project, 'region': 'eu-central-1',
-            'timeout': 720, 'keepAlive': True,
+            'timeout': 720, 'keepAlive': keep_alive,
             'browserSettings': {'context': {'id': identifier(context), 'persist': True},
                                 'recordSession': False, 'logSession': False,
                                 'solveCaptchas': False, 'advancedStealth': False,

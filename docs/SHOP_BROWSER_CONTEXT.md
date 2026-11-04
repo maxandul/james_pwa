@@ -1,77 +1,79 @@
 # Galaxus: Anmeldung behalten und Browser übernehmen
 
-Stand: 04.11.2026. **Vorbereiteter Operator-Prototyp, noch kein erfolgreicher
-Galaxus-Nachweis und noch keine PWA- oder Warenkorb-Integration.**
+Stand: 04.11.2026. Manuelle Anmeldung im Browserbase-Playground vom Nutzer
+bestätigt. Wiederverwendung des Profils und Warenkorbsteuerung sind noch nicht
+live nachgewiesen. Kein Bestellabschluss implementiert.
 
-## Entscheidung
+## PWA-Verbindungstest
 
-Den bisherigen, nach jedem Test gelöschten OpenAI-Browser nicht weiter als
-Dauerlösung verwenden. Zuerst nachweisen, dass ein manuell angemeldeter
-Browserkontext beim erneuten Öffnen nutzbar bleibt. Browserbase bietet Contexts
-und eine interaktive Live View. Die Agentensteuerung folgt erst nach diesem
-Nachweis; bestehender OpenAI-Schlüssel und laufende Anwendung bleiben erhalten.
+`/shop-browser` bietet dem Eigentümer des gebundenen Haushalts:
 
-## Vorbereitung
+- Browser nach ausdrücklichem Start mit Speicherung der Shop-Anmeldung öffnen.
+- Private Browseransicht in einem neuen Fenster öffnen; dort selbst anmelden.
+- Sichtbares richtiges Konto manuell bestätigen (kein unabhängiger Nachweis).
+- Speichern und schliessen; dasselbe Browserprofil danach erneut öffnen.
+- Gespeichertes Profil und Anmeldung beim Provider löschen.
 
-Browserbase-Projekt und API-Schlüssel sind erforderlich. In der geprüften
-Railway-Web-Konfiguration sind diese noch nicht eingerichtet. Separater Dienst,
-separate Abrechnung. Kein Abo wurde abgeschlossen. `keepAlive` benötigt laut
-Anbieterdokumentation mindestens Hobby. Keine automatische Tarifbuchung.
+Zustandsänderungen brauchen POST, CSRF und die aktuelle Datensatzversion.
+Haushalt und Eigentümer stammen aus der James-Anmeldung. Links sind nicht
+öffentlich gelistet oder protokolliert; die private Weiterleitung prüft Nutzer,
+Haushalt, Sitzungsversion und Ablauf erneut. Ein bereits geöffnetes Fenster
+wird durch das Schliessen der Provider-Sitzung unbrauchbar. Cookie-/Profildaten
+bleiben beim Provider; die James-Datenbank hält private Providerreferenzen und
+während der Sitzung den temporären Steuerungslink. Kein Shop-Passwort wird an
+ein Modell übergeben; keine Video- oder Konsolenaufzeichnung angefordert.
 
-Privat als Umgebungsvariablen setzen: `BROWSERBASE_API_KEY`,
-`BROWSERBASE_PROJECT_ID`. Nie als Kommandoargument, Chat-Nachricht oder in Git.
-Abhängigkeiten: `pip install -r requirements-shop-browser.txt`.
+Der vorhandene einzelne `shop-login-worker --watch` bearbeitet die Warteschlange.
+Er hält die CDP-Verbindung offen, ohne kostenpflichtiges Keep-alive anzufordern.
+Höchstens zwölf Minuten ab Start in James; Provider-Zeitlimit zusätzlich zwölf
+Minuten ab Browsererstellung. Free-Plan laut aktueller Preisübersicht:
+15 Minuten je Sitzung. Kein Upgrade vorausgesetzt, Tarifverfügbarkeit beim
+Live-Test prüfen. Keine Proxies, kein CAPTCHA-Lösen, kein Stealth-Wechsel.
 
-## Bedienung durch den Operator
+Bei «wird vorbereitet» den Statuslink verwenden. Nach Ablauf oder Worker-Neustart
+werden bekannte Sitzungen geschlossen und das Profil bleibt erhalten.
+Unklare Erstellung (`creation_unknown`) wird nicht wiederholt: Operator muss im
+Provider-Dashboard abgleichen. Fehlgeschlagene Bereinigung behält die Referenz;
+Löschabsicht geht bei einem Netzwerkfehler nicht verloren. Entzogene Mitgliedschaft
+oder geänderte James-Anmeldung lösen Profilbereinigung aus. Automatischer Worker
+braucht genau eine laufende Instanz; parallele CDP-Worker sind nicht unterstützt.
 
-Ein privater Statuspfad ausserhalb von Git, pro Haushalt ein eigener Pfad.
-Hier nur Platzhalter; keine realen Kontodaten in Dokumentation oder Tests.
+## Deployment
 
-```sh
-python scripts/shop_browser_context.py init --state /private/james-shop/state.json
-python scripts/shop_browser_context.py open --state /private/james-shop/state.json
-python scripts/shop_browser_context.py close --state /private/james-shop/state.json
-python scripts/shop_browser_context.py open --state /private/james-shop/state.json
-python scripts/shop_browser_context.py close --state /private/james-shop/state.json
-```
+Web und Worker auf denselben getesteten Commit bringen. Web führt die Migration
+`9c6ef1a87b20` aus. Worker beginnt neue Browserjobs erst bei bereitem Schema.
+Auf beiden Services `SHOP_BROWSER_ENABLED=1` setzen. Bestehende
+`GALAXUS_HOUSEHOLD_ID` bleibt. Nur der Worker braucht `BROWSERBASE_API_KEY` und
+`BROWSERBASE_PROJECT_ID`; beide sind dort vom Nutzer bereits hinterlegt.
+Bestehender OpenAI-Schlüssel bleibt unverändert.
 
-`open` gibt einen zeitlich begrenzten Steuerungslink im privaten Terminal aus.
-Dieser Link gewährt Browserzugriff: nicht in Logs/CI/Issues veröffentlichen.
-Der Nutzer meldet sich in genau diesem Browser selbst an. Danach `close`,
-Synchronisierung abwarten, erneut `open` und das sichtbare Konto prüfen.
-Die Sitzung ist auf zwölf Minuten begrenzt. Context bleibt beim Schliessen
-bestehen. `forget` schliesst die Sitzung und löscht das Providerprofil.
+Kein Browserstart allein durch Deployment oder GET. Keine Warenkorbänderung,
+kein Agent und kein Checkout durch diesen Verbindungstest. Der alte Pilot bleibt
+separat, parallele Starts mit einem offenen neuen Browser werden abgewiesen.
 
-Die Statusdatei speichert nur Projekt-, Kontext- und Sitzungsreferenzen mit
-Dateimodus 0600; Cookies bleiben beim Provider. Keine Video-/Konsolenaufzeichnung
-angefordert, keine Passwortübergabe an ein Modell. Keine Browseraktionen ausser
-Aufruf der Galaxus-Startseite. Kein Agent, kein Kauf, keine Warenkorbänderung.
+## Abnahme
 
-Bei `creation_pending` ist der Ausgang einer API-Erstellung unklar: im privaten
-Provider-Dashboard abgleichen, bevor der Marker manuell bereinigt wird.
-Nicht erneut erstellen und dabei unbekannte Sitzungen vervielfachen. Sitzungen
-enden zusätzlich über das Provider-Zeitlimit. Bei fehlgeschlagener Bereinigung
-bleibt die Sitzungsreferenz für einen weiteren `close`-Versuch erhalten.
+1. In James «Galaxus verbinden» starten, Browser öffnen, selbst anmelden.
+2. Richtiges Konto sichtbar bestätigen und «Speichern und schliessen» wählen.
+3. Warten bis «Bereit», gespeicherten Browser erneut öffnen.
+4. Prüfen, ob ohne neuen Login dasselbe Konto sichtbar ist.
+5. Danach erst Agentensteuerung mit konkreter Produkt-/Mengenfreigabe anbinden;
+   Warenkorb unabhängig auf dem normalen Gerät kontrollieren.
 
-## Abnahme und nächste Umsetzung
+Desktop zuerst. Mobile Tastaturen werden in der Browserbase-Live-View laut
+Dokumentation nicht direkt unterstützt; komfortabler mobiler Eingaberelay bleibt
+offen. Anmeldung kann vom Shop widerrufen werden. Gespeicherte Cookies sind kein
+Nachweis für eine gültige oder dauerhafte Anmeldung.
 
-1. Galaxus im bereitgestellten Browser erreichbar, ohne Umgehung einer Sperre.
-2. Nutzer kann sich anmelden; sichtbares richtiges Konto manuell bestätigen.
-3. Nach Schliessen und Wiederöffnen ist die Anmeldung weiterhin sichtbar.
-4. Android/iPhone-Eingabe praktisch testen. Browserbase unterstützt mobile
-   Tastaturen in der Live View laut Dokumentation nicht direkt. Für James ist
-   daher ggf. ein eigener Eingaberelay nötig; Desktop-Erfolg reicht nicht.
-5. Erst dann Haushaltsbindung, CSRF-geschützte PWA-Steuerung, Sperre zwischen
-   Nutzer und Agent, Widerruf und private Fehlerdiagnose implementieren.
-6. Agent soll ein freigegebenes Testprodukt gezielt auf Sollmenge setzen;
-   Warenkorb danach unabhängig im normalen Galaxus-Konto kontrollieren.
-7. Wiederverwendung beim nächsten Auftrag prüfen. Bestellauslösung bleibt eine
-   spätere, separate Funktion mit konkreter Warenkorb-/Kostenfreigabe.
+## Operator-Prototyp und CLI
 
-Eine gespeicherte Sitzung garantiert weder dauerhaft gültige Anmeldung noch
-Akzeptanz des Cloud-Browsers durch Galaxus. Scheitert bereits der manuelle Login
-an einer Zugriffssperre, wird dieser Weg beendet und ein nutzereigener Browser
-als Alternative geprüft. Kein Wechsel von Proxy/Identität zur Umgehung.
+`scripts/shop_browser_context.py` bleibt als separater Operator-Prototyp vorhanden.
+Seine `open`-Variante trennt den Client und fragt deshalb weiterhin Keep-alive an;
+nicht mit dem Free-Plan-PWA-Worker verwechseln. CLI-Zugang kann über `browse`
+(bei Entwicklung geprüft: 0.11.3) erfolgen. Railway-OAuth liefert dieser Umgebung
+nur Variablennamen. Die versuchte CLI-Anmeldung wurde durch die Netzwerksperre zu
+`backboard.railway.com` verhindert. Deshalb erfolgt der PWA-Test direkt auf Railway,
+mit dort vorhandenen Schlüsseln, ohne Export in Chat oder Logs.
 
 ## Quellen
 
@@ -79,3 +81,4 @@ als Alternative geprüft. Kein Wechsel von Proxy/Identität zur Umgehung.
 - https://docs.browserbase.com/platform/browser/observability/session-live-view
 - https://docs.browserbase.com/reference/api/create-a-session
 - https://docs.browserbase.com/reference/api/update-a-session
+- https://www.browserbase.com/pricing

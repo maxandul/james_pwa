@@ -381,3 +381,23 @@ class CookingAction(db.Model):
     request_id = db.Column(db.String(36), nullable=False)
     fingerprint = db.Column(db.String(64), nullable=False)
     __table_args__ = (db.UniqueConstraint('household_id', 'request_id', name='cooking_action_request'),)
+
+
+class ShopBrowser(db.Model):
+    """One private persisted browser profile per household; no shop credentials."""
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    auth_version = db.Column(db.Integer, nullable=False)
+    state = db.Column(db.String(24), nullable=False, default='idle')
+    context_id = db.Column(db.String(128))
+    session_id = db.Column(db.String(128))
+    live_url = db.Column(db.Text)
+    expires_at = db.Column(db.DateTime)
+    confirmed_at = db.Column(db.DateTime)
+    error_category = db.Column(db.String(32))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.CheckConstraint(
+        "state IN ('idle','queued','creating','active','closing','forgetting','error')",
+        name='shop_browser_state'),)

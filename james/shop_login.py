@@ -11,7 +11,7 @@ from flask_login import current_user
 from sqlalchemy import func, select, update
 
 from .extensions import db
-from .models import ShopLogin, User, utcnow
+from .models import ShopLogin, ShopBrowser, Household, User, utcnow
 from .services import membership_for
 from .views import household_required
 from .shop_cart import PRODUCTS
@@ -147,6 +147,9 @@ def index():
             message += f' Für die Einrichtung ist eure Haushaltskennung {g.household.id}.'
         return render_template('error.html', message=message), 403
     if request.method == 'POST':
+        db.session.execute(select(Household.id).where(Household.id == g.household.id).with_for_update())
+        if db.session.scalar(select(ShopBrowser.id).where(ShopBrowser.household_id == g.household.id, ShopBrowser.state != 'idle')):
+            abort(409)
         if request.form.get('cost_consent') != 'yes':
             abort(400)
         kind = request.form.get('task_kind', 'login')
