@@ -34,6 +34,9 @@ def create_app(test_config=None):
         JAYJAY_ENABLED=os.getenv('JAYJAY_ENABLED', '') == '1',
         OPENAI_API_KEY=os.getenv('OPENAI_API_KEY', ''),
         OPENAI_MODEL=os.getenv('OPENAI_MODEL', ''),
+        SHOP_BROWSER_ENABLED=os.getenv('SHOP_BROWSER_ENABLED', '') == '1',
+        BROWSERBASE_API_KEY=os.getenv('BROWSERBASE_API_KEY', ''),
+        BROWSERBASE_PROJECT_ID=os.getenv('BROWSERBASE_PROJECT_ID', ''),
         SHOP_LOGIN_PILOT_ENABLED=os.getenv('SHOP_LOGIN_PILOT_ENABLED', '') == '1',
         SHOP_CART_PILOT_ENABLED=os.getenv('SHOP_CART_PILOT_ENABLED', '') == '1',
         SHOP_CART_EXTRA_ATTEMPT_DATE=os.getenv('SHOP_CART_EXTRA_ATTEMPT_DATE', ''),
@@ -117,6 +120,8 @@ def create_app(test_config=None):
     app.register_blueprint(plans)
     app.register_blueprint(chat)
     app.register_blueprint(shop_login)
+    from .shop_browser import shop_browser
+    app.register_blueprint(shop_browser)
     from .cooking import cooking
     app.register_blueprint(cooking)
     register_cli(app)

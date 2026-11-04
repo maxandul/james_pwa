@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Galaxus verbinden · James{% endblock %}
+{% block content %}
+<h1>Galaxus verbinden</h1>
+<p>Melde dich selbst im bereitgestellten Browser bei Galaxus an. James behält dieses Browserprofil für spätere Aufträge. Nach dem Schliessen kannst du es erneut öffnen und prüfen, ob du noch angemeldet bist.</p>
+<p>Dieser Verbindungstest bestellt nichts und verändert den Warenkorb nicht automatisch.</p>
+{% if profile %}
+<p>Status: {% if profile.state == 'idle' %}Bereit{% elif profile.state == 'queued' %}Browser wird vorbereitet{% elif profile.state == 'creating' %}Browser wird geöffnet{% elif profile.state == 'active' and profile.expires_at > now %}Browser ist geöffnet{% elif profile.state == 'closing' %}Sitzung wird gespeichert und geschlossen{% elif profile.state == 'forgetting' %}Verbindung wird gelöscht{% else %}Prüfung erforderlich{% endif %}</p>
+{% if profile.error_category %}<p role="alert">Der letzte Schritt konnte nicht abgeschlossen werden. Fehlerkennung: {{ profile.error_category }}. Bitte keine neue Anmeldung starten, bis die offene Sitzung geklärt ist.</p>{% endif %}
+{% if profile.confirmed_at %}<p>Du hast das sichtbare Konto in dieser Sitzung bestätigt. Ein automatischer Nachweis oder ein Bestellauftrag ist das noch nicht.</p>{% endif %}
+{% endif %}
+{% if not profile or profile.state == 'idle' %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="version" value="{{ profile.version if profile else 0 }}">
+<label><input type="checkbox" name="consent" value="yes" required> Browser für höchstens zwölf Minuten öffnen. Ich erlaube die Speicherung meiner Galaxus-Anmeldung bei Browserbase für diesen Haushalt. Es wird Browserzeit meines Tarifs verwendet.</label>
+<button class="button" name="action" value="open">{{ 'Gespeicherten Browser öffnen' if profile and profile.context_id else 'Galaxus verbinden' }}</button>
+</form>
+{% endif %}
+{% if profile and profile.state == 'active' and profile.expires_at > now %}
+<p><a class="button" href="{{ url_for('shop_browser.live') }}" target="_blank" rel="noopener noreferrer">Galaxus-Browser öffnen</a></p>
+<p>Im neuen Fenster anmelden, danach hierher zurückkehren. Das Schliessen des Fensters allein beendet die Sitzung nicht. Bei Problemen mit der Handy-Tastatur bitte vorerst einen Computer verwenden.</p>
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="{{ profile.version }}">
+<button class="button" name="action" value="confirm">Ich sehe mein richtiges Galaxus-Konto</button>
+<button class="button" name="action" value="close">Speichern und schliessen</button>
+</form>
+{% endif %}
+{% if profile and profile.state not in ('idle', 'active') %}<p><a href="{{ url_for('shop_browser.index') }}">Status aktualisieren</a></p>{% endif %}
+{% if profile and profile.state != 'creating' %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="{{ profile.version }}">
+<button class="button" name="action" value="forget">Verbindung und gespeicherte Anmeldung löschen</button>
+</form>
+{% endif %}
+{% endblock %}
