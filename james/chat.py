@@ -44,7 +44,7 @@ def index():
         conversation = db.session.scalar(conversations().order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc()).limit(1))
     identifier = identifier or (conversation.id if conversation else str(uuid4()))
     if request.method == 'POST':
-        # Older clients without conversation fields retain the previous replay contract.
+        # Old open tabs may still submit without a conversation field after migration.
         operation = request.form.get('operation', 'message')
         try:
             if operation in ('rename', 'delete'):
@@ -67,9 +67,13 @@ def index():
             elif operation == 'message':
                 if not configured():
                     raise ValueError('JayJay ist noch nicht mit OpenAI verbunden.')
-                # No-field legacy POSTs use the old null conversation for idempotent retries.
+                if not request.form.get('conversation_id'):
+                    previous = db.session.scalar(select(ChatTurn).where(ChatTurn.user_id == current_user.id,
+                        ChatTurn.household_id == g.household.id, ChatTurn.request_id == request.form.get('request_id')))
+                    latest = db.session.scalar(conversations().order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc()).limit(1))
+                    identifier = previous.conversation_id if previous else (latest.id if latest else identifier)
                 turn, created = start_turn(current_user.id, g.household.id,
-                    request.form.get('message'), request.form.get('request_id'), request.form.get('conversation_id'))
+                    request.form.get('message'), request.form.get('request_id'), identifier)
                 if created:
                     run_turn(turn.id, current_user.id, g.household.id)
                 identifier = turn.conversation_id

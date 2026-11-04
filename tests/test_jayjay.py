@@ -62,6 +62,7 @@ def test_full_chat_turn_reads_then_changes_and_replay_never_calls_again(app, cli
     with app.app_context():
         assert db.session.scalar(select(func.count(Activity.id))) == 1
         assert db.session.scalar(select(ChatTurn.state)) == 'done'
+        assert db.session.scalar(select(ChatTurn.conversation_id)) is not None
 
 
 def test_same_resource_duplicate_tool_calls_do_not_add_extra_twice(app):
