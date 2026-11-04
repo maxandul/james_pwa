@@ -1,8 +1,9 @@
 # Galaxus: Anmeldung behalten und Browser übernehmen
 
-Stand: 04.11.2026. Manuelle Anmeldung im Browserbase-Playground vom Nutzer
-bestätigt. Wiederverwendung des Profils und Warenkorbsteuerung sind noch nicht
-live nachgewiesen. Kein Bestellabschluss implementiert.
+Stand: 04.11.2026. Manuelle Anmeldung und Wiederverwendung des gespeicherten
+Profils nach Schliessen und erneutem Öffnen wurden vom Nutzer bestätigt.
+Der neue Warenkorbtest ist implementiert; sein Live-Ergebnis steht noch aus.
+Kein Bestellabschluss implementiert.
 
 ## PWA-Verbindungstest
 
@@ -41,7 +42,7 @@ braucht genau eine laufende Instanz; parallele CDP-Worker sind nicht unterstütz
 ## Deployment
 
 Web und Worker auf denselben getesteten Commit bringen. Web führt die Migration
-`9c6ef1a87b20` aus. Worker beginnt neue Browserjobs erst bei bereitem Schema.
+bis zum aktuellen Head `a47b9d31e602` aus. Worker beginnt neue Browserjobs erst bei bereitem Schema.
 Auf beiden Services `SHOP_BROWSER_ENABLED=1` setzen. Bestehende
 `GALAXUS_HOUSEHOLD_ID` bleibt. Nur der Worker braucht `BROWSERBASE_API_KEY` und
 `BROWSERBASE_PROJECT_ID`; beide sind dort vom Nutzer bereits hinterlegt.
@@ -57,8 +58,8 @@ separat, parallele Starts mit einem offenen neuen Browser werden abgewiesen.
 2. Richtiges Konto sichtbar bestätigen und «Speichern und schliessen» wählen.
 3. Warten bis «Bereit», gespeicherten Browser erneut öffnen.
 4. Prüfen, ob ohne neuen Login dasselbe Konto sichtbar ist.
-5. Danach erst Agentensteuerung mit konkreter Produkt-/Mengenfreigabe anbinden;
-   Warenkorb unabhängig auf dem normalen Gerät kontrollieren.
+5. Den separaten Warenkorbtest für die angezeigten drei Produkte starten;
+   danach den Warenkorb unabhängig auf dem normalen Gerät kontrollieren.
 
 Desktop zuerst. Mobile Tastaturen werden in der Browserbase-Live-View laut
 Dokumentation nicht direkt unterstützt; komfortabler mobiler Eingaberelay bleibt
@@ -82,3 +83,29 @@ mit dort vorhandenen Schlüsseln, ohne Export in Chat oder Logs.
 - https://docs.browserbase.com/reference/api/create-a-session
 - https://docs.browserbase.com/reference/api/update-a-session
 - https://www.browserbase.com/pricing
+
+## Begrenzter Warenkorbtest im gespeicherten Browser
+
+Nach dem Öffnen und der Bestätigung des richtigen Kontos bietet `/shop-browser`
+einen separaten Teststart mit den festen Gesamtmengen 2/1/1 aus `shop_cart.py`.
+Nur der gebundene Haushaltseigentümer darf starten; CSRF, Versionsprüfung,
+bestätigte aktive Sitzung und mindestens drei Minuten Restzeit sind erforderlich.
+Der bestehende Worker übernimmt den Auftrag einmalig in derselben CDP-Sitzung.
+Ein Neustart führt zu `INTERRUPTED`, niemals zur automatischen Wiederholung.
+
+Der ComputerToolset-Runner verwendet `gpt-6.1-sol`, maximal 40 API-Schritte und
+neun Minuten innerhalb der verbleibenden Browsersitzung. API-Aufrufe haben
+45 Sekunden Timeout und keine automatischen Wiederholungen. Screenshots werden
+nur im Arbeitsspeicher gehalten und zur Steuerung an OpenAI gesendet (`store=false`).
+Gespeichert werden ausschliesslich feste Ergebniscodes und die Klickanzahl.
+Der Driver erlaubt passende Galaxus-Leseziele, Produktsuche nach den drei IDs und
+begrenzte Hinzufügen-Klicks auf deren Produktseiten. Checkout, Bestellen,
+Mengeneditoren, fremde Produkte und beliebige Tastatureingaben sind nicht freigegeben.
+Unbekannte Bedienelemente stoppen mit `CONTROL_BLOCKED`; die Allowlist muss bei
+Shop-Änderungen gegebenenfalls anhand eines konkreten Tests angepasst werden.
+
+`CART_READY` wird ausdrücklich als Agentenmeldung angezeigt. Der Nachweis im
+Warenkorb auf dem eigenen Gerät steht noch aus, bis der Eigentümer ihn bestätigt.
+Teiländerungen werden nicht automatisch zurückgesetzt. Zum Abbrechen dient
+«Speichern und schliessen»; während eines Laufs den Shop nicht parallel bedienen.
+Web und Worker müssen gemeinsam auf dieselbe Migration ausgeliefert werden.

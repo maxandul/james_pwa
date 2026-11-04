@@ -172,3 +172,59 @@ def test_connected_worker_uses_free_plan_and_holds_browser(enabled, monkeypatch)
     assert p.create_session.call_args.kwargs == {'keep_alive':False}
     page.goto.assert_called_once_with('https://www.galaxus.ch/',wait_until='domcontentloaded',timeout=30000)
     cleanup.assert_called_once()
+
+
+def test_cart_requires_confirmed_live_account_and_consent(enabled, client):
+    pid = record(enabled)
+    assert post(client, 'cart', 1).status_code == 409
+    assert post(client, 'confirm', 1).status_code == 302
+    assert post(client, 'cart', 2, consent='').status_code == 400
+    assert post(client, 'cart', 2).status_code == 302
+    assert post(client, 'cart', 2).status_code == 409
+    with enabled.app_context():
+        item = db.session.get(ShopBrowser, pid)
+        assert item.cart_state == 'queued'
+        version = item.version
+    assert post(client, 'cart', version).status_code == 409
+
+
+def test_cart_cannot_start_near_timeout(enabled, client):
+    record(enabled, confirmed_at=utcnow(), expires_at=utcnow()+timedelta(seconds=120))
+    assert post(client, 'cart', 1).status_code == 409
+
+
+def test_restart_marks_cart_interrupted_never_replays(enabled, monkeypatch):
+    pid = record(enabled, cart_state='running')
+    provider = Mock()
+    provider.session.return_value = {'status': 'COMPLETED'}
+    monkeypatch.setattr('james.shop_browser_worker.Browserbase', lambda *a: provider)
+    monkeypatch.setattr('james.shop_browser_worker.finish',
+                        lambda p, i, **kw: finish(p, i, pause=lambda _: None, **kw))
+    agent = Mock()
+    monkeypatch.setattr('james.shop_cart_agent.run_cart', agent)
+    with enabled.app_context():
+        worker_once(enabled)
+        assert db.session.get(ShopBrowser, pid).cart_state == 'INTERRUPTED'
+    agent.assert_not_called()
+
+
+def test_cart_worker_preserves_close_request(enabled, monkeypatch):
+    from james.shop_browser_worker import run_pending_cart
+    pid = record(enabled, cart_state='queued', confirmed_at=utcnow())
+    def run(page, key, stopped, progress):
+        assert not stopped()
+        progress(2)
+        item = db.session.get(ShopBrowser, pid)
+        item.state = 'closing'
+        db.session.commit()
+        assert stopped()
+        return 'INTERRUPTED'
+    agent = Mock(side_effect=run)
+    monkeypatch.setattr('james.shop_cart_agent.run_cart', agent)
+    with enabled.app_context():
+        run_pending_cart(pid, Mock())
+        item = db.session.get(ShopBrowser, pid)
+        assert item.state == 'closing' and item.cart_state == 'INTERRUPTED'
+        assert item.cart_actions == 2
+        run_pending_cart(pid, Mock())
+    assert agent.call_count == 1

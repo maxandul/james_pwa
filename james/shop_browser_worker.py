@@ -43,6 +43,7 @@ def finish(provider, pid, *, forget=False, pause=sleep):
     db.session.expire_all()
     item = db.session.get(ShopBrowser, pid)
     forget = forget or item.state == 'forgetting' or not valid(item)
+    interrupted = item.cart_state in ('queued', 'running')
     db.session.rollback()
     if forget and context:
         try:
@@ -51,6 +52,7 @@ def finish(provider, pid, *, forget=False, pause=sleep):
             if 'HTTP 404' not in str(exc):
                 raise
     set_fields(pid, session_id=None, live_url=None, state='idle', error_category=None,
+               **({'cart_state': 'INTERRUPTED'} if interrupted else {}),
                **({'context_id': None, 'confirmed_at': None} if forget else {}))
 
 
@@ -90,9 +92,36 @@ def connect(provider, pid):
             if stop:
                 finish(provider, pid, forget=forget)
                 return
+            if item.cart_state == 'queued':
+                run_pending_cart(pid, page)
             # Keeps Playwright's event dispatch and the CDP connection running.
             page.wait_for_timeout(1000)
         finish(provider, pid)
+
+
+def run_pending_cart(pid, page):
+    from flask import current_app
+    from .shop_cart_agent import run_cart
+    claimed = db.session.execute(update(ShopBrowser).where(
+        ShopBrowser.id == pid, ShopBrowser.state == 'active',
+        ShopBrowser.cart_state == 'queued').values(cart_state='running',
+            version=ShopBrowser.version + 1)).rowcount
+    db.session.commit()
+    if not claimed:
+        return
+    deadline = monotonic() + 540
+
+    def stopped():
+        db.session.expire_all()
+        item = db.session.get(ShopBrowser, pid)
+        stop = (not item or item.state != 'active' or not valid(item)
+                or item.expires_at <= utcnow() or monotonic() >= deadline)
+        db.session.rollback()
+        return stop
+
+    result = run_cart(page, current_app.config.get('OPENAI_API_KEY'), stopped,
+                      lambda count: set_fields(pid, cart_actions=count))
+    set_fields(pid, cart_state=result)
 
 
 def worker_once(app):

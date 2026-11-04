@@ -405,6 +405,8 @@ class ShopBrowser(db.Model):
     expires_at = db.Column(db.DateTime)
     confirmed_at = db.Column(db.DateTime)
     error_category = db.Column(db.String(32))
+    cart_state = db.Column(db.String(32))
+    cart_actions = db.Column(db.Integer(), nullable=False, default=0, server_default='0')
     version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     __mapper_args__ = {'version_id_col': version}
     __table_args__ = (db.CheckConstraint(

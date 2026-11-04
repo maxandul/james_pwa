@@ -3,11 +3,15 @@
 {% block content %}
 <h1>Galaxus verbinden</h1>
 <p>Melde dich selbst im bereitgestellten Browser bei Galaxus an. James behält dieses Browserprofil für spätere Aufträge. Nach dem Schliessen kannst du es erneut öffnen und prüfen, ob du noch angemeldet bist.</p>
-<p>Dieser Verbindungstest bestellt nichts und verändert den Warenkorb nicht automatisch.</p>
+<p>Das Öffnen des Browsers verändert den Warenkorb nicht. Den begrenzten Warenkorbtest startest du unten separat. Es wird nichts bestellt.</p>
 {% if profile %}
 <p>Status: {% if profile.state == 'idle' %}Bereit{% elif profile.state == 'queued' %}Browser wird vorbereitet{% elif profile.state == 'creating' %}Browser wird geöffnet{% elif profile.state == 'active' and profile.expires_at > now %}Browser ist geöffnet{% elif profile.state == 'closing' %}Sitzung wird gespeichert und geschlossen{% elif profile.state == 'forgetting' %}Verbindung wird gelöscht{% else %}Prüfung erforderlich{% endif %}</p>
 {% if profile.error_category %}<p role="alert">Der letzte Schritt konnte nicht abgeschlossen werden. Fehlerkennung: {{ profile.error_category }}. Bitte keine neue Anmeldung starten, bis die offene Sitzung geklärt ist.</p>{% endif %}
 {% if profile.confirmed_at %}<p>Du hast das sichtbare Konto in dieser Sitzung bestätigt. Ein automatischer Nachweis oder ein Bestellauftrag ist das noch nicht.</p>{% endif %}
+{% if profile.cart_state %}
+<p role="status">Warenkorbtest: {% if profile.cart_state == 'queued' %}Wartet auf den Browser{% elif profile.cart_state == 'running' %}Agent arbeitet – bitte den Galaxus-Browser währenddessen nicht bedienen{% elif profile.cart_state == 'CART_READY' %}Agent meldet: Zielmengen erreicht. Bitte prüfe den Warenkorb zusätzlich auf deinem eigenen Gerät.{% else %}Beendet mit Kennung {{ profile.cart_state }}. Der Warenkorb kann teilweise verändert sein; bitte vor einem neuen Test prüfen.{% endif %} ({{ profile.cart_actions }} Klicks)</p>
+<p><a href="{{ url_for('shop_browser.index') }}">Status aktualisieren</a></p>
+{% endif %}
 {% endif %}
 {% if not profile or profile.state == 'idle' %}
 <form method="post">
@@ -25,6 +29,17 @@
 <button class="button" name="action" value="confirm">Ich sehe mein richtiges Galaxus-Konto</button>
 <button class="button" name="action" value="close">Speichern und schliessen</button>
 </form>
+{% if profile.confirmed_at and profile.cart_state not in ('queued', 'running') %}
+<h2>Warenkorbtest</h2>
+<ul>{% for product in products %}<li>{{ product.quantity }} × {{ product.name }}, {{ product.package }} ({{ product.id }})</li>{% endfor %}</ul>
+<p>Das sind die gewünschten Gesamtmengen. Andere Artikel bleiben erhalten. Für den Start müssen mindestens drei Minuten Browserzeit übrig sein; andernfalls bitte speichern, erneut öffnen und das Konto bestätigen.</p>
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version" value="{{ profile.version }}">
+<label><input type="checkbox" name="consent" value="yes" required> Diese drei Testprodukte vorbereiten. Dabei werden Browserzeit und kostenpflichtige OpenAI-Aufrufe verwendet. Browseransichten werden zur Steuerung an OpenAI übertragen.</label>
+<button class="button" name="action" value="cart">Warenkorbtest starten</button>
+</form>
+{% endif %}
+{% if profile.cart_state in ('queued','running') %}<p>Mit «Speichern und schliessen» brichst du den Test ab. Ein laufender API-Aufruf kann noch bis zu 45 Sekunden benötigen. Bereits erfolgte Warenkorbänderungen bleiben bestehen.</p>{% endif %}
 {% endif %}
 {% if profile and profile.state not in ('idle', 'active') %}<p><a href="{{ url_for('shop_browser.index') }}">Status aktualisieren</a></p>{% endif %}
 {% if profile and profile.state != 'creating' %}
