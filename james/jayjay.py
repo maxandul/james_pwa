@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 
 from .assortment import key, lock_household, shopping_options
 from .extensions import db
-from .models import ChatTurn, HouseholdItem, ShoppingNeed, User, utcnow
+from .models import ChatConversation, ChatTurn, HouseholdItem, ShoppingNeed, User, utcnow
 from .services import Conflict, change_item, clean_text, create_item, membership_for
 
 INSTRUCTIONS = '''Du bist James, Spitzname JayJay, der persönliche Haushaltsbutler.
@@ -179,7 +179,7 @@ def responses_request(messages, deadline):
         raise ValueError('Die Verbindung zu JayJay ist gerade nicht verfügbar.') from None
 
 
-def start_turn(user_id, household_id, prompt, request_id):
+def start_turn(user_id, household_id, prompt, request_id, conversation_id=None):
     prompt = (prompt or '').replace('\r\n', '\n').replace('\r', '\n').strip()
     if not 1 <= len(prompt) <= 2000 or any(ord(c) < 32 and c not in '\n\t' for c in prompt):
         raise ValueError('Bitte eine Nachricht mit 1 bis 2000 Zeichen eingeben.')
@@ -187,10 +187,15 @@ def start_turn(user_id, household_id, prompt, request_id):
         request_id = str(UUID(request_id))
     except (TypeError, ValueError, AttributeError):
         raise ValueError('Bitte den Chat neu laden.') from None
+    if conversation_id is not None:
+        try:
+            conversation_id = str(UUID(conversation_id))
+        except (ValueError, TypeError, AttributeError):
+            raise ValueError('Bitte den Chat neu laden.') from None
     lock_household(household_id)
     existing = db.session.scalar(select(ChatTurn).where(ChatTurn.user_id == user_id, ChatTurn.request_id == request_id))
     if existing:
-        if existing.household_id != household_id or existing.prompt != prompt:
+        if existing.household_id != household_id or existing.prompt != prompt or existing.conversation_id != conversation_id:
             raise Conflict('Diese Anfragekennung wurde bereits verwendet.')
         db.session.rollback()
         return existing, False
@@ -201,8 +206,18 @@ def start_turn(user_id, household_id, prompt, request_id):
     if db.session.scalar(select(ChatTurn.id).where(ChatTurn.household_id == household_id,
         ChatTurn.state == 'running', ChatTurn.created_at >= utcnow() - timedelta(minutes=1))):
         raise Conflict('JayJay bearbeitet gerade eine Nachricht. Bitte kurz warten.')
+    if conversation_id:
+        conversation = db.session.get(ChatConversation, conversation_id)
+        if conversation and (conversation.user_id != user_id or conversation.household_id != household_id):
+            abort(404)
+        if not conversation:
+            conversation = ChatConversation(id=conversation_id, user_id=user_id, household_id=household_id,
+                title=' '.join(prompt.split())[:100])
+            db.session.add(conversation)
+        conversation.updated_at = utcnow()
+        db.session.flush()
     user = db.session.get(User, user_id)
-    turn = ChatTurn(user_id=user_id, household_id=household_id, auth_version=user.auth_version,
+    turn = ChatTurn(conversation_id=conversation_id, user_id=user_id, household_id=household_id, auth_version=user.auth_version,
         request_id=request_id, prompt=prompt, actions=[])
     db.session.add(turn)
     db.session.commit()
@@ -217,7 +232,8 @@ def run_turn(turn_id, user_id, household_id):
     if turn.state != 'running':
         return turn
     history = db.session.scalars(select(ChatTurn).where(ChatTurn.user_id == user_id,
-        ChatTurn.household_id == household_id, ChatTurn.id < turn_id, ChatTurn.state == 'done')
+        ChatTurn.household_id == household_id, ChatTurn.conversation_id == turn.conversation_id,
+        ChatTurn.id < turn_id, ChatTurn.state == 'done')
         .order_by(ChatTurn.id.desc()).limit(4)).all()
     messages = []
     for prior in reversed(history):

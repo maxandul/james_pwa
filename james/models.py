@@ -242,7 +242,16 @@ class PurchasePlan(db.Model):
     )
 
 
+class ChatConversation(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    title = db.Column(db.String(100), nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
 class ChatTurn(db.Model):
+    conversation_id = db.Column(db.String(36), db.ForeignKey('chat_conversation.id'), index=True)
     id = db.Column(db.Integer, primary_key=True)
     household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)

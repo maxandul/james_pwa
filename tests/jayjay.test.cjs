@@ -1,68 +1,49 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
-
-function ui(fetch, canRefresh = true, pageOwner = 'alice') {
-  const nodes = new Map();
-  function element() {
-    return {listeners:{},hidden:true,open:false,innerHTML:'',textContent:'',scrollHeight:100,
-      addEventListener(name,fn) {this.listeners[name]=fn;},setAttribute(name,value){this[name]=value;},
-      replaceChildren(){this.innerHTML='';this.cleared=true;},focus(){this.focused=true;},
-      querySelector(){return null;},showModal(){this.open=true;},
-      close(){this.open=false;this.listeners.close?.();}};
-  }
-  for (const name of ['#jayjay-launcher','#jayjay-dialog','#jayjay-content','#jayjay-status','#jayjay-reload','#jayjay-refresh','#jayjay-close','logout','main']) nodes.set(name,element());
-  const document = {body:{dataset:{offlineOwner:'alice'}},querySelector:name=>nodes.get(name),querySelectorAll:()=>[nodes.get('logout')]};
-  const storage = new Map(), listeners = {};
-  const window = {location:{pathname:'/shopping',href:'https://james.test/shopping',reload(){}},
-    JamesPage:{canRefresh:()=>canRefresh,refresh:async()=>{window.refreshCalls=(window.refreshCalls||0)+1; const accepted=pageOwner==='alice'; if(accepted)nodes.get('main').replaceChildren(); return accepted;}},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(){},confirm:()=>false};
-  vm.runInNewContext(fs.readFileSync('james/static/jayjay.js','utf8'),{document,window,navigator:{onLine:true},fetch,
-    sessionStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},AbortController,Event,FormData:class {},
-    DOMParser:class {parseFromString(){return {body:{dataset:{offlineOwner:pageOwner}},querySelector:()=>({childNodes:[]})};}}});
-  return {nodes,listeners,storage,window,open:()=>nodes.get('#jayjay-launcher').listeners.click({preventDefault(){}}),
-    submit:()=>nodes.get('#jayjay-content').listeners.submit({target:{matches:()=>true,querySelector:()=>({disabled:false})},preventDefault(){}})};
-}
-const response = (changed=false,owner='alice') => ({ok:true,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({owner,html:'private transcript',changed})});
+const {JSDOM} = require('jsdom');
+const id = '12345678-1234-4234-8234-123456789abc';
+const transcript = (saved=true) => `<div><button data-jayjay-history aria-expanded="false">Verlauf</button><nav id="jayjay-history" hidden>Ältere Chats</nav><a data-jayjay-nav href="/jayjay?new=1">Neuer Chat</a><div data-jayjay-thread>Antwort</div><form data-jayjay-form data-saved="${saved}"><input name="conversation_id" value="${id}"><input name="request_id" value="request"><textarea name="message" required></textarea><button type="submit">Senden</button></form></div>`;
+const response = (changed=false,owner='alice',saved=true) => ({ok:true,status:200,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({owner,html:transcript(saved),changed,saved,conversation_id:id,active_url:saved?'/jayjay?panel=1&conversation='+id:'/jayjay?panel=1&new=1'})});
 const tick = () => new Promise(resolve=>setImmediate(resolve));
+function ui(fetch,canRefresh=true, pageOwner='alice') {
+ const dom=new JSDOM(`<body data-offline-owner="alice"><a id="jayjay-launcher"></a><dialog id="jayjay-dialog"><button id="jayjay-close"></button><button id="jayjay-expand"></button><div id="jayjay-content"></div><p id="jayjay-status"></p><button id="jayjay-reload" hidden></button><button id="jayjay-refresh" hidden></button></dialog><form action="/logout"></form><main></main></body>`,{url:'https://james.test/shopping',runScripts:'outside-only'});
+ const w=dom.window,d=w.document,q=s=>d.querySelector(s);
+ q('dialog').showModal=function(){this.setAttribute('open','');};
+ q('dialog').close=function(){this.removeAttribute('open');this.dispatchEvent(new w.Event('close'));};
+ w.fetch=fetch;w.confirm=()=>true;w.JamesPage={canRefresh:()=>canRefresh,refresh:async()=>{w.refreshCalls=(w.refreshCalls||0)+1;return pageOwner==='alice';}};
+ w.eval(fs.readFileSync('james/static/jayjay.js','utf8'));
+ return {w,d,q,open:()=>q('#jayjay-launcher').click(),submit:()=>q('[data-jayjay-form]').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true})),close:()=>w.close()};
+}
 
-test('closing and reopening preserves the loaded conversation without another request',async()=>{
-  let calls=0;const p=ui(async()=>{calls++;return response();});p.open();await tick();
-  p.nodes.get('#jayjay-close').listeners.click();p.open();await tick();
-  assert.equal(calls,1);assert.equal(p.nodes.get('#jayjay-content').innerHTML,'private transcript');
-  assert.ok([...p.storage.values()].every(v=>v==='0'||v==='1'));
+test('closing and reopening preserves the transcript and draft without another request',async()=>{
+ let calls=0;const p=ui(async()=>{calls++;return response();});p.open();await tick();p.q('textarea').value='Entwurf';
+ p.q('#jayjay-close').click();p.open();await tick();assert.equal(calls,1);assert.equal(p.q('textarea').value,'Entwurf');
+ assert.ok(!Object.values(p.w.sessionStorage).includes('Entwurf'));p.close();
 });
-test('a second send during a pending request is ignored and a failed send is never automatically retried',async()=>{
-  let calls=0,reject;const p=ui(async()=>{calls++;if(calls===1)return response();return new Promise((_,r)=>reject=r);});
-  p.open();await tick();p.submit();p.submit();assert.equal(calls,2);
-  reject(new Error('network'));await tick();assert.equal(calls,2);
-  assert.match(p.nodes.get('#jayjay-status').textContent,/nicht automatisch/);
-  assert.equal(p.nodes.get('#jayjay-reload').hidden,false);
+test('pending and ambiguous writes cannot be submitted twice; reload is read-only',async()=>{
+ let calls=0,reject;const p=ui(async()=>{calls++;if(calls===2)return new Promise((_,r)=>reject=r);return response();});
+ p.open();await tick();p.q('textarea').value='Kaffee';p.submit();p.submit();assert.equal(calls,2);assert.equal(p.q('textarea').readOnly,true);
+ reject(new Error('network'));await tick();p.submit();assert.equal(calls,2);assert.match(p.q('#jayjay-status').textContent,/Verlauf neu laden/);
+ p.q('#jayjay-reload').click();await tick();assert.equal(calls,3);assert.equal(p.q('textarea').value,'Kaffee');p.close();
 });
-test('logout discards a late response and clears private content',async()=>{
-  let resolve;const p=ui(()=>new Promise(r=>resolve=r));p.open();
-  p.nodes.get('logout').listeners.submit();resolve(response());await tick();
-  assert.equal(p.nodes.get('#jayjay-content').innerHTML,'');assert.equal(p.nodes.get('#jayjay-dialog').open,false);
+test('logout and account change discard pending responses',async()=>{
+ for(const method of ['logout','storage']){let resolve;const p=ui(()=>new Promise(r=>resolve=r));p.open();
+ if(method==='logout')p.q('form[action="/logout"]').dispatchEvent(new p.w.Event('submit'));
+ else p.w.dispatchEvent(new p.w.StorageEvent('storage',{key:'james-offline-v1',newValue:JSON.stringify({owner:'bob'})}));
+ resolve(response());await tick();assert.equal(p.q('#jayjay-content').innerHTML,'');assert.equal(p.q('dialog').open,false);p.close();}
 });
-test('an account change in another tab discards a pending response',async()=>{
-  let resolve;const p=ui(()=>new Promise(r=>resolve=r));p.open();
-  p.listeners.storage({key:'james-offline-v1',newValue:JSON.stringify({owner:'bob'})});resolve(response());await tick();
-  assert.equal(p.nodes.get('#jayjay-content').innerHTML,'');
+test('foreign response is never rendered',async()=>{const p=ui(async()=>response(false,'bob'));p.open();await tick();assert.equal(p.q('#jayjay-content').innerHTML,'');p.close();});
+test('saved changes respect unfinished app edits and refresh only when possible',async()=>{
+ for(const allowed of [false,true]){let calls=0;const p=ui(async()=>response(++calls>1),allowed);p.open();await tick();p.submit();await tick();assert.equal(p.q('#jayjay-refresh').hidden,allowed);assert.equal(p.w.refreshCalls||0,allowed?1:0);p.close();}
 });
-test('a response for a different person is never displayed',async()=>{
-  const p=ui(async()=>response(false,'bob'));p.open();await tick();assert.equal(p.nodes.get('#jayjay-content').innerHTML,'');
+test('history and expansion work with accessible state; navigation preserves per-chat drafts',async()=>{
+ let calls=0;const p=ui(async()=>response(false,'alice',++calls!==2));p.open();await tick();p.q('textarea').value='Entwurf im bestehenden Chat';
+ p.q('[data-jayjay-history]').click();assert.equal(p.q('#jayjay-history').hidden,false);assert.equal(p.q('[data-jayjay-history]').getAttribute('aria-expanded'),'true');
+ p.q('#jayjay-expand').click();assert.equal(p.q('dialog').classList.contains('jayjay--expanded'),true);
+ p.q('[data-jayjay-nav]').click();await tick();assert.equal(p.q('textarea').value,'');
+ const a=p.d.createElement('a');a.href='/jayjay?conversation='+id;a.dataset.jayjayNav='';p.q('#jayjay-content').append(a);a.click();await tick();assert.equal(p.q('textarea').value,'Entwurf im bestehenden Chat');p.close();
 });
-test('saved actions do not overwrite an unfinished edit in the app',async()=>{
-  let calls=0;const p=ui(async()=>{calls++;return response(calls>1);},false);p.open();await tick();p.submit();await tick();
-  assert.equal(p.nodes.get('#jayjay-refresh').hidden,false);assert.notEqual(p.nodes.get('main').cleared,true);assert.equal(calls,2);
-});
-test('saved actions refresh the current list when there are no unfinished edits',async()=>{
-  let calls=0;const p=ui(async()=>{calls++;return calls===3 ? {ok:true,redirected:false,text:async()=>'<main>updated</main>'} : response(calls===2);});
-  p.open();await tick();p.submit();await tick();
-  assert.equal(calls,2);assert.equal(p.window.refreshCalls,1);assert.equal(p.nodes.get('main').cleared,true);
-});
-test('a list response belonging to another signed-in person is discarded',async()=>{
-  let calls=0;const p=ui(async()=>{calls++;return calls===3 ? {ok:true,redirected:false,text:async()=>'<main>private</main>'} : response(calls===2);},true,'bob');
-  p.open();await tick();p.submit();await tick();
-  assert.equal(calls,2);assert.equal(p.window.refreshCalls,1);assert.equal(p.nodes.get('#jayjay-refresh').hidden,false);assert.notEqual(p.nodes.get('main').cleared,true);
+test('new drafts reload via a read-only new-chat URL, never an unpersisted conversation',async()=>{
+ const urls=[];const p=ui(async url=>{urls.push(url);return response(false,'alice',false);});p.open();await tick();p.q('#jayjay-reload').click();await tick();assert.equal(urls[1],'/jayjay?panel=1&new=1');p.close();
 });

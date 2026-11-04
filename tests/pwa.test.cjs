@@ -88,7 +88,7 @@ test('offline list navigation falls back only to the anonymous shell', async () 
 test('worker upgrades clean only obsolete James shell caches', async () => {
   const w = worker(); let done;
   w.listeners.activate({ waitUntil: promise => { done = promise; } }); await done;
-  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'james-shell-v7', 'james-shell-v8', 'james-shell-v9']);
+  assert.deepEqual(w.deleted, ['james-shell-v2', 'james-shell-v3', 'james-shell-v4', 'james-shell-v5', 'james-shell-v6', 'james-shell-v7', 'james-shell-v8', 'james-shell-v9', 'james-shell-v10']);
 });
 
 function page(storage, offline, fetch, serviceWorker) {
