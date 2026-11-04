@@ -14,6 +14,7 @@ from .shop_login import (ACTIVE, ProviderUnavailable, SHOP_IDENTITY_ORIGIN, SHOP
     SHOP_LOGIN_URL, account_bound, api, challenge, identity_valid, session_path)
 from .shop_account import credential_response, manual_reason
 from .shop_cart import CART_PREPARATION
+from .shop_limits import SHOP_TEST_SECONDS
 
 
 AUTH_INSTRUCTIONS = '''You are the main agent. Perform this task yourself; do not
@@ -200,6 +201,19 @@ def login_handler(app, run_id):
     return handle
 
 
+def cancellation_reason(run):
+    """Fixed, non-sensitive reason for the local watchdog's cancellation."""
+    if not run:
+        return 'run_missing'
+    if not identity_valid(run) or not account_bound(run.household_id):
+        return 'access_revoked'
+    if run.state in ('cancelled', 'unknown', 'cleanup_pending', 'closed'):
+        return run.state
+    if run.expires_at <= utcnow():
+        return 'deadline_expired'
+    return None
+
+
 def execute_run(app, run_id):
     run = db.session.get(ShopLogin, run_id)
     if run and (run.creation_started_at or run.session_id):
@@ -228,6 +242,7 @@ def execute_run(app, run_id):
     from openai import OpenAI
     from scripts.jayjay_browser_probe import run_task
     stop = Event()
+    cancellation = {}
 
     def record_session(sid):
         with app.app_context():
@@ -246,12 +261,13 @@ def execute_run(app, run_id):
             while not stop.wait(1):
                 with app.app_context():
                     observed = db.session.get(ShopLogin, run_id)
-                    cancel = (not observed or not identity_valid(observed) or not account_bound(observed.household_id)
-                        or observed.expires_at <= utcnow()
-                        or observed.state in ('cancelled', 'unknown', 'cleanup_pending', 'closed'))
+                    reason = cancellation_reason(observed)
+                    cancel = reason is not None
                     sid = observed.session_id if observed else None
                     db.session.rollback()
                 if cancel and sid:
+                    cancellation['reason'] = reason
+                    click.echo('Pilot-Abbruch: ' + reason)
                     try:
                         client.beta.agents.sessions.events.create(sid,
                             events=[{'type': 'agent.session.input.cancel'}])
@@ -267,13 +283,14 @@ def execute_run(app, run_id):
                 instructions=AUTH_INSTRUCTIONS + CART_PREPARATION if is_cart else LOGIN_INSTRUCTIONS,
                 task=('Sign in through https://www.galaxus.ch/auth/v1/login as the main agent, then prepare only the three explicitly listed household cart lines with TOTAL targets 2/1/1. Preserve other lines. Verify the signed-in cart and return the fixed report. Never begin checkout or order.' if is_cart else 'Open https://www.galaxus.ch/auth/v1/login, follow its normal redirect to https://id.digitecgalaxus.ch and request registered browser authentication as the main agent. Complete only this existing-account login attempt and return the fixed report token. No cart changes or orders.'),
                 additional_allowed_origins=(SHOP_IDENTITY_ORIGIN,),
-                seconds=360, authorized_uncapped_test=True,
+                seconds=max(1, min(SHOP_TEST_SECONDS, int((run.expires_at - utcnow()).total_seconds()))), authorized_uncapped_test=True,
                 authentication_handler=login_handler(app, run_id), session_handler=record_session,
                 session_metadata={'james_login_run': reference})
         finally:
             stop.set()
             watcher.join(timeout=2)
             if result:
+                result['local_cancel_reason'] = cancellation.get('reason')
                 save_result(run_id, result)
             if result and result.get('cleanup') in ('deleted', 'not_created'):
                 db.session.execute(update(ShopLogin).where(ShopLogin.id == run_id)
@@ -313,7 +330,9 @@ def save_result(run_id, result):
     outcomes = {'turn_completed', 'no_browser_evidence', 'failed', 'timeout', 'disconnected'}
     # Preserve a locally observed cancellation/uncertain submission over a generic runner error.
     run.outcome = ('submission_unknown' if run.state == 'unknown' else
-        'cancelled' if run.state == 'cancelled' else status if isinstance(status, str) and status in outcomes else 'failed')
+        'cancelled' if run.state == 'cancelled' else
+        'expired' if result.get('local_cancel_reason') == 'deadline_expired' else
+        status if isinstance(status, str) and status in outcomes else 'failed')
     if run.outcome in ('turn_completed', 'no_browser_evidence') and not run.auth_progress:
         if run.outcome == 'turn_completed':
             run.outcome = 'no_authentication'
@@ -389,7 +408,7 @@ def register_shop_cli(app):
             ShopLogin.state != 'closed')):
             raise click.ClickException('Vorherigen Test zuerst abschliessen und bereinigen.')
         run = ShopLogin(user_id=user.id, household_id=member.household_id,
-            auth_version=user.auth_version, cost_authorized_at=utcnow(), expires_at=utcnow() + timedelta(seconds=360))
+            auth_version=user.auth_version, cost_authorized_at=utcnow(), expires_at=utcnow() + timedelta(seconds=SHOP_TEST_SECONDS))
         db.session.add(run)
         db.session.commit()
         run_id = run.id

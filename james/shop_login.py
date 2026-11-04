@@ -15,6 +15,7 @@ from .models import ShopLogin, User, utcnow
 from .services import membership_for
 from .views import household_required
 from .shop_cart import PRODUCTS
+from .shop_limits import SHOP_TEST_SECONDS
 
 shop_login = Blueprint('shop_login', __name__)
 SHOP_ORIGIN = 'https://www.galaxus.ch'
@@ -26,7 +27,7 @@ ACTIVE = ('queued', 'creating', 'running', 'pending', 'submitting', 'accepted')
 
 @shop_login.context_processor
 def shop_constants():
-    return {'shop_products': PRODUCTS, 'cart_daily_limit': cart_daily_limit()}
+    return {'shop_products': PRODUCTS, 'cart_daily_limit': cart_daily_limit(), 'shop_test_minutes': SHOP_TEST_SECONDS // 60}
 
 
 def cart_daily_limit():
@@ -175,7 +176,7 @@ def index():
         run = ShopLogin(user_id=current_user.id, active_user_id=current_user.id,
             household_id=g.household.id, auth_version=current_user.auth_version,
             start_request_id=start_id, task_kind=kind, state='queued', cost_authorized_at=utcnow(),
-            expires_at=utcnow() + timedelta(seconds=360))
+            expires_at=utcnow() + timedelta(seconds=SHOP_TEST_SECONDS))
         db.session.add(run)
         db.session.commit()
         return redirect(url_for('shop_login.login', run_id=run.id))
