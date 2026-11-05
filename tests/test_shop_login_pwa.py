@@ -912,3 +912,38 @@ def test_precise_login_failure_is_retained_for_login_and_cart(app, prepared, rep
             db.session.commit()
             save_result(identifier, {'status': 'turn_completed', 'login_report': report})
             assert row.agent_report == report
+
+
+def test_expired_watchdog_cancellation_is_not_generic_failure(app, prepared):
+    from james.shop_login_worker import cancellation_reason, save_result
+    identifier, _, _ = prepared
+    with app.app_context():
+        row = db.session.get(ShopLogin, identifier)
+        row.state = 'accepted'
+        row.expires_at = utcnow() - timedelta(seconds=1)
+        row.auth_progress = 'email_submitted'
+        db.session.commit()
+        assert cancellation_reason(row) == 'deadline_expired'
+        save_result(identifier, {'status': 'failed', 'failure_stage': 'turn_cancelled', 'local_cancel_reason': 'deadline_expired'})
+        assert row.outcome == 'expired'
+        assert row.auth_progress == 'email_submitted'
+        row.state = 'cancelled'
+        db.session.commit()
+        assert cancellation_reason(row) == 'cancelled'
+        save_result(identifier, {'status': 'failed', 'failure_stage': 'turn_cancelled', 'local_cancel_reason': 'deadline_expired'})
+        assert row.outcome == 'cancelled'
+
+
+def test_new_deadline_is_disclosed_and_bounded_from_user_submission(app, client):
+    from james.shop_limits import SHOP_TEST_SECONDS
+    app.config.update(SHOP_LOGIN_PILOT_ENABLED=True, OPENAI_API_KEY='synthetic-only-key')
+    login(client)
+    page = client.get('/shop-login').data.decode()
+    assert f'Nach {SHOP_TEST_SECONDS // 60} Minuten' in page
+    before = utcnow()
+    response = client.post('/shop-login', data={'csrf_token': csrf(client, '/shop-login'),
+        'start_request_id': str(uuid4()), 'cost_consent': 'yes'})
+    assert response.status_code == 302
+    with app.app_context():
+        row = db.session.scalar(select(ShopLogin))
+        assert before + timedelta(seconds=SHOP_TEST_SECONDS) <= row.expires_at <= utcnow() + timedelta(seconds=SHOP_TEST_SECONDS)

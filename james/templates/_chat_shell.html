@@ -1,0 +1,5 @@
+<header class="jayjay-header"><div class="jayjay-heading"><span class="jayjay-mark" aria-hidden="true">j.</span><div><h2 id="jayjay-title">JayJay</h2><p class="small muted">Dein Assistent für James</p></div></div><div class="jayjay-header-actions">{% if request.endpoint != 'chat.index' %}<button id="jayjay-expand" class="button button--quiet" type="button" aria-label="Chat vergrössern" aria-pressed="false">⤢</button><button id="jayjay-close" class="button button--quiet" type="button" aria-label="Chat schliessen">✕</button>{% else %}<a class="button button--quiet" href="{{ url_for('main.home') }}">Zur App</a>{% endif %}</div></header>
+<div id="jayjay-content" class="jayjay-content" aria-busy="false">{% if request.endpoint == 'chat.index' %}{% include '_chat_body.html' %}{% endif %}</div>
+<p id="jayjay-status" class="jayjay-status small" role="status" aria-live="polite"></p>
+<button id="jayjay-reload" class="button button--outline" type="button" hidden>Verlauf neu laden</button>
+<button id="jayjay-refresh" class="button button--outline" type="button" hidden>App-Ansicht aktualisieren</button>

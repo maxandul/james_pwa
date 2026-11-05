@@ -119,7 +119,7 @@ def item_state(item, need):
     return {"status": item.stock_status, "quantity": need.quantity,
         "name": item.name, "category": item.category, "source": item.source,
         "unit": item.unit, "default_quantity": item.default_quantity,
-        "is_favorite": item.is_favorite, "archived": item.archived, "source_ids": source_ids(item)}
+        "is_favorite": item.is_favorite, "archived": item.archived, "source_ids": source_ids(item), "recipe_context": need.recipe_context or []}
 
 
 def create_item(household_id, data):
@@ -178,6 +178,15 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         if need.quantity == 0:
             need.quantity = item.default_quantity
         item.stock_status = "empty" if action == "empty" else ("empty" if item.stock_status == "empty" else "low")
+    elif action == "recipe_need":
+        origin = data.get('recipe_origin')
+        if not isinstance(origin, dict) or not isinstance(origin.get('recipe_id'), int):
+            raise ValueError('Ungültige Rezeptzuordnung.')
+        if not need.quantity:
+            need.quantity = item.default_quantity
+        contexts = list(need.recipe_context or [])
+        contexts = [entry for entry in contexts if entry.get('recipe_id') != origin['recipe_id']]
+        need.recipe_context = [*contexts, origin][-30:]
     elif action == "extra":
         amount = positive_int(quantity)
         if need.quantity + amount > 999:
@@ -231,6 +240,7 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
             from .assortment import offer_source_ids
             if offer_source_ids(item):
                 raise Conflict("Aktive Produktzuordnungen verwenden die aktuelle Einheit. Bitte zuerst die Shop-Zuordnungen deaktivieren.")
+        need.recipe_context = undo_target.before_state.get("recipe_context", [])
         item.stock_status = undo_target.before_state["status"]
         need.quantity = undo_target.before_state["quantity"]
         # Existing activities may predate metadata snapshots.
@@ -244,6 +254,8 @@ def _change_item(household_id, user_id, item_id, action, request_id, expected_ve
         sync_sources(item, restore_ids=restored_sources)
     else:
         raise ValueError("Unbekannte Aktion.")
+    if need.quantity == 0:
+        need.recipe_context = []
     from .planning import clamp_reservations
     clamp_reservations(item, need)
     # Version advances even when only ShoppingNeed changed, or the action was a no-op.

@@ -9,6 +9,7 @@ from .extensions import db
 from .models import HouseholdItem, Product, Household
 from .services import Conflict
 from .views import household_required
+from .shops import offer_problems
 
 products = Blueprint("products", __name__)
 
@@ -37,7 +38,8 @@ def catalogue_choices():
         return sorted({label(kind, name) for name in defaults if f'{kind}:{key(name)}' not in blocked} | {entry.name for entry in records})
     return {"category_names": choices('category', CATEGORIES, categories),
         "source_names": choices('source', SOURCES, sources),
-        "purchase_sources": sources, "catalogue_label": label}
+        "purchase_sources": sources, "catalogue_label": label,
+        "exact_offer_problems": offer_problems}
 
 
 @products.route("/catalogue", methods=["GET", "POST"])

@@ -48,7 +48,7 @@ Die Person bestaetigt einen einmaligen kostenpflichtigen Anmeldetest sowie die
 Nutzung des hinterlegten Haushaltskontos im OpenAI-gehosteten Shopbrowser. Erst
 ein CSRF-geschuetzter POST reiht den Auftrag ein. Ein GET startet keinen Browser;
 dieselbe Anfragekennung erzeugt keinen zweiten Auftrag. Kein hartes Geldlimit
-wird versprochen. Nach sechs Minuten werden Abbruch und Bereinigung angefordert;
+wird versprochen. Nach zwölf Minuten werden Abbruch und Bereinigung angefordert;
 bei Dienst-/Netzausfall kann sich das verzoegern.
 
 Der beaufsichtigte Worker uebernimmt genau einen Auftrag atomar. Er verwendet

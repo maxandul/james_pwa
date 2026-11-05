@@ -1,0 +1,2 @@
+# Operator-only persisted-browser proof; remote Chromium, no local browser install.
+playwright==1.56.0
