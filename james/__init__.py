@@ -41,6 +41,7 @@ def create_app(test_config=None):
         SHOP_CART_PILOT_ENABLED=os.getenv('SHOP_CART_PILOT_ENABLED', '') == '1',
         SHOP_CART_EXTRA_ATTEMPT_DATE=os.getenv('SHOP_CART_EXTRA_ATTEMPT_DATE', ''),
         GALAXUS_HOUSEHOLD_ID=os.getenv('GALAXUS_HOUSEHOLD_ID', ''),
+        SHOP_BROWSER_HOUSEHOLD_ID=os.getenv('SHOP_BROWSER_HOUSEHOLD_ID', ''),
         GALAXUS_EMAIL=os.getenv('GALAXUS_EMAIL', ''),
         GALAXUS_PASSWORD=os.getenv('GALAXUS_PASSWORD', ''),
     )

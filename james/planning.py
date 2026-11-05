@@ -8,6 +8,7 @@ from .assortment import item_offers, lock_household, selected_offer, shopping_op
 from .extensions import db
 from .models import HouseholdItem, PurchasePlan, PurchaseSource, ShoppingNeed
 from .services import Conflict, positive_int
+from .shops import offer_identity, offer_signature, offer_problems
 
 ACTIVE = ('draft', 'ordered')
 
@@ -86,7 +87,11 @@ def create_plan(household_id, source_id, review, data):
         lines.append({'item_id': item.id, 'name': item.name, 'unit': item.unit,
             'quantity': quantity, 'reserved': quantity,
             'product': offer.product.name if offer else '', 'url': offer.url if offer else '',
-            'units_per_pack': str(offer.units_per_pack) if offer else None})
+            'units_per_pack': str(offer.units_per_pack) if offer else None,
+            'shop_identity': offer_identity(offer) if offer else None,
+            'offer_version': offer.version if offer else None,
+            'confirmed_signature': offer.confirmed_signature if offer else None,
+            'packs': choice.get('packs'), 'covered': str(choice['covered']) if offer else None})
     if not lines:
         raise ValueError('Bitte mindestens einen noch verfügbaren Artikel auswählen.')
     plan = PurchasePlan(household_id=household_id, source_id=source.id,
@@ -94,6 +99,46 @@ def create_plan(household_id, source_id, review, data):
     db.session.add(plan)
     db.session.flush()
     return plan
+
+
+def coop_preview(plan):
+    """Read-only exact targets, never a cart mutation or claim of live stock."""
+    from .models import ShopOffer
+    problems, targets = [], []
+    if plan.state != 'draft' or not plan.source.active or plan.source.shop_key != 'coop':
+        problems.append('Die Vorschau benötigt ein offenes Vorhaben beim verbundenen Coop-Einkaufsort.')
+    if not 1 <= len(plan.lines) <= 3:
+        problems.append('Für den ersten Test bitte ein Vorhaben mit höchstens drei Positionen erstellen.')
+    seen = set()
+    for line in plan.lines:
+        reasons = []
+        identity = line.get('shop_identity')
+        offer = db.session.get(ShopOffer, identity.get('offer_id')) if identity else None
+        if (not offer or offer.household_id != plan.household_id
+                or offer.source_id != plan.source_id or offer.product.household_id != plan.household_id
+                or offer.product.item.household_id != plan.household_id or offer.product.item_id != line['item_id']):
+            reasons.append('Eine eindeutige gespeicherte Produktzuordnung fehlt. Bitte das Vorhaben neu erstellen.')
+        else:
+            reasons.extend(offer_problems(offer))
+            if (identity != offer_identity(offer) or line.get('offer_version') != offer.version
+                    or line.get('confirmed_signature') != offer.confirmed_signature):
+                reasons.append('Die Produktzuordnung wurde seit der Vorbereitung geändert. Bitte das Vorhaben neu erstellen.')
+            if offer.shop_sku in seen:
+                reasons.append('Dieselbe Coop-Artikelnummer kommt mehrfach vor. Bitte die Zuordnungen bereinigen.')
+            seen.add(offer.shop_sku)
+        if line['reserved'] != line['quantity'] or line['reserved'] <= 0:
+            reasons.append('Der eingeplante Bedarf wurde geändert. Bitte das Vorhaben neu erstellen.')
+        for reason in reasons:
+            problems.append(f"{line['name']}: {reason}")
+        if not reasons:
+            packs = int((Decimal(line['quantity']) / offer.units_per_pack).to_integral_value(rounding=ROUND_CEILING))
+            covered = packs * offer.units_per_pack
+            targets.append({'item_id': line['item_id'], 'item': line['name'],
+                'product': offer.product.name, 'brand': offer.product.brand,
+                'package': offer.product.package_text, 'sku': offer.shop_sku, 'url': offer.url,
+                'quantity': packs, 'need': line['quantity'], 'unit': line['unit'],
+                'covered': covered, 'extra': covered - line['quantity']})
+    return {'targets': targets, 'problems': problems, 'ready': bool(targets) and not problems}
 
 
 def change_plan(household_id, plan_id, version, action, reference=''):

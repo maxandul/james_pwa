@@ -174,10 +174,15 @@ class PurchaseSource(db.Model):
     name = db.Column(db.String(60), nullable=False)
     active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     name_key = db.Column(db.String(240), nullable=False)
+    shop_key = db.Column(db.String(16))
     aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     __mapper_args__ = {"version_id_col": version}
-    __table_args__ = (db.UniqueConstraint("household_id", "name_key", name="source_household_name"),)
+    __table_args__ = (
+        db.UniqueConstraint("household_id", "name_key", name="source_household_name"),
+        db.Index("source_household_shop", "household_id", "shop_key", unique=True),
+        db.CheckConstraint("shop_key IS NULL OR shop_key IN ('coop','galaxus')", name="source_shop_key"),
+    )
 
 
 class ItemSource(db.Model):
@@ -193,6 +198,8 @@ class ShopOffer(db.Model):
     source_id = db.Column(db.Integer, db.ForeignKey("purchase_source.id"), nullable=False)
     url = db.Column(db.String(1000), nullable=False, default="")
     shop_sku = db.Column(db.String(80), nullable=False, default="")
+    confirmed_signature = db.Column(db.String(64))
+    confirmed_at = db.Column(db.DateTime)
     units_per_pack = db.Column(db.Numeric(12, 3), nullable=False, default=1, server_default="1")
     preferred = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
@@ -393,9 +400,10 @@ class CookingAction(db.Model):
 
 
 class ShopBrowser(db.Model):
-    """One private persisted browser profile per household; no shop credentials."""
+    """One private persisted browser profile per household and shop."""
     id = db.Column(db.Integer, primary_key=True)
-    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, unique=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False)
+    shop_key = db.Column(db.String(16), nullable=False, default='galaxus', server_default='galaxus')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     auth_version = db.Column(db.Integer, nullable=False)
     state = db.Column(db.String(24), nullable=False, default='idle')
@@ -409,6 +417,8 @@ class ShopBrowser(db.Model):
     cart_actions = db.Column(db.Integer(), nullable=False, default=0, server_default='0')
     version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     __mapper_args__ = {'version_id_col': version}
-    __table_args__ = (db.CheckConstraint(
+    __table_args__ = (db.UniqueConstraint('household_id', 'shop_key', name='browser_household_shop'),
+        db.CheckConstraint("shop_key IN ('coop','galaxus')", name='browser_shop_key'),
+        db.CheckConstraint(
         "state IN ('idle','queued','creating','active','closing','forgetting','error')",
         name='shop_browser_state'),)

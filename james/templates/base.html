@@ -31,7 +31,7 @@
     <a {% if request.blueprint == 'cooking' and request.endpoint != 'cooking.manage_categories' %}aria-current="page"{% endif %} href="{{ url_for('cooking.index') }}"><span aria-hidden="true">♧</span>Kochen</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
       <a href="{{ url_for('settings.index') }}">App-Verwaltung</a>
-      {% if config.SHOP_BROWSER_ENABLED %}<a href="{{ url_for('shop_browser.index') }}">Galaxus verbinden</a>{% endif %}
+      {% if config.SHOP_BROWSER_ENABLED %}<a href="{{ url_for('shop_browser.index') }}">Galaxus verbinden</a><a href="{{ url_for('shop_browser.index', shop_key='coop') }}">Coop verbinden</a>{% endif %}
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}
     </div></details>
   </nav>

@@ -8,13 +8,15 @@ from .extensions import db
 from .models import ShopBrowser, User, utcnow
 from .services import membership_for
 from scripts.shop_browser_context import Browserbase, BrowserUnavailable, identifier
+from .shops import SHOPS
 
 
 def valid(item):
     user = db.session.get(User, item.user_id, populate_existing=True)
     member = membership_for(item.user_id)
     return bool(user and user.active and user.auth_version == item.auth_version and member
-                and member.role == 'owner' and member.household_id == item.household_id)
+                and member.role == 'owner' and member.household_id == item.household_id
+                and item.shop_key in SHOPS)
 
 
 def set_fields(pid, **values):
@@ -79,6 +81,7 @@ def connect(provider, pid):
     # Claimed queued job is never automatically retried after a crash.
     item = db.session.get(ShopBrowser, pid)
     context = item.context_id
+    start_url = SHOPS[item.shop_key]['start_url']
     db.session.rollback()
     if not context:
         context = provider.create_context()
@@ -93,7 +96,7 @@ def connect(provider, pid):
         browser = pw.chromium.connect_over_cdp(session['connectUrl'], timeout=20000)
         context = browser.contexts[0]
         page = context.pages[0] if context.pages else context.new_page()
-        page.goto('https://www.galaxus.ch/', wait_until='domcontentloaded', timeout=30000)
+        page.goto(start_url, wait_until='domcontentloaded', timeout=30000)
         db.session.expire_all()
         item = db.session.get(ShopBrowser, pid)
         if not valid(item) or item.expires_at <= utcnow():
@@ -121,6 +124,10 @@ def connect(provider, pid):
 def run_pending_cart(pid, page):
     from flask import current_app
     from .shop_cart_agent import run_cart
+    item = db.session.get(ShopBrowser, pid)
+    if item.shop_key != 'galaxus':
+        set_fields(pid, cart_state='UNSUPPORTED_SHOP')
+        return
     claimed = db.session.execute(update(ShopBrowser).where(
         ShopBrowser.id == pid, ShopBrowser.state == 'active',
         ShopBrowser.cart_state == 'queued').values(cart_state='running',
