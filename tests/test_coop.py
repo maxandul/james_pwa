@@ -171,6 +171,19 @@ def test_duplicate_sku_cannot_be_confirmed(app):
         db.session.rollback()
 
 
+def test_source_merge_cannot_transfer_coop_product_ids(app, client):
+    item_id, home, _, product_id, shop, oid = exact_offer(app)
+    login(client)
+    migros = source(app, home, 'Migros')
+    response = client.post('/settings/catalogue/source', data={
+        'csrf_token':csrf(client, '/settings/catalogue/source'), 'action':'retire',
+        'entry_id':str(shop), 'version':'1', 'replacement_id':str(migros)})
+    assert response.status_code == 409
+    with app.app_context():
+        saved = db.session.get(ShopOffer, oid)
+        assert saved.source_id == shop and not offer_problems(saved)
+
+
 def test_old_plan_without_exact_snapshot_is_blocked(enabled, client):
     item_id, home, _, product_id, shop, oid = exact_offer(enabled)
     action(client, item_id, 'replenish', 1)
