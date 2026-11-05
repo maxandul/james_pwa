@@ -132,6 +132,7 @@ def test_chat_migration_groups_existing_turns_without_losing_actions(tmp_path):
         connection.execute("INSERT INTO user(id,email,name,password_hash,active,auth_version,preferences,version) VALUES(1,'test@example.test','Test','test',1,1,'{}',1)")
         connection.execute("INSERT INTO chat_turn(id,household_id,user_id,auth_version,request_id,prompt,reply,state,actions,created_at) VALUES(1,1,1,1,'request','Hallo','Antwort','done','[]','2026-11-02')")
     migrate('upgrade')
+
     migrate('check')
     with sqlite3.connect(path) as connection:
         row = connection.execute('SELECT prompt,reply,actions,conversation_id FROM chat_turn').fetchone()
@@ -139,3 +140,39 @@ def test_chat_migration_groups_existing_turns_without_losing_actions(tmp_path):
         assert connection.execute('SELECT title,user_id,household_id FROM chat_conversation').fetchone() == ('Bisheriger Verlauf',1,1)
     migrate('downgrade', '7a4224e5e7e4')
     migrate('upgrade')
+
+
+def test_coop_migration_preserves_profile_links_and_rejects_lossy_downgrade(tmp_path):
+    path = tmp_path / 'coop.sqlite'
+    env = dict(os.environ, APP_ENV='development', SECRET_KEY='migration-test-secret-' * 3,
+               DATABASE_URL='sqlite:///' + path.as_posix())
+    def migrate(*args, success=True):
+        result = subprocess.run([sys.executable, '-m', 'flask', '--app', 'james', 'db', *args],
+            env=env, capture_output=True, text=True, timeout=30)
+        assert (result.returncode == 0) == success, result.stderr
+    migrate('upgrade', 'a47b9d31e602')
+    with sqlite3.connect(path) as c:
+        c.execute("PRAGMA foreign_keys=ON")
+        c.execute("INSERT INTO household(id,name,settings,version) VALUES(1,'Test','{}',1)")
+        c.execute("INSERT INTO user(id,email,name,password_hash,active,auth_version,preferences,version) VALUES(1,'test@example.test','Test','test',1,1,'{}',1)")
+        c.execute("INSERT INTO household_item(id,household_id,name,category,source,unit,default_quantity,stock_status,version) VALUES(1,1,'Milch','Vorrat','Coop','Packung',1,'low',1)")
+        c.execute("INSERT INTO purchase_source(id,household_id,name,name_key,aliases,active,version) VALUES(1,1,'Coop','coop','[]',1,1)")
+        c.execute("INSERT INTO item_source(item_id,source_id) VALUES(1,1)")
+        c.execute("INSERT INTO product(id,household_id,item_id,name,brand,package_text,data_source,version) VALUES(1,1,1,'Milch','Coop','1 l','manual',1)")
+        c.execute("INSERT INTO shop_offer(id,household_id,product_id,source_id,url,shop_sku,units_per_pack,preferred,active,version) VALUES(1,1,1,1,'https://www.coop.ch/de/test/p/123','123',1,1,1,1)")
+        c.execute("INSERT INTO shop_browser(id,household_id,user_id,auth_version,state,context_id,cart_state,cart_actions,version) VALUES(1,1,1,1,'idle','retained-context','CART_READY',9,4)")
+    migrate('upgrade')
+    migrate('check')
+    with sqlite3.connect(path) as c:
+        assert c.execute('SELECT shop_key,context_id,cart_state,cart_actions,version FROM shop_browser').fetchone() == ('galaxus','retained-context','CART_READY',9,4)
+        assert c.execute('SELECT shop_key FROM purchase_source').fetchone() == ('coop',)
+        assert c.execute('SELECT shop_sku,confirmed_signature FROM shop_offer').fetchone() == ('123',None)
+        assert c.execute('SELECT item_id,source_id FROM item_source').fetchone() == (1,1)
+        c.execute("INSERT INTO shop_browser(household_id,shop_key,user_id,auth_version,state,context_id,version) VALUES(1,'coop',1,1,'idle','coop-context',1)")
+    migrate('downgrade', 'a47b9d31e602', success=False)
+    with sqlite3.connect(path) as c:
+        assert c.execute('SELECT COUNT(*) FROM shop_browser').fetchone() == (2,)
+        c.execute("DELETE FROM shop_browser WHERE shop_key='coop'")
+    migrate('downgrade', 'a47b9d31e602')
+    migrate('upgrade')
+    migrate('check')

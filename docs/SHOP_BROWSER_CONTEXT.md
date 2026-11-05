@@ -2,8 +2,12 @@
 
 Stand: 04.11.2026. Manuelle Anmeldung und Wiederverwendung des gespeicherten
 Profils nach Schliessen und erneutem Öffnen wurden vom Nutzer bestätigt.
-Der neue Warenkorbtest ist implementiert; sein Live-Ergebnis steht noch aus.
+Der Nutzer hat anschliessend den Warenkorbtest unabhängig mit den richtigen
+Produkten und Gesamtmengen im echten Kontowarenkorb bestätigt.
 Kein Bestellabschluss implementiert.
+
+Erweiterung vom 05.11.2026: separate Profile je Shop, Coop-Verbindung und genaue
+Testvorschau siehe [COOP.md](COOP.md). Bestehendes Galaxus-Profil bleibt erhalten.
 
 ## PWA-Verbindungstest
 
@@ -104,8 +108,9 @@ Mengeneditoren, fremde Produkte und beliebige Tastatureingaben sind nicht freige
 Unbekannte Bedienelemente stoppen mit `CONTROL_BLOCKED`; die Allowlist muss bei
 Shop-Änderungen gegebenenfalls anhand eines konkreten Tests angepasst werden.
 
-`CART_READY` wird ausdrücklich als Agentenmeldung angezeigt. Der Nachweis im
-Warenkorb auf dem eigenen Gerät steht noch aus, bis der Eigentümer ihn bestätigt.
+`CART_READY` wird ausdrücklich als Agentenmeldung angezeigt. Der Eigentümer hat
+den erfolgreichen Galaxus-Test im Gespräch unabhängig auf seinem Gerät bestätigt.
+Dies ist keine nachträglich automatisch gesetzte technische Prüfung in der App.
 Teiländerungen werden nicht automatisch zurückgesetzt. Zum Abbrechen dient
 «Speichern und schliessen»; während eines Laufs den Shop nicht parallel bedienen.
 Web und Worker müssen gemeinsam auf dieselbe Migration ausgeliefert werden.

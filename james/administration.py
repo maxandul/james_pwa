@@ -194,6 +194,8 @@ def retire_entry(kind, identifier, version, replacement_id=None):
     replacement = scoped(KINDS[kind], replacement_id) if replacement_id is not None else None
     if replacement and (replacement.id == entry.id or not replacement.active):
         raise ValueError('Bitte einen anderen aktiven Ersatz wählen.')
+    if kind == 'source' and replacement and entry.shop_key != replacement.shop_key and (entry.shop_key or replacement.shop_key):
+        raise Conflict('Einkaufsorte mit unterschiedlichen Shop-Verbindungen können nicht zusammengeführt werden. Bitte die Produktzuordnungen zuerst einzeln prüfen.')
     used = catalogue_usage(entry, kind)
     keys = {entry.name_key, *entry.aliases}
     touched = set()
