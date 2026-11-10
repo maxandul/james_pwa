@@ -99,6 +99,7 @@ class ShoppingNeed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, db.ForeignKey("household_item.id"), unique=True, nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0)
+    recipe_context = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     item = db.relationship(HouseholdItem)
     __table_args__ = (db.CheckConstraint("quantity BETWEEN 0 AND 999", name="need_quantity"),)
 
@@ -173,10 +174,15 @@ class PurchaseSource(db.Model):
     name = db.Column(db.String(60), nullable=False)
     active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
     name_key = db.Column(db.String(240), nullable=False)
+    shop_key = db.Column(db.String(16))
     aliases = db.Column(db.JSON, nullable=False, default=list, server_default=db.text("'[]'"))
     version = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     __mapper_args__ = {"version_id_col": version}
-    __table_args__ = (db.UniqueConstraint("household_id", "name_key", name="source_household_name"),)
+    __table_args__ = (
+        db.UniqueConstraint("household_id", "name_key", name="source_household_name"),
+        db.Index("source_household_shop", "household_id", "shop_key", unique=True),
+        db.CheckConstraint("shop_key IS NULL OR shop_key IN ('coop','galaxus')", name="source_shop_key"),
+    )
 
 
 class ItemSource(db.Model):
@@ -192,6 +198,8 @@ class ShopOffer(db.Model):
     source_id = db.Column(db.Integer, db.ForeignKey("purchase_source.id"), nullable=False)
     url = db.Column(db.String(1000), nullable=False, default="")
     shop_sku = db.Column(db.String(80), nullable=False, default="")
+    confirmed_signature = db.Column(db.String(64))
+    confirmed_at = db.Column(db.DateTime)
     units_per_pack = db.Column(db.Numeric(12, 3), nullable=False, default=1, server_default="1")
     preferred = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
@@ -231,6 +239,9 @@ class PurchasePlan(db.Model):
     lines = db.Column(db.JSON, nullable=False)
     state = db.Column(db.String(12), nullable=False, default="draft")
     reference = db.Column(db.String(100), nullable=False, default="")
+    cart_state = db.Column(db.String(32))
+    cart_requested_at = db.Column(db.DateTime)
+    cart_actions = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     version = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     source = db.relationship(PurchaseSource)
@@ -241,7 +252,16 @@ class PurchasePlan(db.Model):
     )
 
 
+class ChatConversation(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    title = db.Column(db.String(100), nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
 class ChatTurn(db.Model):
+    conversation_id = db.Column(db.String(36), db.ForeignKey('chat_conversation.id'), index=True)
     id = db.Column(db.Integer, primary_key=True)
     household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
@@ -308,3 +328,102 @@ class ShoppingView(db.Model):
     source = db.relationship(PurchaseSource)
     __mapper_args__ = {'version_id_col': version}
     __table_args__ = (db.CheckConstraint("item_sort IN ('name','name_desc','favorites')", name='shopping_view_sort'),)
+
+
+class RecipeCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    name = db.Column(db.String(60), nullable=False)
+    name_key = db.Column(db.String(240), nullable=False)
+    position = db.Column(db.Integer, nullable=False, default=0)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.UniqueConstraint('household_id', 'name_key', name='recipe_category_household_name'),)
+
+
+class Recipe(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('recipe_category.id'), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, nullable=False, default='')
+    servings = db.Column(db.Numeric(10, 3), nullable=False, default=4)
+    yield_unit = db.Column(db.String(30), nullable=False, default='Portionen')
+    prep_minutes = db.Column(db.Integer, nullable=False, default=0)
+    cook_minutes = db.Column(db.Integer, nullable=False, default=0)
+    rest_minutes = db.Column(db.Integer, nullable=False, default=0)
+    steps = db.Column(db.JSON, nullable=False, default=list)
+    tags = db.Column(db.JSON, nullable=False, default=list)
+    source = db.Column(db.String(1000), nullable=False, default='')
+    is_favorite = db.Column(db.Boolean, nullable=False, default=False)
+    image = db.Column(db.LargeBinary)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    category = db.relationship(RecipeCategory)
+    author = db.relationship(User, foreign_keys=[updated_by])
+    ingredients = db.relationship('RecipeIngredient', cascade='all, delete-orphan', order_by='RecipeIngredient.position')
+    notes = db.relationship('RecipeNote', cascade='all, delete-orphan', order_by='RecipeNote.created_at.desc()')
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.CheckConstraint('servings > 0', name='recipe_servings'),)
+
+
+class RecipeIngredient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False, index=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('household_item.id'), nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Numeric(12, 3))
+    unit = db.Column(db.String(30), nullable=False, default='')
+    group = db.Column(db.String(60), nullable=False, default='')
+    detail = db.Column(db.String(160), nullable=False, default='')
+    is_staple = db.Column(db.Boolean, nullable=False, default=False)
+    item = db.relationship(HouseholdItem)
+    __table_args__ = (db.CheckConstraint('amount IS NULL OR amount > 0', name='recipe_ingredient_amount'),)
+
+
+class RecipeNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    author = db.relationship(User)
+
+
+class CookingAction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False, index=True)
+    request_id = db.Column(db.String(36), nullable=False)
+    fingerprint = db.Column(db.String(64), nullable=False)
+    __table_args__ = (db.UniqueConstraint('household_id', 'request_id', name='cooking_action_request'),)
+
+
+class ShopBrowser(db.Model):
+    """One private persisted browser profile per household and shop."""
+    id = db.Column(db.Integer, primary_key=True)
+    household_id = db.Column(db.Integer, db.ForeignKey('household.id'), nullable=False)
+    shop_key = db.Column(db.String(16), nullable=False, default='galaxus', server_default='galaxus')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    auth_version = db.Column(db.Integer, nullable=False)
+    state = db.Column(db.String(24), nullable=False, default='idle')
+    context_id = db.Column(db.String(128))
+    session_id = db.Column(db.String(128))
+    live_url = db.Column(db.Text)
+    expires_at = db.Column(db.DateTime)
+    confirmed_at = db.Column(db.DateTime)
+    error_category = db.Column(db.String(32))
+    cart_state = db.Column(db.String(32))
+    cart_actions = db.Column(db.Integer(), nullable=False, default=0, server_default='0')
+    cart_plan_id = db.Column(db.Integer, db.ForeignKey('purchase_plan.id'))
+    cart_plan = db.relationship(PurchasePlan)
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __mapper_args__ = {'version_id_col': version}
+    __table_args__ = (db.UniqueConstraint('household_id', 'shop_key', name='browser_household_shop'),
+        db.CheckConstraint("shop_key IN ('coop','galaxus')", name='browser_shop_key'),
+        db.CheckConstraint(
+        "state IN ('idle','queued','creating','active','closing','forgetting','error')",
+        name='shop_browser_state'),)

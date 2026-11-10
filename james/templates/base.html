@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#214b3d">
   <title>{% block title %}James · Zuhause gut versorgt{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='13') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='15') }}">
   <script src="{{ url_for('static', filename='app.js', v='11') }}" defer></script>
   <script src="/static/offline-store.js?v=1" defer></script>
   <script src="/static/pwa.js?v=4" defer></script>
@@ -24,12 +24,14 @@
   </header>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
   {% set in_shopping = request.endpoint == 'main.shopping' or request.blueprint in ['plans', 'receipts'] %}
-  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] %}
+  {% set in_more = request.endpoint == 'main.household' or request.endpoint == 'products.catalogue' or request.blueprint in ['shop_login', 'settings'] or request.endpoint == 'cooking.manage_categories' %}
   <nav class="nav" aria-label="Hauptnavigation">
-    <a {% if not in_shopping and not in_more %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
+    <a {% if not in_shopping and not in_more and request.blueprint != 'cooking' %}aria-current="page"{% endif %} href="{{ url_for('main.home') }}"><span aria-hidden="true">⌂</span>Haushalt</a>
     <a {% if in_shopping %}aria-current="page"{% endif %} href="{{ url_for('main.shopping') }}"><span aria-hidden="true">☷</span>Einkauf</a>
+    <a {% if request.blueprint == 'cooking' and request.endpoint != 'cooking.manage_categories' %}aria-current="page"{% endif %} href="{{ url_for('cooking.index') }}"><span aria-hidden="true">♧</span>Kochen</a>
     <details class="nav-more" {% if in_more %}data-current="true"{% endif %}><summary><span aria-hidden="true">•••</span>Mehr</summary><div class="nav-more__menu">
       <a href="{{ url_for('settings.index') }}">App-Verwaltung</a>
+      {% if config.SHOP_BROWSER_ENABLED %}<a href="{{ url_for('shop_browser.index') }}">Galaxus verbinden</a><a href="{{ url_for('shop_browser.index', shop_key='coop') }}">Coop verbinden</a>{% endif %}
       {% if config.SHOP_LOGIN_PILOT_ENABLED %}<a href="{{ url_for('shop_login.index') }}">Shop-Anmeldung</a>{% endif %}
     </div></details>
   </nav>
@@ -47,15 +49,11 @@
   <section class="pwa-help" aria-label="App und Offline-Nutzung"><p id="offline-save-status" class="small muted" role="status"></p><button id="install-app" class="button button--outline" type="button" hidden>James als App installieren</button><details><summary>App installieren und Liste offline nutzen</summary><p class="small muted">Im Browsermenü kannst du James installieren oder zum Startbildschirm hinzufügen. Die Einkaufsliste wird auf diesem Gerät gespeichert, wenn du James online und angemeldet öffnest. Beim Abmelden wird sie entfernt. Gerätespeicher kann vom Browser gelöscht werden.</p><a class="button button--quiet" href="/offline">Gespeicherte Einkaufsliste ansehen</a></details></section>
   <footer class="footer">Weniger dran denken. Mehr zuhause sein.<span>James · Erste Version</span></footer>
   {% if current_user.is_authenticated and g.membership is defined and g.membership %}
-  <a id="jayjay-launcher" class="jayjay-launcher" href="{{ url_for('chat.index') }}" aria-label="Mit JayJay sprechen" aria-haspopup="dialog" aria-controls="jayjay-dialog"><span class="jayjay-mark" aria-hidden="true">j.</span><span>JayJay</span></a>
-  <dialog id="jayjay-dialog" class="jayjay" aria-labelledby="jayjay-title">
-    <header class="jayjay-header"><div><p class="eyebrow">EUER BUTLER</p><h2 id="jayjay-title">JayJay ist für euch da.</h2></div><button id="jayjay-close" class="button button--quiet" type="button" aria-label="Chat schliessen">✕</button></header>
-    <div id="jayjay-content" class="jayjay-content" aria-busy="false"></div>
-    <p id="jayjay-status" class="jayjay-status small" role="status"></p>
-    <button id="jayjay-reload" class="button button--outline" type="button" hidden>Verlauf neu laden</button>
-    <button id="jayjay-refresh" class="button button--outline" type="button" hidden>App-Ansicht aktualisieren</button>
-  </dialog>
-  <script src="{{ url_for('static', filename='jayjay.js', v='3') }}" defer></script>
+  {% if request.endpoint != 'chat.index' %}
+  <a id="jayjay-launcher" class="jayjay-launcher" href="{{ url_for('chat.index') }}" aria-label="JayJay öffnen" aria-haspopup="dialog" aria-controls="jayjay-dialog"><span class="jayjay-mark" aria-hidden="true">j.</span><span>JayJay</span></a>
+  <dialog id="jayjay-dialog" class="jayjay" aria-labelledby="jayjay-title">{% include '_chat_shell.html' %}</dialog>
+  {% endif %}
+  <script src="{{ url_for('static', filename='jayjay.js', v='4') }}" defer></script>
   {% endif %}
 </body>
 </html>

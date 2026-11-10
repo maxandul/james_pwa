@@ -82,8 +82,8 @@ def run_task(client, url, state_path, *, instructions, task, seconds=120,
             raise ValueError('Zusaetzliche Freigabe muss ein exakter HTTPS-Origin sein.')
     if authentication_handler is not None and (screenshot_path or keep_session):
         raise ValueError('Loginpilot: keine Screenshotdateien oder Sitzungsaufbewahrung.')
-    if authorized_uncapped_test and (keep_session or session_id or not 0 < seconds <= 360):
-        raise ValueError('Freigegebener Einzeltest: nur neue Sitzung, maximal 360 Sekunden, keine Aufbewahrung.')
+    if authorized_uncapped_test and (keep_session or session_id or not 0 < seconds <= 720):
+        raise ValueError('Freigegebener Einzeltest: nur neue Sitzung, maximal 720 Sekunden, keine Aufbewahrung.')
     # Exclusive creation prevents accidentally overwriting an unresolved session.
     fd = os.open(state_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     result = {'status': 'starting', 'browser_calls': 0, 'screenshots': 0,

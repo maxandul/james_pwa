@@ -161,7 +161,10 @@ def catalogue(kind):
             identifier = int(raw) if raw else None
             action = request.form.get('action')
             if action == 'save':
-                save_entry(g.household.id, kind, request.form.get('name'), identifier, request.form.get('version'))
+                entry = save_entry(g.household.id, kind, request.form.get('name'), identifier, request.form.get('version'))
+                if kind == 'source' and 'shop_key' in request.form:
+                    from .assortment import bind_shop
+                    bind_shop(entry, request.form.get('shop_key'))
                 message = 'Bezeichnung gespeichert.'
             elif action == 'retire' and identifier:
                 replacement = int(request.form['replacement_id']) if request.form.get('replacement_id') else None

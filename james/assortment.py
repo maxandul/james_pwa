@@ -54,6 +54,11 @@ def ensure_entry(household_id, kind, value):
     if f'{kind}:{key(name)}' in home.settings.get('catalogue_deleted', []):
         raise Conflict('Diese Bezeichnung wurde entfernt. Bitte einen aktiven Eintrag wählen.')
     entry = KINDS[kind](household_id=household_id, name=name, name_key=key(name), aliases=[])
+    if kind == 'source' and key(name) in ('coop', 'galaxus'):
+        # A custom source may already own the connector; never create a duplicate.
+        if not db.session.scalar(select(PurchaseSource.id).where(
+                PurchaseSource.household_id == household_id, PurchaseSource.shop_key == key(name))):
+            entry.shop_key = key(name)
     db.session.add(entry)
     db.session.flush([entry])
     return entry
@@ -124,6 +129,23 @@ def save_entry(household_id, kind, name, entry_id=None, version=None):
 def source_ids(item):
     return list(db.session.scalars(select(ItemSource.source_id).join(PurchaseSource).where(
         ItemSource.item_id == item.id, PurchaseSource.household_id == item.household_id).order_by(ItemSource.source_id)))
+
+
+def bind_shop(source, shop_key):
+    from .shops import SHOPS
+    shop_key = shop_key or None
+    if shop_key is not None and shop_key not in SHOPS:
+        raise ValueError('Bitte eine gültige Shop-Verbindung wählen.')
+    if shop_key == source.shop_key:
+        return
+    if shop_key and db.session.scalar(select(PurchaseSource.id).where(
+            PurchaseSource.household_id == source.household_id,
+            PurchaseSource.shop_key == shop_key, PurchaseSource.id != source.id)):
+        raise Conflict('Dieser Shop ist bereits einem Einkaufsort zugeordnet. Bitte zuerst die bestehende Verbindung lösen.')
+    source.shop_key = shop_key
+    for offer in db.session.scalars(select(ShopOffer).where(ShopOffer.source_id == source.id)):
+        offer.confirmed_signature = None
+        offer.confirmed_at = None
 
 
 def offer_source_ids(item):
@@ -276,6 +298,24 @@ def save_offer(household_id, item_id, product_id, data, offer_id=None, *, expect
                 other.preferred = False
     db.session.flush()
     sync_sources(item)
+    from .shops import offer_problems, offer_signature
+    # Relationship caches may still point to the old source after an edit.
+    offer.source = source
+    if data.get('confirm_exact') == '1':
+        problems = offer_problems(offer, require_confirmation=False)
+        if problems:
+            raise ValueError(' '.join(problems))
+        duplicate = db.session.scalar(select(ShopOffer.id).join(PurchaseSource).where(
+            ShopOffer.household_id == household_id, PurchaseSource.shop_key == 'coop',
+            ShopOffer.shop_sku == offer.shop_sku, ShopOffer.active.is_(True), ShopOffer.id != offer.id))
+        if duplicate:
+            raise Conflict('Diese Coop-Artikelnummer ist bereits einem anderen Produkt zugeordnet. Bitte die bestehende Zuordnung verwenden.')
+        from .models import utcnow
+        offer.confirmed_signature = offer_signature(offer)
+        offer.confirmed_at = utcnow()
+    elif offer.confirmed_signature is not None and offer.confirmed_signature != offer_signature(offer):
+        offer.confirmed_signature = None
+        offer.confirmed_at = None
     return offer
 
 
