@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Coop-Warenkorbtest · James{% endblock %}
+{% block content %}
+<h1>Coop-Warenkorbtest</h1>
+<p>Diese drei Testprodukte sind fest ausgewählt. Die Mengen sind die gewünschten Gesamtmengen im Warenkorb.</p>
+{% if error %}<p class="notice notice--error" role="alert">{{ error }}</p>{% endif %}
+<ul>{% for product in products %}<li><strong>{{ product.quantity }} × {{ product.product }}</strong>, {{ product.package }} · Coop-Artikelnummer {{ product.sku }}</li>{% endfor %}</ul>
+<p>Andere Warenkorbpositionen bleiben erhalten. Keine Ersatzprodukte, Packungswechsel oder Bestellung. Eine offene manuelle Coop-Sitzung wird zuerst gespeichert und geschlossen; der Test verwendet danach dieselbe gespeicherte Anmeldung.</p>
+<form method="post" class="panel form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="request_id" value="{{ request_id }}">
+<label><input type="checkbox" name="consent" value="yes" required> Diese Gesamtmengen einmalig im gespeicherten Coop-Konto vorbereiten. Browserzeit und kostenpflichtige OpenAI-Aufrufe werden verwendet. Browseransichten gehen zur Steuerung an OpenAI. Kein Checkout und keine Bestellung.</label>
+<button class="button button--primary" type="submit">Coop-Warenkorbtest starten</button>
+</form>
+<p>Die Testartikel werden in James als «Coop-Test» angelegt. Der Auftrag läuft höchstens zwölf Minuten und wird bei Fehlern oder Neustarts nicht automatisch wiederholt. Bitte den Coop-Warenkorb währenddessen nicht verändern. Anschliessend auf dem eigenen Gerät prüfen.</p>
+<a href="{{ url_for('shop_browser.index', shop_key='coop') }}">Zur Coop-Verbindung</a>
+{% endblock %}

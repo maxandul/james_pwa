@@ -154,3 +154,29 @@ def preview(plan_id):
             db.session.rollback()
             error, status = str(exc), 409 if isinstance(exc, Conflict) else 400
     return render_template('coop_preview.html', plan=plan, error=error, **coop_preview(plan)), status
+
+
+@shop_browser.route('/shop-browser/coop/pilot', methods=['GET','POST'])
+@household_required
+def pilot():
+    from uuid import UUID, uuid4
+    from .coop_pilot import PRODUCTS, prepare_pilot
+    from .services import Conflict
+    profile('coop')
+    error, status = None, 200
+    request_id = request.form.get('request_id', '') if request.method == 'POST' else str(uuid4())
+    if request.method == 'POST':
+        try:
+            if request.form.get('consent') != 'yes':
+                raise ValueError('Bitte den konkreten Warenkorbtest bestätigen.')
+            try:
+                request_id = str(UUID(request_id))
+            except ValueError:
+                raise ValueError('Bitte die Testseite neu laden.') from None
+            plan, _ = prepare_pilot(request_id, queue=True)
+            db.session.commit()
+            return redirect(url_for('shop_browser.preview', plan_id=plan.id))
+        except ValueError as exc:
+            db.session.rollback()
+            error, status = str(exc), 409 if isinstance(exc, Conflict) else 400
+    return render_template('coop_pilot.html', products=PRODUCTS, request_id=request_id, error=error), status
