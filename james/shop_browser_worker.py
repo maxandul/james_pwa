@@ -9,6 +9,8 @@ from .models import ShopBrowser, User, utcnow
 from .services import membership_for
 from scripts.shop_browser_context import Browserbase, BrowserUnavailable, identifier
 from .shops import SHOPS
+from .models import PurchasePlan, Household, ShopLogin
+from datetime import timedelta
 
 
 def valid(item):
@@ -63,6 +65,7 @@ def finish(provider, pid, *, forget=False, pause=sleep):
     item = db.session.get(ShopBrowser, pid)
     forget = forget or item.state == 'forgetting' or not valid(item)
     interrupted = item.cart_state in ('queued', 'running')
+    plan_id = item.cart_plan_id
     db.session.rollback()
     if forget and context:
         current_app.logger.warning('Shopbrowser cleanup phase: context')
@@ -74,6 +77,10 @@ def finish(provider, pid, *, forget=False, pause=sleep):
     set_fields(pid, session_id=None, live_url=None, state='idle', error_category=None,
                **({'cart_state': 'INTERRUPTED'} if interrupted else {}),
                **({'context_id': None, 'confirmed_at': None} if forget else {}))
+    if interrupted and plan_id:
+        db.session.execute(update(PurchasePlan).where(PurchasePlan.id == plan_id,
+            PurchasePlan.cart_state == 'running').values(cart_state='INTERRUPTED', version=PurchasePlan.version+1))
+        db.session.commit()
     current_app.logger.warning('Shopbrowser cleanup complete: forgotten=%s', forget)
 
 
@@ -125,9 +132,10 @@ def run_pending_cart(pid, page):
     from flask import current_app
     from .shop_cart_agent import run_cart
     item = db.session.get(ShopBrowser, pid)
-    if item.shop_key != 'galaxus':
+    if item.shop_key == 'coop' and not item.cart_plan_id:
         set_fields(pid, cart_state='UNSUPPORTED_SHOP')
         return
+    shop, plan_id = item.shop_key, item.cart_plan_id
     claimed = db.session.execute(update(ShopBrowser).where(
         ShopBrowser.id == pid, ShopBrowser.state == 'active',
         ShopBrowser.cart_state == 'queued').values(cart_state='running',
@@ -142,18 +150,81 @@ def run_pending_cart(pid, page):
         item = db.session.get(ShopBrowser, pid)
         stop = (not item or item.state != 'active' or not valid(item)
                 or item.expires_at <= utcnow() or monotonic() >= deadline)
+        if shop == 'coop' and not stop:
+            from .planning import coop_preview
+            plan = db.session.get(PurchasePlan, plan_id)
+            stop = (not plan or plan.household_id != item.household_id or plan.cart_state != 'running'
+                    or item.cart_plan_id != plan_id or not coop_preview(plan)['ready'])
         db.session.rollback()
         return stop
 
-    result = run_cart(page, current_app.config.get('OPENAI_API_KEY'), stopped,
-                      lambda count: set_fields(pid, cart_actions=count))
+    def progress(count):
+        set_fields(pid, cart_actions=count)
+        if shop == 'coop':
+            db.session.execute(update(PurchasePlan).where(PurchasePlan.id == plan_id)
+                .values(cart_actions=count, version=PurchasePlan.version+1))
+            db.session.commit()
+
+    if shop == 'coop':
+        from .planning import coop_preview
+        from .coop_cart_agent import run_coop_cart
+        plan = db.session.get(PurchasePlan, plan_id)
+        preview = coop_preview(plan) if plan and plan.household_id == item.household_id else {'ready':False}
+        db.session.rollback()
+        result = (run_coop_cart(page, current_app.config.get('OPENAI_API_KEY'), preview['targets'], stopped, progress)
+                  if preview['ready'] and not stopped() else 'PLAN_INVALID')
+    else:
+        result = run_cart(page, current_app.config.get('OPENAI_API_KEY'), stopped, progress)
     set_fields(pid, cart_state=result)
+    if shop == 'coop':
+        db.session.execute(update(PurchasePlan).where(PurchasePlan.id == plan_id)
+            .values(cart_state=result, version=PurchasePlan.version+1))
+        db.session.commit()
     current_app.logger.warning('Shopbrowser cart result: %s', result)
+
+
+def schedule_coop_plan():
+    """A durable plan survives browser cleanup; a claimed test never requeues."""
+    from .planning import coop_preview
+    ids = db.session.scalars(select(PurchasePlan.id).where(PurchasePlan.cart_state == 'queued').order_by(PurchasePlan.id)).all()
+    db.session.rollback()
+    for plan_id in ids:
+        plan = db.session.get(PurchasePlan, plan_id)
+        db.session.execute(select(Household.id).where(Household.id == plan.household_id).with_for_update())
+        db.session.refresh(plan)
+        if plan.cart_state != 'queued':
+            db.session.rollback()
+            continue
+        if not plan.cart_requested_at or plan.cart_requested_at + timedelta(minutes=12) <= utcnow():
+            plan.cart_state = 'EXPIRED'
+            db.session.commit()
+            continue
+        profile = db.session.scalar(select(ShopBrowser).where(ShopBrowser.household_id == plan.household_id,
+            ShopBrowser.shop_key == 'coop'))
+        if not profile or not valid(profile) or not profile.context_id or not coop_preview(plan)['ready']:
+            plan.cart_state = 'PLAN_INVALID'
+            db.session.commit()
+            continue
+        busy = db.session.scalar(select(ShopBrowser.id).where(ShopBrowser.household_id == plan.household_id,
+            ShopBrowser.state != 'idle'))
+        legacy = db.session.scalar(select(ShopLogin.id).where(ShopLogin.active_household_id == plan.household_id))
+        if busy or legacy:
+            db.session.rollback()
+            continue
+        plan.cart_state = 'running'
+        profile.cart_plan_id = plan.id
+        profile.cart_state = 'queued'
+        profile.cart_actions = 0
+        profile.state = 'queued'
+        profile.expires_at = plan.cart_requested_at + timedelta(minutes=12)
+        profile.error_category = None
+        db.session.commit()
 
 
 def worker_once(app):
     if not app.config.get('SHOP_BROWSER_ENABLED'):
         return False
+    schedule_coop_plan()
     provider = Browserbase(app.config.get('BROWSERBASE_API_KEY'), app.config.get('BROWSERBASE_PROJECT_ID'))
     ids = db.session.scalars(select(ShopBrowser.id)).all()
     db.session.rollback()
@@ -178,6 +249,10 @@ def worker_once(app):
                     return True
             elif state == 'creating' and not item.session_id:
                 set_fields(pid, state='error', live_url=None, error_category='creation_unknown')
+                if item.cart_plan_id:
+                    db.session.execute(update(PurchasePlan).where(PurchasePlan.id == item.cart_plan_id,
+                        PurchasePlan.cart_state == 'running').values(cart_state='CREATION_UNKNOWN',version=PurchasePlan.version+1))
+                    db.session.commit()
             else:
                 forget = state == 'forgetting' or not valid(item)
                 db.session.rollback()
@@ -194,6 +269,11 @@ def worker_once(app):
                                'provider' if isinstance(exc, BrowserUnavailable) else 'internal')
             set_fields(pid, state='forgetting' if forgetting else 'idle' if rejected else 'error', live_url=None,
                        error_category=('provider_http_' + str(exc.status)) if rejected else 'creation_unknown' if unknown else 'cleanup_pending' if item.session_id else 'browser_unavailable')
+            if item.cart_plan_id:
+                result = ('PROVIDER_HTTP_' + str(exc.status)) if rejected else 'CREATION_UNKNOWN' if unknown else 'INTERRUPTED'
+                db.session.execute(update(PurchasePlan).where(PurchasePlan.id == item.cart_plan_id,
+                    PurchasePlan.cart_state == 'running').values(cart_state=result,version=PurchasePlan.version+1))
+                db.session.commit()
         finally:
             db.session.remove()
     return False

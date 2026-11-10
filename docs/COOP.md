@@ -1,7 +1,7 @@
 # Coop-Verbindung und eindeutige Produktvorbereitung
 
-Stand: 05.11.2026. Erste Etappe: gespeicherte Anmeldung, genaue Zuordnung und
-schreibgeschützte Testvorschau. Kein Coop-Warenkorb-Agent und kein Checkout.
+Stand: 10.11.2026. Gespeicherte Anmeldung, genaue Zuordnung und begrenzter
+Coop-Warenkorbtest für höchstens drei Produkte. Kein Checkout.
 Der Nutzer hat den bestehenden Galaxus-Test mit den richtigen Gesamtmengen
 unabhängig im echten Kontowarenkorb bestätigt. Dieser Ablauf bleibt erhalten.
 
@@ -10,7 +10,7 @@ unabhängig im echten Kontowarenkorb bestätigt. Dieser Ablauf bleibt erhalten.
 1. Unter **Mehr → Coop verbinden** den Browser ausdrücklich öffnen. Dort selbst
    anmelden, in James das sichtbare richtige Konto bestätigen und **Speichern
    und schliessen** wählen. Danach erneut öffnen und dasselbe Konto prüfen.
-   Die manuelle Anmeldung bei Coop wurde mit dieser Codeänderung noch nicht live geprüft.
+   Der Nutzer hat Anmeldung und Wiederöffnung mit erhaltener Anmeldung am 10.11.2026 bestätigt.
 2. Unter **App-Verwaltung → Einkaufsorte** ist der vorhandene Einkaufsort Coop
    mit dem technischen Shop `coop` verbunden. Eigene oder umbenannte Einkaufsorte
    lassen sich dort ausdrücklich verbinden; je Haushalt nur einer pro Shop.
@@ -29,7 +29,7 @@ unabhängig im echten Kontowarenkorb bestätigt. Dieser Ablauf bleibt erhalten.
    und neu erstellen, damit es keine Mengen weiter reserviert. Alte Vorhaben
    ohne vollständigen Produktsnapshot werden nicht automatisch aufgewertet.
 
-Die automatische Warenkorbübertragung ist die nächste Etappe. Preis,
+Die Testvorschau bietet einen ausdrücklichen Start des Warenkorbtests. Preis,
 Verfügbarkeit, Liefergebiet und bereits vorhandene Warenkorbmengen werden
 dabei im echten Shop geprüft. Es gibt keine stillen Ersatzprodukte oder
 Packungswechsel. JayJay wird später dieselben Fachfunktionen aufrufen.
@@ -58,7 +58,7 @@ Packungswechsel. JayJay wird später dieselben Fachfunktionen aufrufen.
 
 ## Betrieb und Abnahme
 
-Migration: `c28a60b4e915`. Web zuerst bis zum neuen Head migrieren, danach Worker
+Migration: `d39b71c5fa26`. Web zuerst bis zum neuen Head migrieren, danach Worker
 auf denselben Code bringen. Der vorhandene Worker wartet auf passende
 Schema-Readiness. Eine laufende manuelle Browsersitzung vor dem Rollout speichern
 und schliessen. Kein neuer Dienst, kein neues Shop-Passwort und kein neuer
@@ -74,9 +74,10 @@ Starts bis zur Klärung. Löschen einer Coop-Verbindung löscht nicht das Galaxu
 
 Der Worker öffnet für Coop `https://www.coop.ch/de/`; die Person durchläuft den
 Shop-Login manuell in der bestehenden Live-Ansicht. Der Galaxus-Agent und seine
-festen drei Produkte bleiben unverändert. Coop lehnt den bisherigen Cart-Aufruf
-in Route und Worker ab, damit der Galaxus-Agent keinen falschen Shop übernimmt.
-Die Vorschau ist ausschliesslich GET und startet keine Browser- oder API-Läufe.
+festen drei Produkte bleiben unverändert. Coop verwendet einen eigenen Driver
+mit geprüften Produkt- und Bedienelementkennungen. Der alte feste Galaxus-Cart-
+Aufruf bleibt für Coop gesperrt. Ein GET auf die Vorschau startet nichts;
+ein bestätigter POST reiht genau ein Vorhaben ein.
 
 Tests prüfen Profiltrennung, Wiederverwendung des richtigen Kontextes,
 unveränderten Galaxus-Ablauf, CSRF/Haushaltsgrenzen, Identitätsänderungen,
@@ -84,6 +85,33 @@ Packungsrundung, alte Vorhaben und Migration mit vorhandenen Daten. Ein Downgrad
 mit vorhandenen Coop-Profilen wird vor Änderungen abgewiesen; Profile werden
 nicht zur Rückkehr auf ein altes Schema automatisch gelöscht.
 
-Offene Live-Abnahmen: (1) manuelle Coop-Anmeldung und Wiederöffnung,
-(2) zwei bis drei vom Nutzer gewählte Produkte zuordnen,
-(3) Vorschau prüfen. Erst danach den eigenen Coop-Warenkorb-Agenten ergänzen.
+## Einmaliger delegierter Test vom 10.11.2026
+
+Der Nutzer bestätigte die erhaltene Anmeldung und überliess die Produktauswahl
+ausdrücklich dem Agenten. Gewählt wurden zwei Packungen Barilla Spaghetti No. 5
+(500 g, ID 3032108), eine Packung Prix Garantie Tomaten gehackt (400 g,
+ID 6492579) und eine Packung JuraSel Tafelsalz mit Jod (500 g, ID 3020051).
+Die Produktseiten wurden öffentlich geprüft; persönliche Haushaltspräferenzen
+werden daraus nicht abgeleitet. Artikel tragen das Präfix `[Coop-Test …]`.
+
+`flask --app james coop-cart-pilot --request-id <UUID> --authorize-test --queue`
+erstellt Testartikel, Product/ShopOffer und ein normales PurchasePlan über die
+bestehenden Fachfunktionen. Die stabile Anfragekennung verhindert jeden erneuten
+Start desselben Tests, auch nach Fehlern oder späteren Aufträgen. Ohne `--queue`
+wird nur vorbereitet; ohne ausdrückliche Autorisierung wird nichts erstellt.
+Bestehende Produktzuordnungen werden nicht überschrieben.
+
+PurchasePlan bewahrt Auftragszustand, Startzeit und Klickzahl. ShopBrowser
+referenziert das verwendete Vorhaben. Der Worker schliesst zunächst eine offene
+manuelle Coop-Sitzung mit Speicherung, öffnet dann denselben Kontext für den
+einmaligen Auftrag. Ein Claim wird nie automatisch wiederholt. Gesamtlaufzeit
+einschliesslich Warteschlange höchstens zwölf Minuten, bis zu 40 Modellschritte.
+Ein Neustart nach Claim führt zu INTERRUPTED/CREATION_UNKNOWN. Providerfehler
+beenden den Plan ebenfalls; ein Fehler löscht keine gespeicherte Anmeldung.
+
+Der Driver erlaubt nur Hauptprodukt-Adds mit passender Artikelnummer,
+ID-Suche und begrenzte Navigation. Empfehlungen, fremde Produkte,
+Mengeneditoren, Checkout, Bestellung und Zahlung sind nicht freigegeben.
+Vor jeder Aktion werden aktuelle Zuordnung und Vorhaben erneut geprüft.
+CART_READY bleibt eine Agentenmeldung; die unabhängige Kontrolle desselben
+Kontowarenkorbs durch den Nutzer steht nach dem Test noch an.

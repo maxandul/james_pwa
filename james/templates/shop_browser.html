@@ -5,7 +5,8 @@
 {% if shop_key == 'coop' %}
 <section class="panel"><h2>Coop-Produkte vorbereiten</h2><p>Hinterlege unter «Produkte und Einkaufsorte» die genaue Variante, Packung und Coop-Artikelnummer und bestätige die Zuordnung. Erstelle danach ein Vorhaben mit zwei bis drei Positionen für die Testvorschau.</p>
 {% if source %}<a class="button button--outline" href="{{ url_for('plans.index', source_id=source.id) }}">Coop-Einkauf vorbereiten</a>{% else %}<p>Verbinde zuerst einen Einkaufsort mit Coop.</p><a href="{{ url_for('settings.catalogue', kind='source') }}">Einkaufsorte verwalten</a>{% endif %}
-<p class="small muted">Diese Etappe speichert die Anmeldung und zeigt die Testvorschau. Die Coop-Warenkorbübertragung folgt separat.</p></section>
+<p class="small muted">In der Testvorschau kannst du den begrenzten Warenkorbtest für die genauen Produkte starten. Kein Checkout und keine Bestellung.</p>
+{% for plan in cart_plans %}<p><a href="{{ url_for('shop_browser.preview', plan_id=plan.id) }}">Coop-Warenkorbtest · Vorhaben {{ plan.id }}</a> · {{ plan.cart_state }}</p>{% endfor %}</section>
 {% endif %}
 <h1>{{ shop.name }} verbinden</h1>
 <p>Melde dich selbst im bereitgestellten Browser bei {{ shop.name }} an. James behält dieses Browserprofil für spätere Aufträge. Nach dem Schliessen kannst du es erneut öffnen und prüfen, ob du noch angemeldet bist.</p>

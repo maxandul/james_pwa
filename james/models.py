@@ -239,6 +239,9 @@ class PurchasePlan(db.Model):
     lines = db.Column(db.JSON, nullable=False)
     state = db.Column(db.String(12), nullable=False, default="draft")
     reference = db.Column(db.String(100), nullable=False, default="")
+    cart_state = db.Column(db.String(32))
+    cart_requested_at = db.Column(db.DateTime)
+    cart_actions = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     version = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     source = db.relationship(PurchaseSource)
@@ -415,6 +418,8 @@ class ShopBrowser(db.Model):
     error_category = db.Column(db.String(32))
     cart_state = db.Column(db.String(32))
     cart_actions = db.Column(db.Integer(), nullable=False, default=0, server_default='0')
+    cart_plan_id = db.Column(db.Integer, db.ForeignKey('purchase_plan.id'))
+    cart_plan = db.relationship(PurchasePlan)
     version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     __mapper_args__ = {'version_id_col': version}
     __table_args__ = (db.UniqueConstraint('household_id', 'shop_key', name='browser_household_shop'),
