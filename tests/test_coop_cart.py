@@ -139,6 +139,27 @@ def test_provider_failure_is_terminal_and_does_not_replay(enabled, monkeypatch):
     assert provider.create_session.call_count == 1
 
 
+def test_direct_pilot_start_is_read_only_until_consent_and_is_idempotent(enabled, client):
+    import re
+    seed_item(enabled)
+    record(enabled, shop_key='coop', state='idle', session_id=None, context_id='saved-coop')
+    path = '/shop-browser/coop/pilot'
+    html = client.get(path).text
+    token = re.search(r'name="csrf_token" value="([^"]+)"', html)[1]
+    request_id = re.search(r'name="request_id" value="([^"]+)"', html)[1]
+    with enabled.app_context():
+        assert db.session.scalar(select(func.count(PurchasePlan.id))) == 0
+    assert client.post(path, data={'request_id':request_id,'consent':'yes'}).status_code == 400
+    assert client.post(path, data={'csrf_token':token,'request_id':request_id}).status_code == 400
+    data = {'csrf_token':token,'request_id':request_id,'consent':'yes'}
+    first = client.post(path, data=data)
+    assert first.status_code == 302
+    assert client.post(path, data=data).headers['Location'] == first.headers['Location']
+    with enabled.app_context():
+        assert db.session.scalar(select(func.count(PurchasePlan.id))) == 1
+        assert db.session.scalar(select(PurchasePlan.cart_state)) == 'queued'
+
+
 def driver():
     page = Mock()
     page.url = PRODUCTS[0]['url']
