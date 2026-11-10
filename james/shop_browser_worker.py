@@ -250,6 +250,7 @@ def worker_once(app):
             elif state == 'creating' and not item.session_id:
                 set_fields(pid, state='error', live_url=None, error_category='creation_unknown')
                 if item.cart_plan_id:
+                    set_fields(pid, cart_state='CREATION_UNKNOWN')
                     db.session.execute(update(PurchasePlan).where(PurchasePlan.id == item.cart_plan_id,
                         PurchasePlan.cart_state == 'running').values(cart_state='CREATION_UNKNOWN',version=PurchasePlan.version+1))
                     db.session.commit()
@@ -271,6 +272,7 @@ def worker_once(app):
                        error_category=('provider_http_' + str(exc.status)) if rejected else 'creation_unknown' if unknown else 'cleanup_pending' if item.session_id else 'browser_unavailable')
             if item.cart_plan_id:
                 result = ('PROVIDER_HTTP_' + str(exc.status)) if rejected else 'CREATION_UNKNOWN' if unknown else 'INTERRUPTED'
+                set_fields(pid, cart_state=result)
                 db.session.execute(update(PurchasePlan).where(PurchasePlan.id == item.cart_plan_id,
                     PurchasePlan.cart_state == 'running').values(cart_state=result,version=PurchasePlan.version+1))
                 db.session.commit()

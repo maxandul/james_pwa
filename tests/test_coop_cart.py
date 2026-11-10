@@ -133,6 +133,7 @@ def test_provider_failure_is_terminal_and_does_not_replay(enabled, monkeypatch):
     with enabled.app_context():
         worker_once(enabled)
         assert db.session.get(PurchasePlan, plan_id).cart_state == 'PROVIDER_HTTP_402'
+        assert db.session.get(ShopBrowser, pid).cart_state == 'PROVIDER_HTTP_402'
         assert db.session.get(ShopBrowser, pid).context_id == 'saved-coop'
         worker_once(enabled)
     assert provider.create_session.call_count == 1
