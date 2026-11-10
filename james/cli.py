@@ -7,6 +7,8 @@ from .services import clean_email, clean_text, validate_password
 
 
 def register_cli(app):
+    from .coop_pilot import register_coop_cli
+    register_coop_cli(app)
     @app.cli.command('jayjay-check')
     def jayjay_check():
         """Verify model access without sending household records or enabling chat."""

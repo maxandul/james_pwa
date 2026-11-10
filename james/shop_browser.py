@@ -106,8 +106,12 @@ def index(shop_key='galaxus'):
     from .models import PurchaseSource
     source = db.session.scalar(select(PurchaseSource).where(PurchaseSource.household_id == g.household.id,
         PurchaseSource.shop_key == shop_key, PurchaseSource.active.is_(True)))
+    from .models import PurchasePlan
+    cart_plans = db.session.scalars(select(PurchasePlan).where(PurchasePlan.household_id == g.household.id,
+        PurchasePlan.source_id == source.id, PurchasePlan.cart_state.is_not(None))
+        .order_by(PurchasePlan.id.desc()).limit(5)).all() if shop_key == 'coop' and source else []
     return render_template('shop_browser.html', profile=item, now=utcnow(), products=PRODUCTS,
-                           shop_key=shop_key, shop=SHOPS[shop_key], source=source)
+                           shop_key=shop_key, shop=SHOPS[shop_key], source=source, cart_plans=cart_plans)
 
 
 @shop_browser.get('/shop-browser/live')
@@ -122,14 +126,31 @@ def live(shop_key='galaxus'):
     return redirect(item.live_url)
 
 
-@shop_browser.get('/shop-browser/coop/preview/<int:plan_id>')
+@shop_browser.route('/shop-browser/coop/preview/<int:plan_id>', methods=['GET','POST'])
 @household_required
 def preview(plan_id):
-    profile('coop')  # Same private owner/household boundary as the saved browser.
+    if request.method == 'POST':
+        db.session.execute(select(Household.id).where(Household.id == g.household.id).with_for_update())
+    browser = profile('coop')
     from .models import PurchasePlan
     from .planning import coop_preview
     plan = db.session.scalar(select(PurchasePlan).where(PurchasePlan.id == plan_id,
         PurchasePlan.household_id == g.household.id))
     if not plan:
         abort(404)
-    return render_template('coop_preview.html', plan=plan, **coop_preview(plan))
+    error, status = None, 200
+    if request.method == 'POST':
+        from .coop_pilot import queue_plan
+        from .assortment import version_matches
+        from .services import Conflict
+        try:
+            version_matches(plan, request.form.get('version'))
+            if request.form.get('consent') != 'yes':
+                raise ValueError('Bitte den konkreten Warenkorbtest bestätigen.')
+            queue_plan(plan, browser)
+            db.session.commit()
+            return redirect(url_for('shop_browser.preview', plan_id=plan.id))
+        except ValueError as exc:
+            db.session.rollback()
+            error, status = str(exc), 409 if isinstance(exc, Conflict) else 400
+    return render_template('coop_preview.html', plan=plan, error=error, **coop_preview(plan)), status
